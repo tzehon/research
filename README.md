@@ -11,11 +11,11 @@ MODEL = "claude-sonnet-4.5"
 
 def get_first_commit_date(folder):
     result = subprocess.run(
-        ["git", "log", "--diff-filter=A", "--follow", "--format=%aI", "--", folder],
+        ["git", "log", "--diff-filter=A", "--follow", "--format=%aI", "--reverse", "--", folder],
         capture_output=True, text=True
     )
     dates = result.stdout.strip().split('\n')
-    return dates[-1] if dates and dates[-1] else None
+    return dates[0] if dates and dates[0] else None
 
 def get_summary(folder):
     summary_file = Path(folder) / "_summary.md"
@@ -62,12 +62,17 @@ projects.sort(reverse=True)
 
 repo_url = get_repo_url()
 
+# Print heading with project count
+print(f"## {len(projects)} research projects\n")
+
 for date, folder in projects:
     date_str = date[:10] if date else "unknown"
     print(f"### [{folder}]({repo_url}/tree/main/{folder}) ({date_str})\n")
     print(get_summary(folder))
     print()
 ]]]-->
+## 5 research projects
+
 ### [mongodb-ops-manager-kubernetes](https://github.com/tzehon/research/tree/main/mongodb-ops-manager-kubernetes) (2025-11-30)
 
 MongoDB Ops Manager can be deployed on Kubernetes using the [MongoDB Controllers for Kubernetes (MCK)](https://www.mongodb.com/docs/kubernetes/current/) operator, and this learning-focused project provides automated scripts for setting up a complete environment including TLS encryption via [cert-manager](https://cert-manager.io/docs/), backup infrastructure with oplog/blockstore, LDAP integration, and external access configurations. The deployment creates an Ops Manager instance with a 3-node application database, automated backup capabilities for point-in-time recovery, and supports both ReplicaSet and sharded cluster topologies with optional MongoDB Search (preview) functionality for full-text and vector search. A single `_launch.bash` script orchestrates the entire deployment from cluster creation through Ops Manager setup and production database provisioning, while connection helper scripts automatically handle credential extraction and TLS certificate management for external access.

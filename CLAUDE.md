@@ -22,7 +22,7 @@ When working in a specific project directory, refer to that project's `CLAUDE.md
 The root README.md uses [cogapp](https://github.com/nedbat/cog) for automatic project summaries:
 ```bash
 pip install cogapp llm llm-anthropic
-cog -r README.md
+cog -r -P README.md
 ```
 Per-project summaries are cached in `_summary.md` files within each project.
 
