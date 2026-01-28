@@ -24,7 +24,6 @@ orgName=${orgName:-myDeployment}
 orgInfo=( $( get_org.bash -o ${orgName} ) )
 orgId=${orgInfo[1]}
 projectName=${projectName:-myProject}
-#curlData=$( printf '{ "name" : "PROJECT", "orgId" : "ORGID" }' | sed -e"s/PROJECT/${projectName}/" -e"s/ORGID/${orgId}/" )
 projectId=$( get_projectId.bash -p ${projectName} )
 
 output=$( curl $curlOpts --silent --user "${publicKey}:${privateKey}" --digest \

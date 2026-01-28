@@ -1,12 +1,5 @@
 #!/bin/bash
 
-#docker run --detach --rm --name openldap \
-#   --env LDAP_ADMIN_USERNAME=admin \
-#   --env LDAP_ADMIN_PASSWORD=${ldapBindQueryPassword} \
-#   --env LDAP_USERS="user01,user02" \
-#   --env LDAP_PASSWORDS="Mongodb1,Mongodb1" \
-#   -p "389:1389" bitnami/openldap:latest
-
 # Resolve bin directory and add to PATH so scripts can find each other
 _bindir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 PATH="${_bindir}:${PATH}"
@@ -95,15 +88,6 @@ gidNumber: 1003
 homeDirectory: /Users/suzanne
 EOF
 
-#ldapmodify -H ${ldapServer} -x -c -w ${ldapBindQueryPassword} -D cn=admin,dc=example,dc=org <<EOF
-#dn: cn=readers,ou=users,dc=example,dc=org
-#changetype: modify
-#delete: member
-#member: cn=dbAdmin,ou=users,dc=example,dc=org
-#member: cn=User01,ou=users,dc=example,dc=org
-#member: cn=User02,ou=users,dc=example,dc=org
-#EOF
-
 # put users in readers group -  DB users
 ldapmodify -H ${ldapServer} -x -c -w ${ldapBindQueryPassword} -D cn=admin,dc=example,dc=org <<EOF
 dn: cn=readers,ou=users,dc=example,dc=org
@@ -137,8 +121,5 @@ objectClass: groupOfNames
 member: cn=Thomas.Luckenbach,ou=users,dc=example,dc=org
 member: cn=Suzanne.Luckenbach,ou=users,dc=example,dc=org
 EOF
-
-#ldapsearch -H ${ldapServer} -x -b 'dc=example,dc=org' 
-#ldapsearch -H ${ldapServer} -x -b 'dc=example,dc=org' dn cn=Thomas.Luckenbach,ou=users,dc=example,dc=org dn memberof
 
 printf "%s\n" "created ldapServer=ldap://${hostName}:${port}"

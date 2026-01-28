@@ -19,7 +19,6 @@ cat ${template} | sed \
     -e "s|NAMESPACE|$namespace|" \
     -e "s|CERTNAME|$name|g" > "${yaml}"
 
-# printf "%s\n" "    - *.${name}-svc.${namespace}.svc.${clusterDomain}" >> "${yaml}"
 for n in ${names[*]}
 do
 printf "%s\n" "    - \"${n}\"" >> "${yaml}"

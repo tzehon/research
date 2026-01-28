@@ -6,10 +6,6 @@ d=$( dirname "$0" )
 cd "${d}"
 name=${1:-opsmanager}
 
-#def_token=( $( kubectl get secrets | grep default-token ) )
-#kubectl get secret ${def_token} -o jsonpath='{.data.ca\.crt}' | base64 -D > ca.crt
-#kubectl get secret -n default -o jsonpath="{.items[?(@.type==\"kubernetes.io/service-account-token\")].data['ca\.crt']}" | base64 --decode > ca.crt
-
 cert="${name}-svc"
 
 # certs for the proxy server for queryable backup
@@ -47,8 +43,6 @@ cat "${cert}.key" "${cert}.crt" > "${cert}.pem"
 
 # appdb
 # use prefix om
-#"$PWD/gen_cert.bash" ${name}-db-cert "*.${name}-db-svc.${namespace}.svc.${clusterDomain}" 
-
 members=3 # hard coded in template
 n=0
 while [ $n -lt $members ]

@@ -22,7 +22,6 @@ shift "$(($OPTIND -1))"
 
 orgName="${orgName:-myDeployment}"
 
-#create_key.bash
 get_key.bash
 if [[ $? != 0 ]]
 then
@@ -32,7 +31,6 @@ fi
 create_org.bash -o "${orgName}"
 if [[ $? != 0 ]]
 then
-    #rm ${deployconf}
     exit 1
 fi
 source ${deployconf}
@@ -41,4 +39,3 @@ source ${deployconf}
 orgId="${orgName}_orgId"
 orgId="${!orgId}"
 add_user_to_org.bash -u "${user}" -i "${orgId}"
-#cat ${deployconf}
