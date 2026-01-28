@@ -6,7 +6,7 @@ metadata:
 
 spec:
   replicas: REPLICAS
-  version: VERSION # 8.0.16 # 7.0.2 # 6.0.6 # 5.0.14 # 4.4.15
+  version: VERSION # 8.0.19 # 7.0.2 # 6.0.6 # 5.0.14 # 4.4.15
   clusterDomain: DOMAINNAME
   #DEMO jvmParameters: ["-Xms2560m", "-Xmx2560m"] # 2.5M is a good size for a demo -- comment out for larger clusters in production
   adminCredentials: admin-user-credentials # Should match metadata.name in the Kubernetes secret for the admin user
