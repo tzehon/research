@@ -596,18 +596,6 @@ misc/mdb_operator_diagnostic_data.sh
 | cert-manager | v1.16.2 | [Docs](https://cert-manager.io/docs/) |
 | MongoDB Search (Preview) | 0.55.0 | [Docs](https://www.mongodb.com/docs/kubernetes/current/fts-vs-deployment/) |
 
-## Evolution & Lessons Learned
-
-This project evolved through several major iterations:
-
-1. **MEKO to MCK Migration** - Migrated from the deprecated MongoDB Enterprise Kubernetes Operator (MEKO) to MongoDB Controllers for Kubernetes (MCK), the new standardized operator using Helm-based installation.
-
-2. **Docker to Kubernetes-Only** - Removed Docker Compose setup to focus exclusively on Kubernetes deployments for production parity.
-
-3. **cert-manager Integration** - cfssl generates the root CA, then cert-manager handles all certificate issuance and lifecycle management.
-
-4. **External Access Improvements** - Implemented split-horizon DNS for ReplicaSets and LoadBalancer exposure for sharded cluster mongos instances.
-
 ## Related Projects
 
 Other MongoDB projects in this research repository:
