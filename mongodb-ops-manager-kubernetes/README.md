@@ -149,6 +149,107 @@ Access via browser: `https://<EXTERNAL-IP>:8443`
 - Login with credentials from `init.conf`
 - Accept the self-signed certificate warning
 
+## Deployment Flow
+
+This section documents the full execution sequence when running `./0_make_k8s.bash && ./_launch.bash --search`.
+
+### Phase 1: `0_make_k8s.bash` — Create GKE Cluster
+
+| Order | File | Purpose |
+|-------|------|---------|
+| 1 | `scripts/init.conf` | Sourced for GKE project, region, zone variables |
+| 2 | `gcloud` CLI | Creates a GKE cluster (default name `mdb-central`) and fetches kubectl credentials |
+
+### Phase 2: `_launch.bash --search` — Deploy the Full Stack
+
+`_launch.bash` sources `init.conf`, parses `--search` to set `searchFlag="--search"`, then orchestrates 8 timed steps:
+
+#### Step 1: Operator — `deploy_Operator.bash`
+
+| Order | File | Purpose |
+|-------|------|---------|
+| 1 | `scripts/init.conf` | Namespace, MCK version, TLS settings |
+| 1a | `kubectl` | Creates namespace, sets context, removes old MEKO operator if present |
+| 2 | Helm chart `mongodb/mongodb-kubernetes` | Installs the MCK operator, waits for CRDs and operator deployment to be ready |
+| 3 | `certs/make_cert_issuer.bash` | (if TLS) Sets up cert-manager and a CA Issuer |
+| 3a | `certs/generate_ca.bash` | Generates the CA key pair |
+| 3b | cert-manager manifest (remote) | Installs cert-manager CRDs and controllers |
+
+#### Step 2: Ops Manager — `deploy_OM.bash`
+
+| Order | File | Purpose |
+|-------|------|---------|
+| 1 | `scripts/init.conf` | OM version, credentials, email/LDAP config |
+| 1a | `kubectl create secret` | Creates `admin-user-credentials` secret from `init.conf` (username, password, name) |
+| 2 | `certs/make_OM_certs.bash` | (if TLS) Generates certs for OM, AppDB, queryable backup |
+| 2a | `certs/gen_cert.bash` + `certs/cert_template.yaml` | Produces Certificate CRDs from template |
+| 3 | `templates/mdbom_template.yaml` | Template with placeholders (`VERSION`, `NAME`, etc.) replaced by values from `init.conf` to produce the final `OpsManager` manifest |
+| 4 | `kubectl apply` | Applies the manifest, waits for OM to reach `Running` |
+| 5 | `bin/update_initconf_hostnames.bash` | Gets external IP/hostname, updates `init.conf` and `/etc/hosts` |
+| 5a | `bin/get_hns.bash` | Helper to extract hostnames from K8s services |
+
+#### Step 2b: Backup Infrastructure (if `omBackup=true`)
+
+| Order | File | Purpose |
+|-------|------|---------|
+| 1 | `bin/deploy_org.bash` | Creates an Ops Manager org for backup databases |
+| 1a | `bin/get_key.bash` | Reads API keys from K8s secrets |
+| 1b | `bin/create_org.bash` → `bin/get_org.bash` | REST API calls to create the org |
+| 1c | `bin/add_user_to_org.bash` | Adds admin user as `ORG_OWNER` |
+| 2 | `scripts/deploy_Cluster.bash` (oplog options) | Deploys the oplog store replica set |
+| 3 | `scripts/deploy_Cluster.bash` (blockstore options) | Deploys the blockstore replica set |
+
+#### Step 3: Organization — `bin/deploy_org.bash`
+
+Creates the main deployment org (same scripts as Step 2b item 1).
+
+#### Step 4: ReplicaSet — `deploy_Cluster.bash --search`
+
+This is the key step affected by the `--search` flag. Rows in **bold** are search-specific.
+
+| Order | File | Purpose |
+|-------|------|---------|
+| 1 | `scripts/init.conf` | Cluster name, version, credentials, LDAP config |
+| 2 | `bin/get_org.bash` | Looks up the org ID via Ops Manager API |
+| 3 | `certs/make_cluster_certs.bash` | (if TLS) Certs for each RS member |
+| 3a | `certs/make_sharded_certs.bash` (agent mode) | Agent cert generation |
+| 3b | `certs/gen_cert.bash` + `certs/cert_template.yaml` | Certificate CRDs |
+| 3c | `kubectl create configmap` | Project ConfigMap with `baseUrl`, `orgId`, `projectName` (and TLS CA settings if TLS) |
+| 3d | `kubectl create secret` | `<cluster>-admin` password secret for the database admin user |
+| 4 | `templates/mdbuser_template_admin.yaml` | Placeholders replaced to produce admin `MongoDBUser` manifest |
+| 5 | `templates/mdbuser_template_ldap.yaml` | (if LDAP) Placeholders replaced to produce LDAP `MongoDBUser` manifest |
+| 6 | `templates/mdb_template_rs.yaml` | Placeholders replaced to produce the `MongoDB` ReplicaSet manifest |
+| 7 | `bin/expose_service.bash` → `bin/get_hns.bash` | Configures split-horizon DNS for external access |
+| 8 | `kubectl` polling | Waits for `MongoDB/<name>` to reach `Running` |
+| **9** | **`templates/mdbuser_template_search.yaml`** | **`--search` only:** Creates the `search-sync-source` MongoDBUser with `searchCoordinator` role |
+| **10** | **cert-manager Certificate** | **`--search` only:** TLS cert for `<name>-search-svc` |
+| **11** | **`templates/mdbsearch_template.yaml`** | **`--search` only:** Placeholders replaced to produce the `MongoDBSearch` manifest (mongot pods) |
+| **12** | **`kubectl` polling** | **`--search` only:** Waits for `MongoDBSearch/<name>` to reach `Running` |
+| 13 | `bin/get_connection_string.bash` → `bin/get_hns.bash` | Prints the final connection string |
+
+#### Step 5: Sharded Cluster — `deploy_Cluster.bash` (no `--search`)
+
+Uses `templates/mdb_template_sh.yaml`. Key differences from the ReplicaSet flow in Step 4:
+
+- **Cert generation** — calls `certs/make_sharded_certs.bash` once per component (agent, mongos, config, shard-0, shard-1, ...) instead of `make_cluster_certs.bash`
+- **No `expose_service.bash`** — mongos are exposed via LoadBalancer services defined in the manifest, not split-horizon DNS
+- **Post-deploy mongos cert regeneration** — waits for mongos LoadBalancers to get external IPs, then regenerates mongos TLS certs with the external DNS names
+- **No `--search`** — search is not passed to the sharded cluster (ReplicaSet-only in this setup)
+
+#### Step 6: Hostname Update — `bin/update_initconf_hostnames.bash`
+
+Final pass to update `init.conf` and `/etc/hosts` with all external hostnames for Ops Manager, the replica set, and sharded cluster.
+
+### Summary of `--search`-specific additions
+
+The `--search` flag only affects `deploy_Cluster.bash` for the ReplicaSet. It adds three extra resources after the MongoDB cluster is running:
+
+1. **`mdbuser_template_search.yaml`** — A `MongoDBUser` with role `searchCoordinator` and username `search-sync-source`
+2. **A cert-manager `Certificate`** — TLS cert for the search service endpoint
+3. **`mdbsearch_template.yaml`** — A `MongoDBSearch` CR that deploys standalone `mongot` pods with their own CPU/memory/storage requirements
+
+Everything else in the pipeline is identical to a non-search run.
+
 ## Directory Structure
 
 ```
