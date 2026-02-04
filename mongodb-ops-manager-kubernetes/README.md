@@ -104,6 +104,7 @@ Key settings to configure:
 | `tls` | Enable TLS encryption | `true` |
 | `omBackup` | Enable backup infrastructure | `true` |
 | `clusterDomain` | External domain name | `mdb.com` |
+| `owner` | GKE cluster owner tag | - |
 
 ### Step 2: Create Kubernetes Cluster
 
@@ -111,7 +112,14 @@ For GKE clusters:
 
 ```bash
 cd scripts
-./0_make_k8s.bash
+./0_make_k8s.bash            # Uses owner from init.conf
+./0_make_k8s.bash -o jane    # Override owner via flag
+```
+
+The `-o` flag overrides the `owner` setting from `init.conf`. One of the two must be set. To delete a cluster, use `-d`:
+
+```bash
+./0_make_k8s.bash -d
 ```
 
 This creates a GKE cluster with appropriate node pools. For other providers (EKS, OpenShift), ensure your cluster meets the resource requirements above.

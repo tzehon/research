@@ -5,8 +5,21 @@ d=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 cd "${d}"
 source init.conf
 
+# Parse flags
 verb=create
-[[ $1 == "-d" ]] && verb=delete
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -d) verb=delete; shift ;;
+        -o) owner="$2"; shift 2 ;;
+        *) echo "Usage: $0 [-d] [-o owner]"; exit 1 ;;
+    esac
+done
+
+# Validate owner
+if [[ -z "${owner:-}" ]]; then
+    echo "Error: owner is not set. Set 'owner' in init.conf or pass -o <owner>"
+    exit 1
+fi
 
 # Cluster configuration
 cluster="${MDB_CENTRAL_C:-mdb-central}"
@@ -37,8 +50,8 @@ then
         --num-nodes=${nodesPerRegion} \
         --machine-type "${clusterType}" \
         --cluster-version="1.33" \
-        --labels="expire-on=${expire},owner=tzehon_tan,purpose=opportunity,noreap=true" \
-        --node-labels="expire-on=${expire},owner=tzehon_tan,purpose=opportunity,noreap=true"
+        --labels="expire-on=${expire},owner=${owner},purpose=opportunity,noreap=true" \
+        --node-labels="expire-on=${expire},owner=${owner},purpose=opportunity,noreap=true"
     set +x
     gcloud container clusters get-credentials ${cluster} --region="${gkeRegion}"
     echo "Cluster ${cluster} created and credentials configured"
