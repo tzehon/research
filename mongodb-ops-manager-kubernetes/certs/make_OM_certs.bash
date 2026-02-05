@@ -11,16 +11,16 @@ cert="${name}-svc"
 # certs for the proxy server for queryable backup
 if [[ ! -e queryable-backup.pem ]]
 then
-    "$PWD/gen_cert.bash" ${cert} ${name}-svc ${name}-svc.${namespace}.svc.${clusterDomain} ${name}-backup-daemon-0 ${name}-backup-daemon-0.${name}-backup-daemon-svc.${namespace}.svc.${clusterDomain} 
-    kubectl apply -f "$PWD/certs_${cert}.yaml"
+    "$PWD/gen_cert.bash" ${cert} ${name}-svc ${name}-svc.${namespace}.svc.${clusterDomain} ${name}-backup-daemon-0 ${name}-backup-daemon-0.${name}-backup-daemon-svc.${namespace}.svc.${clusterDomain}
+    kubectl -n ${namespace} apply -f "$PWD/certs_${cert}.yaml"
     while true
     do
     sleep 5
-    kubectl get secret/"${cert}" > /dev/null 2>&1
+    kubectl -n ${namespace} get secret/"${cert}" > /dev/null 2>&1
     [[ $? == 0 ]] && break
     done
-    kubectl get secret "${cert}" -o jsonpath="{.data.tls\.crt}"|base64 --decode > "${cert}.crt"
-    kubectl get secret "${cert}" -o jsonpath="{.data.tls\.key}"|base64 --decode > "${cert}.key"
+    kubectl -n ${namespace} get secret "${cert}" -o jsonpath="{.data.tls\.crt}"|base64 --decode > "${cert}.crt"
+    kubectl -n ${namespace} get secret "${cert}" -o jsonpath="{.data.tls\.key}"|base64 --decode > "${cert}.key"
     cat "${cert}.key" "${cert}.crt" ca.key ca.crt > queryable-backup.pem
     rm "${cert}.key" "${cert}.crt" 
     [[ -e "queryable-backup.pem" ]] && printf "%s\n" "Made queryable-backup.pem" 
@@ -29,15 +29,15 @@ fi
 # OM
 # makes opmanager-svc.pem
 "$PWD/gen_cert.bash" "${cert}" "${name}-svc" "${name}-svc.${namespace}.svc.${clusterDomain}" "${omExternalName}"
-kubectl apply -f "$PWD/certs_${cert}.yaml"
+kubectl -n ${namespace} apply -f "$PWD/certs_${cert}.yaml"
     while true
     do
     sleep 5
-    kubectl get secret/"${cert}" > /dev/null 2>&1
+    kubectl -n ${namespace} get secret/"${cert}" > /dev/null 2>&1
     [[ $? == 0 ]] && break
     done
-kubectl get secret "${cert}" -o jsonpath="{.data.tls\.crt}"|base64 --decode > "${cert}.crt"
-kubectl get secret "${cert}" -o jsonpath="{.data.tls\.key}"|base64 --decode > "${cert}.key"
+kubectl -n ${namespace} get secret "${cert}" -o jsonpath="{.data.tls\.crt}"|base64 --decode > "${cert}.crt"
+kubectl -n ${namespace} get secret "${cert}" -o jsonpath="{.data.tls\.key}"|base64 --decode > "${cert}.key"
 cat "${cert}.key" "${cert}.crt" > "${cert}.pem"
 [[ -e "${cert}.pem" ]] && printf "%s\n" "Made ${cert}.pem"
 

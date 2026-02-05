@@ -21,8 +21,8 @@ then
 fi
 
 # Create a map for the ca
-kubectl delete configmap ca-pem > /dev/null 2>&1
-kubectl create configmap ca-pem \
+kubectl -n ${namespace} delete configmap ca-pem > /dev/null 2>&1
+kubectl -n ${namespace} create configmap ca-pem \
     --from-file="ca-pem=ca.pem"
 
 # get the cert-manager
@@ -33,8 +33,8 @@ else
     kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/${issuerVersion}/cert-manager.yaml
 fi
 
-kubectl delete secret ca-key-pair > /dev/null 2>&1
-kubectl create secret tls ca-key-pair \
+kubectl -n ${namespace} delete secret ca-key-pair > /dev/null 2>&1
+kubectl -n ${namespace} create secret tls ca-key-pair \
     --cert="ca.crt" \
     --key="ca.key"
 
@@ -45,7 +45,7 @@ n=0
 while [ $code -eq 1 ]
 do
 sleep 20
-kubectl delete Issuer/${issuerName} > /dev/null 2>&1
+kubectl -n ${namespace} delete Issuer/${issuerName} > /dev/null 2>&1
 cat <<EOF | kubectl apply -f - > /dev/null 2>&1
 apiVersion: cert-manager.io/v1
 kind: Issuer

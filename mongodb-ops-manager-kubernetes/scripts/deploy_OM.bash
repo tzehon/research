@@ -68,8 +68,8 @@ printf "%s\n" "Deploying OM ApplicationDB with $rsmem Maximum Memory, $rsmem Req
 printf "\n"
 
 # Create the credentials for main admin user
-kubectl delete secret         admin-user-credentials > /dev/null 2>&1
-kubectl create secret generic admin-user-credentials \
+kubectl -n ${namespace} delete secret         admin-user-credentials > /dev/null 2>&1
+kubectl -n ${namespace} create secret generic admin-user-credentials \
     --from-literal=Username="${user}" \
     --from-literal=Password="${password}" \
     --from-literal=FirstName="${firstName}" \
@@ -84,16 +84,16 @@ then
     rm "${PWD}/../certs/${name}-[svc,db]".* "${PWD}/../certs/queryable-backup.pem" > /dev/null 2>&1
     "${PWD}/../certs/make_OM_certs.bash" ${name}
     # create appdb cert request
-    kubectl apply -f "${PWD}/../certs/certs_om-${name}-db-cert.yaml"
+    kubectl -n ${namespace} apply -f "${PWD}/../certs/certs_om-${name}-db-cert.yaml"
     # For enablement of TLS (https) - provide certs and certificate authority
     # <prefix>-<metadata.name>-cert - need the specific keyname server.pem and queryable-backup.pem
-    kubectl delete secret         ${name}-cert > /dev/null 2>&1
-    kubectl create secret generic ${name}-cert \
+    kubectl -n ${namespace} delete secret         ${name}-cert > /dev/null 2>&1
+    kubectl -n ${namespace} create secret generic ${name}-cert \
         --from-file="server.pem=${PWD}/../certs/${name}-svc.pem" \
         --from-file="${PWD}/../certs/queryable-backup.pem"
     # Configmap used for OM to get the CA - need specific keynames ca-pem and mms-ca.crt
-    kubectl delete configmap ${name}-ca > /dev/null 2>&1
-    kubectl create configmap ${name}-ca \
+    kubectl -n ${namespace} delete configmap ${name}-ca > /dev/null 2>&1
+    kubectl -n ${namespace} create configmap ${name}-ca \
         --from-file="ca-pem=${PWD}/../certs/ca.pem" \
         --from-file="mms-ca.crt=${PWD}/../certs/ca.pem" 
     fi
@@ -103,8 +103,8 @@ tlsr="#TLS "
     if [[ ${makeCerts} == true ]]
     then
         # <prefix>-<metadata.name>-cert
-        kubectl delete secret         ${name}-cert > /dev/null 2>&1
-        kubectl create secret generic ${name}-cert \
+        kubectl -n ${namespace} delete secret         ${name}-cert > /dev/null 2>&1
+        kubectl -n ${namespace} create secret generic ${name}-cert \
             --from-file="${PWD}/../certs/queryable-backup.pem"
     fi
 fi
@@ -124,7 +124,6 @@ if [[ ${serviceType} == "NodePort" || ${demo} ]]
 then 
     LB="#LB  "
     serviceType="NodePort"
-    clusterDomain="cluster.local"
 else
     NP="#NP   "
 fi
@@ -175,10 +174,10 @@ cat ../templates/mdbom_template.yaml | sed \
     -e "s/NAME/$name/g" > "${mdbom}"
 
 #  Deploy OpsManager resources
-kubectl apply -f "${mdbom}"
+kubectl -n ${namespace} apply -f "${mdbom}"
 
 # remove any certificate requests
-[[ ${tls} == true ]] && kubectl delete $( kubectl get certificaterequest -o name | grep "${name}" ) > /dev/null 2>&1
+[[ ${tls} == true ]] && kubectl -n ${namespace} delete $( kubectl -n ${namespace} get certificaterequest -o name | grep "${name}" ) > /dev/null 2>&1
 
 # Monitor the progress until the OpsMgr app is ready
 printf "\n%s\n" "Monitoring the progress of resource om/${name} ..."
@@ -186,9 +185,9 @@ sleep 10
 while true
 do
     sleep 15
-    kubectl get om/${name}
-    pstatus=$( kubectl get om/${name} -o jsonpath={.status.opsManager.phase} )
-    message=$( kubectl get om/${name} -o jsonpath={.status.opsManager.message} )
+    kubectl -n ${namespace} get om/${name}
+    pstatus=$( kubectl -n ${namespace} get om/${name} -o jsonpath={.status.opsManager.phase} )
+    message=$( kubectl -n ${namespace} get om/${name} -o jsonpath={.status.opsManager.message} )
     printf "%s\n" "status.opsManager.message: $message"
     if [[ "$pstatus" == "Running" ]];
     then
@@ -207,10 +206,10 @@ printf "\n%s\n" "Monitoring the progress of svc ${name} ..."
 n=0
 while [ $n -lt 12 ]
 do
-    kubectl get svc | grep ${name} | grep -i "pending"
+    kubectl -n ${namespace} get svc | grep ${name} | grep -i "pending"
     if [[ $? = 1 ]]
     then
-        kubectl get svc/${name}-svc-ext # svc/${name}-backup svc/${name}-backup-daemon-0
+        kubectl -n ${namespace} get svc/${name}-svc-ext # svc/${name}-backup svc/${name}-backup-daemon-0
         break
     fi
     printf "%s\n" "Sleeping 15 seconds to allow IP/Hostnames to be created"
