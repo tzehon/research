@@ -17,14 +17,19 @@ eval serviceType=$( kubectl -n ${namespace} get svc/${name}-svc-ext -o jsonpath=
 
 if [[ $serviceType == "NodePort" ]]
 then
-    slist=( $(get_hns.bash -n "${name}" ) ) 
+    slist=( $(get_hns.bash -n "${name}" ) )
     hostname="${slist[0]%:*}"
     slist=( $(kubectl -n ${namespace} get nodes -o jsonpath='{.items[*].status.addresses[?(@.type=="ExternalIP")].address}' ) )
     [[ ${slist[0]} == "" ]] && slist=( $(kubectl -n ${namespace} get nodes -o jsonpath='{.items[*].status.addresses[?(@.type=="InternalIP")].address}' ) )
     opsMgrExtIp=${slist[0]}
 else
-    eval hostname=$(    kubectl -n ${namespace} get svc/${name}-svc-ext -o jsonpath={.status.loadBalancer.ingress[0].hostname} ) 
-    eval opsMgrExtIp=$( kubectl -n ${namespace} get svc/${name}-svc-ext -o jsonpath={.status.loadBalancer.ingress[0].ip} ) 
+    eval hostname=$(    kubectl -n ${namespace} get svc/${name}-svc-ext -o jsonpath={.status.loadBalancer.ingress[0].hostname} )
+    eval opsMgrExtIp=$( kubectl -n ${namespace} get svc/${name}-svc-ext -o jsonpath={.status.loadBalancer.ingress[0].ip} )
+    # EKS provides a hostname (ELB DNS) instead of an IP — use it as the external address
+    if [[ -z "${opsMgrExtIp}" && -n "${hostname}" ]]
+    then
+        opsMgrExtIp="${hostname}"
+    fi
 fi
 
 http="http"

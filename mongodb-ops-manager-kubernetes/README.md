@@ -48,10 +48,11 @@ Deploy MongoDB Ops Manager and managed MongoDB clusters on Kubernetes using Mong
 
 | Requirement | Version | Notes |
 |-------------|---------|-------|
-| Kubernetes | 1.16+ | Tested on GKE |
+| Kubernetes | 1.16+ | Tested on GKE and EKS |
 | kubectl | Latest | Kubernetes CLI |
 | Helm | 3.x | For MCK operator installation |
 | gcloud | Latest | For GKE cluster creation |
+| eksctl + aws CLI | Latest | For EKS cluster creation |
 | cfssl | Latest | Required for root CA generation (TLS enabled by default) |
 
 ### Resource Requirements
@@ -103,12 +104,12 @@ Key settings to configure:
 | `serviceType` | `LoadBalancer` or `NodePort` | `LoadBalancer` |
 | `tls` | Enable TLS encryption | `true` |
 | `omBackup` | Enable backup infrastructure | `true` |
-| `clusterDomain` | External domain name | `mdb.com` |
+| `clusterDomain` | K8s cluster DNS domain | `cluster.local` |
 | `owner` | GKE cluster owner tag | - |
 
 ### Step 2: Create Kubernetes Cluster
 
-For GKE clusters:
+**For GKE clusters:**
 
 ```bash
 cd scripts
@@ -122,7 +123,63 @@ The `-o` flag overrides the `owner` setting from `init.conf`. One of the two mus
 ./0_make_k8s.bash -d
 ```
 
-This creates a GKE cluster with appropriate node pools. For other providers (EKS, OpenShift), ensure your cluster meets the resource requirements above.
+> **GKE Cloud DNS:** If you want a custom cluster DNS domain (e.g., `mdb.com`), set `clusterDomain="mdb.com"` in `init.conf` before running `0_make_k8s.bash`. The default `cluster.local` works for most cases.
+
+**For EKS clusters:**
+
+```bash
+cd scripts
+
+# Create the EKS cluster
+eksctl create cluster \
+    --name=mdb-central \
+    --region=us-west-1 \
+    --version=1.33 \
+    --nodegroup-name=mdb-central-nodes \
+    --node-type=m5.2xlarge \
+    --nodes=6 \
+    --managed
+
+# Update kubeconfig
+aws eks update-kubeconfig --name mdb-central --region us-west-1
+```
+
+> **Important: EBS CSI Driver Required**
+>
+> EKS does not include the EBS CSI driver by default. Without it, PersistentVolumeClaims will stay in `Pending` state and pods cannot start. Install it after cluster creation:
+>
+> ```bash
+> # 1. Associate IAM OIDC provider (required for IAM roles for service accounts)
+> eksctl utils associate-iam-oidc-provider \
+>     --cluster=mdb-central --region=us-west-1 --approve
+>
+> # 2. Create IAM service account with EBS permissions
+> eksctl create iamserviceaccount \
+>     --name ebs-csi-controller-sa \
+>     --namespace kube-system \
+>     --cluster mdb-central \
+>     --region us-west-1 \
+>     --role-name AmazonEKS_EBS_CSI_DriverRole \
+>     --attach-policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy \
+>     --approve
+>
+> # 3. Install the EBS CSI driver add-on with the IAM role
+> role_arn=$(aws iam get-role --role-name AmazonEKS_EBS_CSI_DriverRole \
+>     --query 'Role.Arn' --output text)
+> eksctl create addon \
+>     --name aws-ebs-csi-driver \
+>     --cluster mdb-central \
+>     --region us-west-1 \
+>     --service-account-role-arn "${role_arn}"
+> ```
+
+The default `clusterDomain` (`cluster.local`) works for EKS — no changes needed in `init.conf`. To delete the cluster:
+
+```bash
+eksctl delete cluster --name=mdb-central --region=us-west-1 --wait
+```
+
+For other providers (AKS, OpenShift), ensure your cluster meets the resource requirements above and that `clusterDomain` in `init.conf` matches your cluster's DNS domain (run `bin/get_cluster_domain.bash` to check).
 
 ### Step 3: Deploy the Stack
 
@@ -286,6 +343,7 @@ mongodb-ops-manager-kubernetes/
 ├── bin/                        # Utility scripts
 │   ├── deploy_org.bash         # Organization setup
 │   ├── deploy_ldap.bash        # LDAP deployment
+│   ├── get_cluster_domain.bash # Detect K8s cluster DNS domain
 │   ├── get_*.bash              # Query helpers
 │   ├── create_*.bash           # Resource creation
 │   └── connect_*.bash          # Connection helpers
@@ -456,7 +514,7 @@ During deployment, `_launch.bash` modifies `/etc/hosts` to add hostname entries 
 
 The deployment adds entries like:
 ```
-34.168.33.127    opsmanager-svc.mongodb.svc.mdb.com opsmanager-svc om.mongodb.mdb.com
+34.168.33.127    opsmanager-svc.mongodb.svc.cluster.local opsmanager-svc om.mongodb.cluster.local
 ```
 
 This allows you to access services using friendly hostnames instead of raw IPs.
@@ -570,7 +628,9 @@ Use `_cleanup.bash` to clean up resources before redeploying or to tear down the
 | Issue | Solution |
 |-------|----------|
 | Pods stuck in `Pending` | Check node resources: `kubectl describe nodes` |
+| PVCs stuck in `Pending` (EKS) | Install EBS CSI driver with IAM permissions — see [EKS cluster setup](#step-2-create-kubernetes-cluster) |
 | Ops Manager not ready | Wait for AppDB: `kubectl get mongodb -n mongodb -w` |
+| `UnknownHostException` in OM logs | `clusterDomain` in `init.conf` doesn't match cluster DNS — run `bin/get_cluster_domain.bash` to check |
 | TLS certificate errors | Regenerate certs: `certs/generate_ca.bash && certs/make_OM_certs.bash` |
 | External access not working | Check service type: `kubectl get svc -n mongodb` |
 | LDAP auth failing | Verify LDAP pod: `kubectl get pods -n mongodb | grep ldap` |

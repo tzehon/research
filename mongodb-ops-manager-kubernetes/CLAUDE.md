@@ -30,6 +30,7 @@ cp sample_init.conf init.conf  # Configure credentials first
 bin/get_key.bash               # Get Ops Manager API keys
 bin/get_connection_string.bash -n <cluster>  # Get connection string
 bin/connect_external.bash -n <cluster>       # Connect via mongosh
+bin/get_cluster_domain.bash    # Detect K8s cluster DNS domain
 bin/deploy_ldap.bash           # Deploy OpenLDAP server
 bin/test_search.bash -n <cluster>            # Test MongoDB Search (Preview)
 ```
