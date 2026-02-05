@@ -16,7 +16,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Validate owner
-if [[ -z "${owner:-}" ]]; then
+if [[ -z "${owner:-}" || "${owner}" == "your_name" ]]; then
     echo "Error: owner is not set. Set 'owner' in init.conf or pass -o <owner>"
     exit 1
 fi
@@ -24,7 +24,7 @@ fi
 # Cluster configuration
 cluster="${MDB_CENTRAL_C:-mdb-central}"
 gkeRegion="${MDB_CENTRAL_REGION:-us-west1}"
-domain="${clusterDomain:-mdb.com}"
+domain="${clusterDomain}"
 nodesPerRegion="2" # 2 nodes per zone x 3 zones = 6 total nodes
 clusterType="e2-standard-8"
 

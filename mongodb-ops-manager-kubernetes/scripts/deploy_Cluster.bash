@@ -103,7 +103,7 @@ then
 fi
 fullName=$( printf "${projectName}-${name}"| tr '[:upper:]' '[:lower:]' )
 makeCerts=${makeCerts:-true}
-[[ ${demo} ]] && serviceType="NodePort" clusterDomain="cluster.local"
+[[ ${demo} ]] && serviceType="NodePort"
 duplicateServiceObjects=false
 mdbKind="MongoDB"
 
