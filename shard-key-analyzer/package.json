@@ -1,0 +1,31 @@
+{
+  "name": "mongodb-shard-key-analyzer",
+  "version": "1.0.0",
+  "description": "A web application to analyze and recommend optimal shard keys for MongoDB Atlas sharded clusters",
+  "private": true,
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "concurrently --kill-others \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "npm run dev --workspace=server",
+    "dev:client": "npm run dev --workspace=client",
+    "build": "npm run build --workspace=client",
+    "start": "npm run start --workspace=server",
+    "install:all": "npm install && npm install --workspace=server && npm install --workspace=client"
+  },
+  "keywords": [
+    "mongodb",
+    "atlas",
+    "sharding",
+    "shard-key",
+    "analyzer",
+    "database"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
