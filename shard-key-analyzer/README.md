@@ -106,31 +106,11 @@ The `clusterManager` role covers all three. On Atlas, the **Atlas Admin** built-
 
 ```bash
 git clone <your-repo-url>
-cd mongodb-shard-key-analyzer
+cd shard-key-analyzer
 npm install
 ```
 
-### 2. Configure environment variables
-
-Copy the example environment file and edit it:
-
-```bash
-cp .env.example .env
-```
-
-The default values in `.env.example` work for local development — no changes are needed unless you want to run the server on a different port:
-
-```bash
-PORT=3001                # Backend API port
-NODE_ENV=development
-LOG_LEVEL=info
-```
-
-In development, the Vite dev server automatically proxies `/api` and `/socket.io` requests to the backend (configured in `client/vite.config.js`).
-
-> **Note:** Your MongoDB Atlas connection string is **not** stored in the `.env` file. You'll enter it through the app's UI after starting the server (see step 4 below).
-
-### 3. Start the development servers
+### 2. Start the development servers
 
 ```bash
 npm run dev
@@ -145,7 +125,7 @@ npm run build          # Build the client
 npm start              # Start the production server
 ```
 
-### 4. Connect to your Atlas cluster
+### 3. Connect to your Atlas cluster
 
 Once the app is running, enter your MongoDB Atlas connection string on the connection page. The format is:
 
@@ -405,7 +385,7 @@ GET  /api/sample-data/status         # Get loading status
 ## Project Structure
 
 ```
-mongodb-shard-key-analyzer/
+shard-key-analyzer/
 ├── server/
 │   ├── src/
 │   │   ├── index.js              # Express server entry
@@ -425,7 +405,6 @@ mongodb-shard-key-analyzer/
 │   ├── vite.config.js            # Vite build & dev proxy config
 │   ├── tailwind.config.js        # Tailwind CSS config
 │   └── postcss.config.js         # PostCSS config
-├── .env.example                  # Environment variable template
 └── README.md
 ```
 

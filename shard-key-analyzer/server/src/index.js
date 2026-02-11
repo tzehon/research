@@ -2,8 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import dotenv from 'dotenv';
-
 import connectionRoutes from './routes/connection.js';
 import explorerRoutes from './routes/explorer.js';
 import samplingRoutes from './routes/sampling.js';
@@ -11,8 +9,6 @@ import workloadRoutes from './routes/workload.js';
 import analysisRoutes from './routes/analysis.js';
 import sampleDataRoutes from './routes/sample-data.js';
 import { setupSocketHandlers, stopSamplingStatusUpdates } from './socket/handlers.js';
-
-dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
