@@ -31,20 +31,20 @@ Under the hood, the app orchestrates two MongoDB commands:
 ### Workflow
 
 ```
-┌─────────────────────────────────────────────────────┐
-│  1. Pick a collection (Explorer)                    │
-│                                                     │
-│  2. Start sampling ─── runs in the background ───┐  │
-│     (configureQueryAnalyzer)                     │  │
-│                                                  │  │
-│  3. Generate traffic ── while sampling captures ─┤  │
-│     (Workload simulator or your own app)         │  │
-│                                                  │  │
-│  4. Analyze candidates ── reads collection docs ──┘  │
-│     (analyzeShardKey)      + sampled queries          │
-│                                                     │
-│  5. Compare results (Report)                        │
-└─────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│  1. Pick a collection (Explorer)                     │
+│                                                      │
+│  2. Start sampling ─── runs in the background ───┐   │
+│     (configureQueryAnalyzer)                     │   │
+│                                                  │   │
+│  3. Generate traffic ── while sampling captures ─┤   │
+│     (Workload simulator or your own app)         │   │
+│                                                  │   │
+│  4. Analyze candidates ── reads collection docs ─┘   │
+│     (analyzeShardKey)      + sampled queries         │
+│                                                      │
+│  5. Compare results (Report)                         │
+└──────────────────────────────────────────────────────┘
 ```
 
 Sampling stays active in the background through steps 3 and 4. You don't need to stop it before analyzing — `analyzeShardKey` reads whatever queries have been collected so far. More sampled queries means more accurate read/write distribution metrics.
