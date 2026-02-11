@@ -71,7 +71,17 @@ for date, folder in projects:
     print(get_summary(folder))
     print()
 ]]]-->
-## 5 research projects
+## 6 research projects
+
+### [shard-key-analyzer](https://github.com/tzehon/research/tree/main/shard-key-analyzer) (2026-02-11)
+
+Selecting the right shard key is critical for scaling MongoDB, yet the native `analyzeShardKey` and `configureQueryAnalyzer` commands return raw JSON that's difficult to interpret. The [MongoDB Shard Key Analyzer](https://www.mongodb.com/docs/manual/reference/command/analyzeshardkey/) wraps these commands in an interactive web interface that lets you compare candidate shard keys side-by-side with visual scoring across cardinality, frequency, monotonicity, and query targeting metrics. Built with React and Express, the tool connects to Atlas M30+ clusters or replica sets (MongoDB 7.0+), samples real query patterns in the background, and generates data-driven recommendations with radar charts and detailed explanations—helping teams avoid hot spots, scatter-gather queries, and scaling ceilings before committing to a shard key that's difficult to change.
+
+**Key capabilities:**
+- **Query sampling**: Captures real read/write patterns via [`configureQueryAnalyzer`](https://www.mongodb.com/docs/manual/reference/command/configurequeryanalyzer/) at configurable rates (1–50 queries/second)
+- **Multi-candidate analysis**: Scores multiple shard keys simultaneously on five weighted metrics (cardinality 25%, frequency 20%, monotonicity 15%, read/write targeting 20% each)
+- **Built-in workload simulator**: Generates realistic traffic patterns for testing, with warnings against production use
+- **Production-ready**: Read-only analysis operations with configurable sample sizes and low-overhead sampling modes
 
 ### [mongodb-ops-manager-kubernetes](https://github.com/tzehon/research/tree/main/mongodb-ops-manager-kubernetes) (2025-11-30)
 
