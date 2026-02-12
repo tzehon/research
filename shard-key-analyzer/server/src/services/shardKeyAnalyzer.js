@@ -140,9 +140,10 @@ function parseAnalysisResult(result, key) {
       }
     };
 
-    // Calculate cardinality ratio
-    const cardinalityRatio = analysis.keyCharacteristics.numDocsTotal > 0
-      ? analysis.keyCharacteristics.numDistinctValues / analysis.keyCharacteristics.numDocsTotal
+    // Calculate cardinality ratio using numDocsSampled (not numDocsTotal)
+    // because numDistinctValues is counted from the sample, not the full collection
+    const cardinalityRatio = analysis.keyCharacteristics.numDocsSampled > 0
+      ? analysis.keyCharacteristics.numDistinctValues / analysis.keyCharacteristics.numDocsSampled
       : 0;
 
     analysis.keyCharacteristics.cardinalityRatio = cardinalityRatio;

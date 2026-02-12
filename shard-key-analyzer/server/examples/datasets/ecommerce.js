@@ -45,13 +45,14 @@ let customerPool = [];
 /**
  * Generate e-commerce order documents
  */
-export function generateEcommerceData(count, offset = 0) {
+export function generateEcommerceData(count, offset = 0, totalCount = null) {
   const documents = [];
 
-  // Initialize customer pool on first call
-  if (customerPool.length === 0) {
-    // Create ~30% of count as unique customers (rest are repeat)
-    const uniqueCustomers = Math.floor(count * 0.3);
+  // Initialize customer pool on first batch, sized to total document count
+  if (customerPool.length === 0 || offset === 0) {
+    customerPool = [];
+    const total = totalCount || count;
+    const uniqueCustomers = Math.floor(total * 0.2);
     for (let i = 0; i < Math.max(1000, uniqueCustomers); i++) {
       customerPool.push(uuidv4());
     }

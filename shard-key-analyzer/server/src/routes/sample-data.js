@@ -166,7 +166,7 @@ async function loadDataInBackground(dataset, coll, count) {
     const remaining = count - inserted;
     const currentBatch = Math.min(batchSize, remaining);
 
-    const documents = generator(currentBatch, inserted);
+    const documents = generator(currentBatch, inserted, count);
 
     await coll.insertMany(documents);
 

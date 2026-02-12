@@ -43,12 +43,13 @@ export function calculateScore(analysis) {
  * Based on ratio of distinct values to total documents
  */
 function calculateCardinalityScore(kc) {
-  if (!kc || kc.numDocsTotal === 0) return 50;
+  if (!kc || kc.numDocsSampled === 0) return 50;
 
-  const { numDistinctValues, numDocsTotal } = kc;
+  const { numDistinctValues, numDocsSampled } = kc;
 
-  // Score based on cardinality ratio
-  const ratio = numDistinctValues / numDocsTotal;
+  // Score based on cardinality ratio within the sample
+  // numDistinctValues is counted from the sampled docs, so compare against numDocsSampled
+  const ratio = numDistinctValues / numDocsSampled;
 
   // Very low cardinality (< 10 values) is penalized heavily
   if (numDistinctValues < 10) {

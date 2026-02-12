@@ -38,13 +38,14 @@ let userPool = [];
 /**
  * Generate social media post documents
  */
-export function generateSocialData(count, offset = 0) {
+export function generateSocialData(count, offset = 0, totalCount = null) {
   const documents = [];
 
-  // Initialize user pool on first call
-  if (userPool.length === 0) {
-    // Create ~20% of count as unique users
-    const uniqueUsers = Math.floor(count * 0.2);
+  // Initialize user pool on first batch, sized to total document count
+  if (userPool.length === 0 || offset === 0) {
+    userPool = [];
+    const total = totalCount || count;
+    const uniqueUsers = Math.floor(total * 0.15);
     for (let i = 0; i < Math.max(500, uniqueUsers); i++) {
       userPool.push({
         userId: uuidv4(),
