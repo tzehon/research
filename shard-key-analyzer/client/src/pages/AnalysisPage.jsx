@@ -214,36 +214,44 @@ export default function AnalysisPage() {
               )}
 
               {/* Add Custom */}
-              <div className="flex items-end space-x-3 pt-4 border-t">
-                <div className="flex-1">
-                  <Label className="text-xs">Field Name</Label>
-                  <Input
-                    value={newFieldName}
-                    onChange={(e) => setNewFieldName(e.target.value)}
-                    placeholder="fieldName"
-                    disabled={isAnalyzing}
-                  />
+              <div className="pt-4 border-t space-y-2">
+                <div className="flex items-end space-x-3">
+                  <div className="flex-1">
+                    <Label className="text-xs">Field Name</Label>
+                    <Input
+                      value={newFieldName}
+                      onChange={(e) => setNewFieldName(e.target.value)}
+                      placeholder="e.g. userId, customerId, region"
+                      disabled={isAnalyzing}
+                      onKeyDown={(e) => e.key === 'Enter' && newFieldName && addCustomCandidate()}
+                    />
+                  </div>
+                  <div className="w-32">
+                    <Label className="text-xs">Type</Label>
+                    <Select value={newFieldType} onValueChange={setNewFieldType}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">Ascending (1)</SelectItem>
+                        <SelectItem value="-1">Descending (-1)</SelectItem>
+                        <SelectItem value="hashed">Hashed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button
+                    onClick={addCustomCandidate}
+                    disabled={!newFieldName || isAnalyzing}
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Add
+                  </Button>
                 </div>
-                <div className="w-32">
-                  <Label className="text-xs">Type</Label>
-                  <Select value={newFieldType} onValueChange={setNewFieldType}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">Ascending (1)</SelectItem>
-                      <SelectItem value="-1">Descending (-1)</SelectItem>
-                      <SelectItem value="hashed">Hashed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button
-                  onClick={addCustomCandidate}
-                  disabled={!newFieldName || isAnalyzing}
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add
-                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Enter a top-level field name from your documents exactly as it appears (case-sensitive).
+                  For nested fields use dot notation, e.g. <code className="text-xs bg-muted px-1 py-0.5 rounded">address.country</code>.
+                  Each add creates a single-field candidate. For compound keys, add each field separately or use the suggestions above.
+                </p>
               </div>
             </CardContent>
           </Card>
