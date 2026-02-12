@@ -24,7 +24,7 @@ router.get('/datasets', (req, res) => {
       {
         id: 'ecommerce',
         name: 'E-commerce Orders',
-        description: 'Simulated e-commerce order data with customers, products, and regions',
+        description: 'Simulated e-commerce order data with customers, products, and regions. 75% of workload queries target customerId.',
         defaultCount: 150000,
         fields: [
           { name: 'orderId', type: 'UUID', cardinality: 'unique' },
@@ -34,13 +34,13 @@ router.get('/datasets', (req, res) => {
           { name: 'status', type: 'String', cardinality: 'very low (5 values)' },
           { name: 'createdAt', type: 'Date', cardinality: 'high (monotonic!)' }
         ],
-        goodCandidates: ['customerId', 'orderId', '{ customerId, createdAt }'],
-        badCandidates: ['region', 'status', 'createdAt']
+        goodCandidates: ['customerId', '{ customerId, createdAt }'],
+        badCandidates: ['orderId', 'region', 'status', 'createdAt']
       },
       {
         id: 'social',
         name: 'Social Media Posts',
-        description: 'Simulated social media posts with users, engagement metrics',
+        description: 'Simulated social media posts with users, engagement metrics. 75% of workload queries target userId.',
         defaultCount: 100000,
         fields: [
           { name: 'postId', type: 'UUID', cardinality: 'unique' },
@@ -49,8 +49,8 @@ router.get('/datasets', (req, res) => {
           { name: 'visibility', type: 'String', cardinality: 'very low (3 values)' },
           { name: 'createdAt', type: 'Date', cardinality: 'high (monotonic!)' }
         ],
-        goodCandidates: ['userId', 'postId', '{ userId, createdAt }'],
-        badCandidates: ['category', 'visibility', 'createdAt']
+        goodCandidates: ['userId', '{ userId, createdAt }'],
+        badCandidates: ['postId', 'category', 'visibility', 'createdAt']
       }
     ]
   });
@@ -184,10 +184,15 @@ async function loadDataInBackground(dataset, coll, count) {
     await coll.createIndex({ region: 1 });
     await coll.createIndex({ customerId: 1, createdAt: 1 });
     await coll.createIndex({ region: 1, customerId: 1 });
+    await coll.createIndex({ status: 1 });
+    await coll.createIndex({ createdAt: 1 });
   } else if (dataset === 'social') {
     await coll.createIndex({ userId: 1 });
     await coll.createIndex({ postId: 1 }, { unique: true });
     await coll.createIndex({ userId: 1, createdAt: 1 });
+    await coll.createIndex({ category: 1 });
+    await coll.createIndex({ visibility: 1 });
+    await coll.createIndex({ createdAt: 1 });
   }
 
 }

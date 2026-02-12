@@ -15,42 +15,50 @@ let workloadState = {
 const PROFILES = {
   ecommerce: {
     name: 'E-commerce',
-    description: 'Simulates an e-commerce order system with customer lookups, order processing, and regional queries',
+    description: 'Simulates an e-commerce order system with customer-centric reads and writes',
     patterns: [
       {
-        name: 'Find orders by customerId',
+        name: 'Get customer orders',
         type: 'read',
-        weight: 35,
+        weight: 25,
         operation: 'find',
         template: (data) => ({
-          filter: { customerId: data.customerId }
+          filter: { customerId: data.customerId },
+          options: { sort: { createdAt: -1 }, limit: 20 }
         })
       },
       {
-        name: 'Find order by orderId',
+        name: 'Place new order',
+        type: 'write',
+        weight: 15,
+        operation: 'insert',
+        template: (data) => ({
+          document: {
+            orderId: uuidv4(),
+            customerId: data.customerId,
+            region: data.region,
+            totalAmount: Math.round((Math.random() * 500 + 10) * 100) / 100,
+            status: 'pending',
+            paymentMethod: ['credit_card', 'debit_card', 'paypal'][Math.floor(Math.random() * 3)],
+            lineItems: [{ sku: `SKU-${Math.random().toString(36).substring(2, 10).toUpperCase()}`, quantity: Math.floor(Math.random() * 3) + 1 }],
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        })
+      },
+      {
+        name: 'Get order details',
         type: 'read',
-        weight: 20,
+        weight: 10,
         operation: 'find',
         template: (data) => ({
           filter: { orderId: data.orderId }
         })
       },
       {
-        name: 'Find orders by region + date',
-        type: 'read',
-        weight: 15,
-        operation: 'find',
-        template: (data) => ({
-          filter: {
-            region: data.region,
-            createdAt: { $gte: data.dateFrom }
-          }
-        })
-      },
-      {
         name: 'Update order status',
         type: 'write',
-        weight: 20,
+        weight: 10,
         operation: 'update',
         template: (data) => ({
           filter: { orderId: data.orderId },
@@ -58,9 +66,41 @@ const PROFILES = {
         })
       },
       {
-        name: 'Aggregate sales by region',
+        name: 'Customer updates order',
+        type: 'write',
+        weight: 15,
+        operation: 'update',
+        template: (data) => ({
+          filter: { customerId: data.customerId, orderId: data.orderId },
+          update: { $set: { 'shippingAddress.street': `${Math.floor(Math.random() * 9999) + 1} Updated Street`, updatedAt: new Date() } }
+        })
+      },
+      {
+        name: 'Cancel customer order',
+        type: 'write',
+        weight: 10,
+        operation: 'update',
+        template: (data) => ({
+          filter: { customerId: data.customerId, status: 'pending' },
+          update: { $set: { status: 'cancelled', updatedAt: new Date() } }
+        })
+      },
+      {
+        name: 'Customer spending summary',
         type: 'read',
         weight: 10,
+        operation: 'aggregate',
+        template: (data) => ({
+          pipeline: [
+            { $match: { customerId: data.customerId } },
+            { $group: { _id: '$customerId', totalSpent: { $sum: '$totalAmount' }, orderCount: { $sum: 1 } } }
+          ]
+        })
+      },
+      {
+        name: 'Regional sales report',
+        type: 'read',
+        weight: 5,
         operation: 'aggregate',
         template: (data) => ({
           pipeline: [
@@ -73,25 +113,16 @@ const PROFILES = {
   },
   social: {
     name: 'Social Media',
-    description: 'Simulates a social media platform with user feeds, posts, and engagement queries',
+    description: 'Simulates a social media platform with user-centric reads and writes',
     patterns: [
       {
         name: 'Get user feed',
         type: 'read',
-        weight: 40,
+        weight: 25,
         operation: 'find',
         template: (data) => ({
           filter: { userId: data.userId },
           options: { sort: { createdAt: -1 }, limit: 20 }
-        })
-      },
-      {
-        name: 'Get post by ID',
-        type: 'read',
-        weight: 20,
-        operation: 'find',
-        template: (data) => ({
-          filter: { postId: data.postId }
         })
       },
       {
@@ -103,21 +134,79 @@ const PROFILES = {
           document: {
             postId: uuidv4(),
             userId: data.userId,
-            content: 'Sample post content',
-            createdAt: new Date(),
+            username: `user_${data.userId.substring(0, 8)}`,
+            content: 'Sample post content from workload simulation',
+            category: ['technology', 'sports', 'entertainment', 'news', 'lifestyle'][Math.floor(Math.random() * 5)],
+            visibility: 'public',
             likes: 0,
-            comments: []
+            commentCount: 0,
+            comments: [],
+            createdAt: new Date(),
+            updatedAt: new Date()
           }
+        })
+      },
+      {
+        name: 'Edit post',
+        type: 'write',
+        weight: 10,
+        operation: 'update',
+        template: (data) => ({
+          filter: { userId: data.userId, postId: data.postId },
+          update: { $set: { content: 'Edited post content', isEdited: true, updatedAt: new Date() } }
+        })
+      },
+      {
+        name: 'Delete post',
+        type: 'write',
+        weight: 5,
+        operation: 'delete',
+        template: (data) => ({
+          filter: { userId: data.userId, postId: data.postId }
+        })
+      },
+      {
+        name: 'Get post by ID',
+        type: 'read',
+        weight: 10,
+        operation: 'find',
+        template: (data) => ({
+          filter: { postId: data.postId }
         })
       },
       {
         name: 'Like post',
         type: 'write',
-        weight: 20,
+        weight: 10,
         operation: 'update',
         template: (data) => ({
           filter: { postId: data.postId },
           update: { $inc: { likes: 1 } }
+        })
+      },
+      {
+        name: 'Add comment',
+        type: 'write',
+        weight: 10,
+        operation: 'update',
+        template: (data) => ({
+          filter: { userId: data.userId, postId: data.postId },
+          update: {
+            $push: { comments: { commentId: uuidv4(), userId: data.userId, content: 'Sample comment', createdAt: new Date() } },
+            $inc: { commentCount: 1 }
+          }
+        })
+      },
+      {
+        name: 'User engagement stats',
+        type: 'read',
+        weight: 10,
+        operation: 'aggregate',
+        template: (data) => ({
+          pipeline: [
+            { $match: { userId: data.userId } },
+            { $group: { _id: '$userId', totalLikes: { $sum: '$likes' }, totalPosts: { $sum: 1 }, avgLikes: { $avg: '$likes' } } }
+          ]
         })
       },
       {
@@ -127,7 +216,7 @@ const PROFILES = {
         operation: 'aggregate',
         template: (data) => ({
           pipeline: [
-            { $match: { createdAt: { $gte: data.dateFrom } } },
+            { $match: { createdAt: { $gte: data.dateFrom }, visibility: 'public' } },
             { $sort: { likes: -1 } },
             { $limit: 10 }
           ]
