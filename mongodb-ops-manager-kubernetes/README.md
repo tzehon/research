@@ -658,11 +658,11 @@ misc/mdb_operator_diagnostic_data.sh
 
 | Component | Version | Documentation |
 |-----------|---------|---------------|
-| MongoDB Controllers for Kubernetes (MCK) | 1.6.0 | [Docs](https://www.mongodb.com/docs/kubernetes/current/) |
+| MongoDB Controllers for Kubernetes (MCK) | 1.7.0 | [Docs](https://www.mongodb.com/docs/kubernetes/current/) |
 | Ops Manager | 8.0.14 | [Release Notes](https://www.mongodb.com/docs/ops-manager/current/release-notes/application/) |
-| MongoDB Enterprise | 8.2.0-ent | [Compatibility](https://www.mongodb.com/docs/ops-manager/current/reference/mongodb-compatibility/) |
+| MongoDB Enterprise | 8.2.4-ent | [Compatibility](https://www.mongodb.com/docs/ops-manager/current/reference/mongodb-compatibility/) |
 | cert-manager | v1.16.2 | [Docs](https://cert-manager.io/docs/) |
-| MongoDB Search (Preview) | 0.55.0 | [Docs](https://www.mongodb.com/docs/kubernetes/current/fts-vs-deployment/) |
+| MongoDB Search (Preview) | 0.60.1 | [Docs](https://www.mongodb.com/docs/kubernetes/current/fts-vs-deployment/) |
 
 ## Related Projects
 
