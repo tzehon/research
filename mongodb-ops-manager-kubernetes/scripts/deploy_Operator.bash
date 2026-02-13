@@ -32,11 +32,11 @@ if command -v helm &> /dev/null; then
     helm upgrade --install mongodb-kubernetes mongodb/mongodb-kubernetes \
       --namespace ${namespace} \
       --create-namespace \
-      --version ${mckVersion:-1.6.0} \
+      --version ${mckVersion:-1.7.0} \
       --set operator.watchNamespace=${namespace} \
       --wait --timeout 10m
 
-    echo "MCK version: ${mckVersion:-1.6.0}"
+    echo "MCK version: ${mckVersion:-1.7.0}"
 
     if [[ $? -ne 0 ]]; then
         echo "ERROR: Helm install failed"
