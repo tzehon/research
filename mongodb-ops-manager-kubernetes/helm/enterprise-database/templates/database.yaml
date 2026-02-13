@@ -9,7 +9,7 @@ metadata:
 spec:
   type: {{ .Values.mongodb.type }}
   members: {{ .Values.mongodb.members | default 3 }}
-  version: {{ .Values.mongodb.version | default "8.0.17-ent" }}
+  version: {{ .Values.mongodb.version | default "8.0.18-ent" }}
 
   {{- if eq $mongoDeploymentType "ShardedCluster" }}
   shardCount: {{ .Values.mongodb.sharding.shardCount }}

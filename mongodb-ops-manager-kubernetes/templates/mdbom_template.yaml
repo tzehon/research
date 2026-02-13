@@ -43,7 +43,7 @@ spec:
 
   applicationDatabase:
     members: 3
-    version: "APPDBVER" # 8.2.1-ent # 7.0.5-ent # 6.0.12-ent # 5.0.7-ent # 4.4.4-ent
+    version: "APPDBVER" # 8.2.4-ent # 7.0.29-ent # 6.0.12-ent # 5.0.7-ent # 4.4.4-ent
     featureCompatibilityVersion: "FCV" # 8.0 recommended for MongoDB 8.2.x upgrades
     clusterDomain: DOMAINNAME
     # persistent: true

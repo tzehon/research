@@ -6,7 +6,7 @@ metadata:
   namespace: NAMESPACE
 spec:
   members: 3
-  version: "VERSION" # 8.2.1-ent # 7.0.5-ent
+  version: "VERSION" # 8.2.4-ent # 7.0.29-ent
   featureCompatibilityVersion: "FCV" # 8.0 recommended for MongoDB 8.2.x upgrades
   clusterDomain: DOMAINNAME
   type: ReplicaSet
