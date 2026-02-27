@@ -1,0 +1,7 @@
+MongoDB Atlas administrators can now validate fine-grained database permissions using this automated test harness that creates a **collection-scoped read-only role** and verifies access controls through repeatable, idempotent tests. The tool relies exclusively on the [Atlas CLI](https://www.mongodb.com/docs/atlas/cli/stable/) and [mongosh](https://www.mongodb.com/docs/mongodb-shell/) (no direct API calls), orchestrating four steps: seeding test data, creating a custom role with `FIND` privileges on a single collection, provisioning a restricted database user, and programmatically confirming that read operations succeed only on the permitted collection while writes and access to other collections are properly denied. Designed for CI/CD integration and repeatability, the harness supports running individual steps or the complete end-to-end workflow with automatic cleanup.
+
+**Key capabilities:**
+- Creates custom Atlas DB roles granting granular collection-level permissions
+- Validates three security boundaries: allowed reads succeed, unauthorized reads fail, write attempts are blocked
+- Fully idempotent—safe to run repeatedly without manual cleanup between executions
+- Requires only Atlas CLI authentication and an admin connection string (no Python dependencies beyond stdlib)
