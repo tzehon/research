@@ -181,8 +181,10 @@ def main():
                 # Retrieval
                 with st.expander("Step 2: Knowledge Retrieval", expanded=True):
                     category = selected_alarm.get("category", "?")
+                    desc_short = selected_alarm.get("description", "")[:60]
                     st.code(
-                        f'query_embedding = voyage.embed("...", model="voyage-4-large", input_type="query")\n'
+                        f'query_embedding = voyage.embed("{desc_short}...",\n'
+                        f'                              model="voyage-4-large", input_type="query")  // 1024 dims\n'
                         f'\n'
                         f'db.incidents.aggregate([{{ $rankFusion: {{\n'
                         f'  pipelines: {{\n'
