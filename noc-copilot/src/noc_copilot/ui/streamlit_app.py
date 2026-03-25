@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import threading
 import time
 
 import streamlit as st
@@ -17,16 +18,20 @@ from noc_copilot.agent.state import NOCAgentState
 
 
 @st.cache_resource
-def _get_loop():
-    """Create a single event loop for the Streamlit script thread."""
+def _get_background_loop():
+    """Create a background event loop for running async code from Streamlit.
+
+    Uses a dedicated daemon thread so ``run_coroutine_threadsafe`` never
+    conflicts with Streamlit's own event loop.
+    """
     loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    thread = threading.Thread(target=loop.run_forever, daemon=True)
+    thread.start()
     return loop
 
 
 @st.cache_resource
 def init_resources():
-    _get_loop()  # ensure event loop exists before Motor client is created
     settings = get_settings()
     db = MongoDBConnection.get_async_db()
     sync_db = MongoDBConnection.get_sync_db()
@@ -35,7 +40,28 @@ def init_resources():
 
 
 def run_async(coro):
-    return _get_loop().run_until_complete(coro)
+    """Submit a coroutine to the background loop and block until done."""
+    return asyncio.run_coroutine_threadsafe(coro, _get_background_loop()).result()
+
+
+async def _count_documents(collection, filter=None):
+    """Run count_documents inside the background event loop."""
+    return await collection.count_documents(filter or {})
+
+
+async def _find_to_list(collection, filter, projection=None, sort=None, limit=None):
+    """Run a Motor find().to_list() entirely inside the async event loop.
+
+    Motor's to_list() calls get_event_loop() at invocation time, so the whole
+    cursor chain must be built inside the background loop — not in Streamlit's
+    ScriptRunner thread.
+    """
+    cursor = collection.find(filter, projection)
+    if sort:
+        cursor = cursor.sort(*sort)
+    if limit:
+        cursor = cursor.limit(limit)
+    return await cursor.to_list(length=limit or 100)
 
 
 SEVERITY_COLORS = {
@@ -56,7 +82,7 @@ def main():
     # Sidebar — Active Alarms
     st.sidebar.header("Active Alarms")
     alarms = run_async(
-        db[ALARMS].find({"status": "active"}, {"embedding": 0}).sort("severity", 1).to_list(length=20)
+        _find_to_list(db[ALARMS], {"status": "active"}, projection={"embedding": 0}, sort=("severity", 1), limit=20)
     )
 
     severity_order = {"critical": 0, "major": 1, "minor": 2, "warning": 3}
@@ -81,10 +107,10 @@ def main():
         critical = sum(1 for a in alarms if a.get("severity") == "critical")
         st.metric("Critical", critical)
     with col3:
-        inc_count = run_async(db[INCIDENTS].count_documents({}))
+        inc_count = run_async(_count_documents(db[INCIDENTS]))
         st.metric("Historical Incidents", inc_count)
     with col4:
-        rb_count = run_async(db[RUNBOOKS].count_documents({}))
+        rb_count = run_async(_count_documents(db[RUNBOOKS]))
         st.metric("Runbook Sections", rb_count)
 
     # Tabs
@@ -300,7 +326,7 @@ def main():
     with tab3:
         st.subheader("Data Explorer")
         collection = st.selectbox("Collection", [INCIDENTS, RUNBOOKS, ALARMS, NETWORK_INVENTORY, DIAGNOSES])
-        docs = run_async(db[collection].find({}, {"embedding": 0}).limit(20).to_list(length=20))
+        docs = run_async(_find_to_list(db[collection], {}, projection={"embedding": 0}, limit=20))
         st.markdown(f"**Showing {len(docs)} documents from `{collection}`**")
         for doc in docs:
             doc.pop("_id", None)
