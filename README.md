@@ -71,7 +71,20 @@ for date, folder in projects:
     print(get_summary(folder))
     print()
 ]]]-->
-## 7 research projects
+## 8 research projects
+
+### [noc-copilot](https://github.com/tzehon/research/tree/main/noc-copilot) (2026-03-25)
+
+# NOC Copilot: Autonomous Network Incident Resolution Agent
+
+NOC Copilot demonstrates Level 3 autonomous operations for telecommunications Network Operations Centers by combining MongoDB's unified data platform with Voyage AI embeddings and Claude reasoning. When a 5G network alarm fires, the [LangGraph](https://langchain-ai.github.io/langgraph/)-based agent autonomously enriches it with network inventory and maintenance history, retrieves semantically similar past incidents and relevant runbook sections using native `$rankFusion` hybrid search, generates a structured diagnosis with calibrated confidence scoring, and either auto-remediates (confidence ≥0.9) or escalates with a full evidence chain. The system leverages [MongoDB Atlas](https://www.mongodb.com/atlas) as a single unified platform for operational data, full-text search, and vector search—executing hybrid retrieval entirely server-side in one aggregation pipeline—while Voyage AI's `voyage-4-large` provides asymmetric embeddings for semantic matching and `voyage-context-3` delivers contextualized chunk embeddings that preserve global document structure for runbook retrieval.
+
+**Key capabilities:**
+- **Native hybrid search** with `$rankFusion` combining Voyage AI vector embeddings and full-text search in a single server-side pipeline
+- **Contextualized embeddings** via Voyage AI's `voyage-context-3` that encode both section content and surrounding runbook context
+- **Confidence-based escalation** enabling auto-remediation for high-confidence matches (≥0.9) while routing ambiguous cases to human engineers
+- **Complete auditability** with full evidence chains (alarm → enrichment → retrieval → diagnosis → action) persisted to MongoDB
+- **542x faster resolution** compared to manual NOC processes (8.3s vs ~75 min average TTD+TTR)
 
 ### [atlas-custom-role-test](https://github.com/tzehon/research/tree/main/atlas-custom-role-test) (2026-02-27)
 
