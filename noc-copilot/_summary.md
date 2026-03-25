@@ -7,4 +7,3 @@ NOC Copilot demonstrates Level 3 autonomous operations for telecommunications Ne
 - **Contextualized embeddings** via Voyage AI's `voyage-context-3` that encode both section content and surrounding runbook context
 - **Confidence-based escalation** enabling auto-remediation for high-confidence matches (≥0.9) while routing ambiguous cases to human engineers
 - **Complete auditability** with full evidence chains (alarm → enrichment → retrieval → diagnosis → action) persisted to MongoDB
-- **542x faster resolution** compared to manual NOC processes (8.3s vs ~75 min average TTD+TTR)
