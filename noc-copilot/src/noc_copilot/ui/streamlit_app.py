@@ -306,6 +306,43 @@ def main():
             with st.spinner("Searching..."):
                 embedding = embedder.embed_query(query)
 
+            domain_str = f', filter: {{ domain: "{domain_filter}" }}' if domain_filter else ""
+            category_str = f', filter: {{ category: "{domain_filter}" }}' if domain_filter else ""
+
+            if search_type == "Hybrid $rankFusion (Incidents)":
+                st.code(
+                    f'db.incidents.aggregate([{{ $rankFusion: {{\n'
+                    f'  input: {{\n'
+                    f'    vector: [{{ $vectorSearch: {{ query: "{query}"{category_str}, limit: {limit} }} }}],\n'
+                    f'    text:   [{{ $search: {{ text: {{ query: "{query}" }} }} }}]\n'
+                    f'  }},\n'
+                    f'  weights: {{ vector: 0.6, text: 0.4 }}\n'
+                    f'}} }}])',
+                    language="javascript",
+                )
+            elif search_type == "Full-Text Search (Runbooks)":
+                filter_line = f'\n  , filter: {{ domain: "{domain_filter}" }}' if domain_filter else ""
+                st.code(
+                    f'db.runbooks.aggregate([{{ $search: {{\n'
+                    f'  text: {{ query: "{query}", path: ["title", "section_title", "content"] }}{filter_line}\n'
+                    f'}} }}])\n'
+                    f'.limit({limit})',
+                    language="javascript",
+                )
+            else:
+                method = "rankFusion" if "rankFusion" in search_type else "scoreFusion"
+                st.code(
+                    f'db.runbooks.aggregate([{{ ${method}: {{\n'
+                    f'  input: {{\n'
+                    f'    vector: [{{ $vectorSearch: {{ query: "{query}"{domain_str}, limit: {limit} }} }}],\n'
+                    f'    text:   [{{ $search: {{ text: {{ query: "{query}" }} }} }}]\n'
+                    f'  }},\n'
+                    f'  weights: {{ vector: 0.6, text: 0.4 }}\n'
+                    f'}} }}])',
+                    language="javascript",
+                )
+
+            with st.spinner("Running search..."):
                 if search_type == "Hybrid $rankFusion (Incidents)":
                     results = run_async(hybrid_search_incidents(db[INCIDENTS], query, embedding, category=domain_filter, limit=limit, method="rankFusion"))
                 elif search_type == "Full-Text Search (Runbooks)":
