@@ -1,0 +1,7 @@
+MongoDB Advisory Solutions Architects can use this full-stack demo application to visually demonstrate WiredTiger cache behavior and memory sizing during customer working sessions. The **[Observatory](https://github.com/mongodb)** view connects to any MongoDB 4.4+ cluster, displays seven real-time cache health metrics (dirty fill ratio, app thread eviction, disk reads, queued ops), and includes configurable load presets that deliberately stress the cache to show healthy vs. unhealthy states with color-coded thresholds and time-series charts. The **[Sizing Calculator](https://www.mongodb.com/docs/manual/reference/command/serverStatus/)** computes recommended `cacheSizeGB` and container memory limits based on working set size, connection counts, and deployment topology, with one-click auto-population from live metrics and exportable MCK YAML or Atlas tier recommendations.
+
+**Key features:**
+- **Auto-connects** from `.env` on startup—no manual URI entry needed
+- **Load presets**: "Healthy In-Cache Reads" (all green metrics) vs. "Stressed Write Storm" (dirty fill climbs past 5%→20%, triggers queued ops and disk I/O spikes)
+- **Safety**: 5-minute auto-stop, targets only `ram_pool_demo` database, never touches customer data
+- **Demo flow**: 10 minutes total—3 min healthy baseline, 5 min stressed scenario, 2 min sizing calculation with visual breakdown
