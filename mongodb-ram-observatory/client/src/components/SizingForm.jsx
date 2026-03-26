@@ -1,6 +1,74 @@
-import React from 'react';
+import React, { useState } from 'react';
+
+const FIELD_HELP = {
+  deploymentTarget: {
+    title: 'Deployment Target',
+    description: 'Determines the output format. EA on OpenShift produces MCK custom resource YAML with cacheSizeGB and container memory limits. Atlas produces a tier recommendation table.',
+  },
+  workingSetGB: {
+    title: 'Working Set Size',
+    description: 'The amount of data your application actively reads and writes. Check the Observatory\'s "Cache Fill Ratio" — the bytes shown is your current working set. You can also click "Use Observed Values" to auto-fill this from live metrics.',
+  },
+  maxConnections: {
+    title: 'Max Connections',
+    description: 'Peak concurrent connections to this mongod. Each connection uses ~1 MB of RAM. Check your connection pool settings: total = (app pods) x maxPoolSize. Use "Use Observed Values" to auto-fill from live connections.',
+  },
+  numReplicaSets: {
+    title: 'Number of Replica Sets',
+    description: 'How many replica sets in your deployment. Each replica set has 3 data-bearing nodes (PSS). The total RAM Pool = per-node memory x 3 x number of replica sets.',
+  },
+  headroomPercent: {
+    title: 'Working Set Headroom',
+    description: 'Extra cache budget on top of the working set for dirty pages and MVCC (multi-version concurrency control) overhead. 20% is a safe default. Increase if you have heavy write workloads.',
+  },
+  aggMemoryGB: {
+    title: 'Aggregation Memory',
+    description: 'RAM budget for concurrent aggregation pipelines ($group, $sort, $lookup). Each pipeline can use up to 100 MB by default. Estimate based on how many concurrent pipelines run at peak.',
+  },
+  internalOverheadGB: {
+    title: 'Internal Overhead',
+    description: 'Memory for WiredTiger metadata, query plan cache, oplog buffer, and other internal structures. 1 GB is a safe default for most workloads.',
+  },
+  tcmallocPercent: {
+    title: 'TCMalloc Overhead',
+    description: 'MongoDB uses TCMalloc for memory allocation, which holds freed memory in thread-local caches rather than returning it to the OS. 10-15% overhead is typical.',
+  },
+  fsCachePercent: {
+    title: 'Filesystem Cache Headroom',
+    description: 'Percentage of total container memory left for the OS page/filesystem cache. This helps with compressed data reads and journal writes. 25% is recommended. The formula: container limit = mongod process total / (1 - this %).',
+  },
+  mongosInstances: {
+    title: 'mongos Instances',
+    description: 'Number of mongos routers for sharded clusters. Set to 0 for replica sets. Each mongos typically needs 2-4 GB RAM.',
+  },
+  currentContainerGB: {
+    title: 'Current Container Size',
+    description: 'Your current resources.limits.memory value. Enter this to see a side-by-side comparison of current vs recommended sizing and potential RAM Pool savings.',
+  },
+  currentTier: {
+    title: 'Current Atlas Tier',
+    description: 'Your current Atlas tier. Enter this to see a comparison of current vs recommended tier.',
+  },
+};
+
+function Tooltip({ field }) {
+  const help = FIELD_HELP[field];
+  if (!help) return null;
+
+  return (
+    <span className="relative inline-block ml-1 group">
+      <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-mongo-forest text-gray-400 text-[10px] cursor-help font-bold hover:bg-mongo-green hover:text-mongo-dark transition-colors">?</span>
+      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 px-4 py-3 bg-mongo-dark border border-mongo-forest rounded-lg text-xs text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 shadow-xl">
+        <span className="block font-semibold text-mongo-white mb-1">{help.title}</span>
+        {help.description}
+      </span>
+    </span>
+  );
+}
 
 export default function SizingForm({ inputs, onChange, onCalculate, onUseObserved, hasObserved }) {
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
   const update = (field, value) => {
     onChange({ ...inputs, [field]: value });
   };
@@ -19,10 +87,10 @@ export default function SizingForm({ inputs, onChange, onCalculate, onUseObserve
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* Deployment Target */}
+      {/* Essential fields */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div>
-          <label className="label">Deployment Target</label>
+          <label className="label">Deployment Target <Tooltip field="deploymentTarget" /></label>
           <div className="flex gap-2">
             <button
               onClick={() => update('deploymentTarget', 'ea')}
@@ -47,9 +115,8 @@ export default function SizingForm({ inputs, onChange, onCalculate, onUseObserve
           </div>
         </div>
 
-        {/* Working Set Size */}
         <div>
-          <label className="label">Working Set Size (GB)</label>
+          <label className="label">Working Set Size (GB) <Tooltip field="workingSetGB" /></label>
           <input
             type="number"
             value={inputs.workingSetGB}
@@ -60,26 +127,8 @@ export default function SizingForm({ inputs, onChange, onCalculate, onUseObserve
           />
         </div>
 
-        {/* Headroom */}
         <div>
-          <label className="label">Working Set Headroom: {inputs.headroomPercent}%</label>
-          <input
-            type="range"
-            value={inputs.headroomPercent}
-            onChange={e => update('headroomPercent', parseInt(e.target.value))}
-            className="w-full accent-mongo-green"
-            min={0}
-            max={50}
-            step={5}
-          />
-          <div className="flex justify-between text-xs text-gray-600">
-            <span>0%</span><span>50%</span>
-          </div>
-        </div>
-
-        {/* Max Connections */}
-        <div>
-          <label className="label">Max Connections</label>
+          <label className="label">Max Connections <Tooltip field="maxConnections" /></label>
           <input
             type="number"
             value={inputs.maxConnections}
@@ -90,69 +139,8 @@ export default function SizingForm({ inputs, onChange, onCalculate, onUseObserve
           />
         </div>
 
-        {/* Aggregation Memory */}
         <div>
-          <label className="label">Aggregation Memory (GB)</label>
-          <input
-            type="number"
-            value={inputs.aggMemoryGB}
-            onChange={e => update('aggMemoryGB', parseFloat(e.target.value) || 0)}
-            className="input-field"
-            min={0}
-            step={0.25}
-          />
-        </div>
-
-        {/* Internal Overhead */}
-        <div>
-          <label className="label">Internal Overhead (GB)</label>
-          <input
-            type="number"
-            value={inputs.internalOverheadGB}
-            onChange={e => update('internalOverheadGB', parseFloat(e.target.value) || 0)}
-            className="input-field"
-            min={0}
-            step={0.25}
-          />
-        </div>
-
-        {/* TCMalloc */}
-        <div>
-          <label className="label">TCMalloc Overhead: {inputs.tcmallocPercent}%</label>
-          <input
-            type="range"
-            value={inputs.tcmallocPercent}
-            onChange={e => update('tcmallocPercent', parseInt(e.target.value))}
-            className="w-full accent-mongo-green"
-            min={5}
-            max={25}
-            step={1}
-          />
-          <div className="flex justify-between text-xs text-gray-600">
-            <span>5%</span><span>25%</span>
-          </div>
-        </div>
-
-        {/* FS Cache */}
-        <div>
-          <label className="label">FS Cache Headroom: {inputs.fsCachePercent}%</label>
-          <input
-            type="range"
-            value={inputs.fsCachePercent}
-            onChange={e => update('fsCachePercent', parseInt(e.target.value))}
-            className="w-full accent-mongo-green"
-            min={10}
-            max={40}
-            step={5}
-          />
-          <div className="flex justify-between text-xs text-gray-600">
-            <span>10%</span><span>40%</span>
-          </div>
-        </div>
-
-        {/* Number of Replica Sets */}
-        <div>
-          <label className="label">Number of Replica Sets</label>
+          <label className="label">Replica Sets <Tooltip field="numReplicaSets" /></label>
           <input
             type="number"
             value={inputs.numReplicaSets}
@@ -162,70 +150,134 @@ export default function SizingForm({ inputs, onChange, onCalculate, onUseObserve
             max={50}
           />
         </div>
+      </div>
 
-        {/* mongos */}
-        <div>
-          <label className="label">mongos Instances</label>
-          <input
-            type="number"
-            value={inputs.mongosInstances}
-            onChange={e => update('mongosInstances', parseInt(e.target.value) || 0)}
-            className="input-field"
-            min={0}
-          />
-        </div>
+      {/* Advanced toggle */}
+      <div className="mt-4">
+        <button
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="text-sm text-gray-400 hover:text-mongo-green transition-colors flex items-center gap-1"
+        >
+          <span className={`transition-transform ${showAdvanced ? 'rotate-90' : ''}`}>&#9656;</span>
+          Advanced settings
+          <span className="text-xs text-gray-600">(headroom, TCMalloc, FS cache, mongos)</span>
+        </button>
+      </div>
 
-        {inputs.mongosInstances > 0 && (
+      {/* Advanced fields */}
+      {showAdvanced && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4 pt-4 border-t border-mongo-forest">
           <div>
-            <label className="label">mongos Memory (GB)</label>
+            <label className="label">Working Set Headroom: {inputs.headroomPercent}% <Tooltip field="headroomPercent" /></label>
+            <input
+              type="range"
+              value={inputs.headroomPercent}
+              onChange={e => update('headroomPercent', parseInt(e.target.value))}
+              className="w-full accent-mongo-green"
+              min={0} max={50} step={5}
+            />
+            <div className="flex justify-between text-xs text-gray-600"><span>0%</span><span>50%</span></div>
+          </div>
+
+          <div>
+            <label className="label">Aggregation Memory (GB) <Tooltip field="aggMemoryGB" /></label>
             <input
               type="number"
-              value={inputs.mongosMemoryGB}
-              onChange={e => update('mongosMemoryGB', parseFloat(e.target.value) || 2)}
+              value={inputs.aggMemoryGB}
+              onChange={e => update('aggMemoryGB', parseFloat(e.target.value) || 0)}
               className="input-field"
-              min={1}
-              step={1}
+              min={0} step={0.25}
             />
           </div>
-        )}
 
-        {/* Current container (for comparison) */}
+          <div>
+            <label className="label">Internal Overhead (GB) <Tooltip field="internalOverheadGB" /></label>
+            <input
+              type="number"
+              value={inputs.internalOverheadGB}
+              onChange={e => update('internalOverheadGB', parseFloat(e.target.value) || 0)}
+              className="input-field"
+              min={0} step={0.25}
+            />
+          </div>
+
+          <div>
+            <label className="label">TCMalloc Overhead: {inputs.tcmallocPercent}% <Tooltip field="tcmallocPercent" /></label>
+            <input
+              type="range"
+              value={inputs.tcmallocPercent}
+              onChange={e => update('tcmallocPercent', parseInt(e.target.value))}
+              className="w-full accent-mongo-green"
+              min={5} max={25} step={1}
+            />
+            <div className="flex justify-between text-xs text-gray-600"><span>5%</span><span>25%</span></div>
+          </div>
+
+          <div>
+            <label className="label">FS Cache Headroom: {inputs.fsCachePercent}% <Tooltip field="fsCachePercent" /></label>
+            <input
+              type="range"
+              value={inputs.fsCachePercent}
+              onChange={e => update('fsCachePercent', parseInt(e.target.value))}
+              className="w-full accent-mongo-green"
+              min={10} max={40} step={5}
+            />
+            <div className="flex justify-between text-xs text-gray-600"><span>10%</span><span>40%</span></div>
+          </div>
+
+          <div>
+            <label className="label">mongos Instances <Tooltip field="mongosInstances" /></label>
+            <input
+              type="number"
+              value={inputs.mongosInstances}
+              onChange={e => update('mongosInstances', parseInt(e.target.value) || 0)}
+              className="input-field"
+              min={0}
+            />
+          </div>
+
+          {inputs.mongosInstances > 0 && (
+            <div>
+              <label className="label">mongos Memory (GB)</label>
+              <input
+                type="number"
+                value={inputs.mongosMemoryGB}
+                onChange={e => update('mongosMemoryGB', parseFloat(e.target.value) || 2)}
+                className="input-field"
+                min={1} step={1}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Comparison field */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-mongo-forest">
         {inputs.deploymentTarget === 'ea' && (
           <div>
-            <label className="label">Current Container Size (GB, optional)</label>
+            <label className="label">Current Container Size (GB, optional) <Tooltip field="currentContainerGB" /></label>
             <input
               type="number"
               value={inputs.currentContainerGB || ''}
               onChange={e => update('currentContainerGB', parseFloat(e.target.value) || null)}
               className="input-field"
-              min={0}
-              step={1}
+              min={0} step={1}
               placeholder="For comparison"
             />
           </div>
         )}
-
         {inputs.deploymentTarget === 'atlas' && (
           <div>
-            <label className="label">Current Atlas Tier (optional)</label>
+            <label className="label">Current Atlas Tier (optional) <Tooltip field="currentTier" /></label>
             <select
               value={inputs.currentTier || ''}
               onChange={e => update('currentTier', e.target.value || null)}
               className="input-field"
             >
               <option value="">Select for comparison</option>
-              <option value="M10">M10</option>
-              <option value="M20">M20</option>
-              <option value="M30">M30</option>
-              <option value="M40">M40</option>
-              <option value="M50">M50</option>
-              <option value="M60">M60</option>
-              <option value="M80">M80</option>
-              <option value="M140">M140</option>
-              <option value="M200">M200</option>
-              <option value="M300">M300</option>
-              <option value="M400">M400</option>
-              <option value="M700">M700</option>
+              {['M10','M20','M30','M40','M50','M60','M80','M140','M200','M300','M400','M700'].map(t => (
+                <option key={t} value={t}>{t}</option>
+              ))}
             </select>
           </div>
         )}
