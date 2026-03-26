@@ -59,8 +59,8 @@ function getDirtyColor(pct) {
 export default function MetricsPanel({ metrics }) {
   if (!metrics) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-        {Array.from({ length: 7 }).map((_, i) => (
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="card flex flex-col items-center justify-center animate-pulse">
             <div className="h-3 w-16 bg-mongo-forest rounded mb-2" />
             <div className="h-8 w-20 bg-mongo-forest rounded" />
@@ -82,7 +82,7 @@ export default function MetricsPanel({ metrics }) {
 
   return (
     <>
-    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
       <GaugeCard
         title="Cache Fill Ratio"
         value={formatPercent(cachePercent)}
@@ -100,15 +100,6 @@ export default function MetricsPanel({ metrics }) {
         status={dirtyStatus.status}
         statusColor={dirtyStatus.color}
         mongoshCmd='db.serverStatus().wiredTiger.cache["tracked dirty bytes in the cache"]'
-      />
-      <GaugeCard
-        title="App Thread Eviction"
-        value={formatNumber(appEviction)}
-        subtitle="pages/s"
-        color={appEviction > 0 ? 'text-mongo-red' : 'text-mongo-green'}
-        status={appEviction > 0 ? 'Degraded!' : 'Healthy'}
-        statusColor={appEviction > 0 ? 'text-mongo-red' : 'text-mongo-green'}
-        mongoshCmd='db.serverStatus().wiredTiger.cache["pages evicted by application threads"]'
       />
       <GaugeCard
         title="Disk Reads"
