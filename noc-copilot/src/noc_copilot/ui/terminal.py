@@ -368,7 +368,7 @@ async def run_demo(db: AsyncIOMotorDatabase, embedder: VoyageEmbedder) -> None:
     """Run the full demo flow."""
     console.print(Panel(
         "[bold cyan]NOC Copilot[/bold cyan] — Autonomous Network Incident Resolution Agent\n"
-        "[dim]MongoDB × Voyage AI × Claude × LangGraph[/dim]",
+        "[dim]MongoDB × Voyage AI × Anthropic × LangGraph[/dim]",
         border_style="cyan",
         padding=(1, 2),
     ))

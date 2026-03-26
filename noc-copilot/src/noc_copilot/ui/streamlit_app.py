@@ -75,7 +75,7 @@ SEVERITY_COLORS = {
 def main():
     st.set_page_config(page_title="NOC Copilot", page_icon="🛰️", layout="wide")
     st.title("🛰️ NOC Copilot")
-    st.caption("Autonomous Network Incident Resolution Agent — MongoDB × Voyage AI × Claude × LangGraph")
+    st.caption("Autonomous Network Incident Resolution Agent — MongoDB × Voyage AI × Anthropic × LangGraph")
 
     db, sync_db, embedder = init_resources()
 
