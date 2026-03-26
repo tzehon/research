@@ -174,44 +174,6 @@ export default function SizingResults({ result }) {
         </div>
       </div>
 
-      {/* Comparison */}
-      {result.comparison && (
-        <div className="card border-mongo-amber border">
-          <h3 className="text-lg font-semibold text-mongo-white mb-3">Current vs Recommended</h3>
-          {result.deploymentTarget === 'ea' ? (
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <p className="text-sm text-gray-400">Current RAM Pool</p>
-                <p className="text-2xl font-bold text-mongo-amber">{result.comparison.current.ramPool} GB</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-400">Recommended RAM Pool</p>
-                <p className="text-2xl font-bold text-mongo-green">{result.comparison.recommended.ramPool} GB</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-400">
-                  {result.comparison.savingsGB > 0 ? 'Savings' : 'Additional Needed'}
-                </p>
-                <p className={`text-2xl font-bold ${result.comparison.savingsGB > 0 ? 'text-mongo-green' : 'text-mongo-red'}`}>
-                  {Math.abs(result.comparison.savingsGB)} GB ({Math.abs(result.comparison.savingsPercent)}%)
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-4 text-center">
-              <div>
-                <p className="text-sm text-gray-400">Current Tier</p>
-                <p className="text-2xl font-bold text-mongo-amber">{result.comparison.current.tier} ({result.comparison.current.ram} GB)</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-400">Recommended Tier</p>
-                <p className="text-2xl font-bold text-mongo-green">{result.comparison.recommended.tier} ({result.comparison.recommended.ram} GB)</p>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Atlas Tiers */}
       {result.atlasTiers && (
         <div className="card">

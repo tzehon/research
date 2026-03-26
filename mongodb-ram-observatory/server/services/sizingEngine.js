@@ -26,8 +26,6 @@ export function calculateSizing(inputs) {
     mongosInstances = 0,
     mongosMemoryGB = 4,
     deploymentTarget = 'ea',
-    currentContainerGB = null,
-    currentTier = null,
   } = inputs;
 
   // Step 1: cacheSizeGB
@@ -78,18 +76,6 @@ export function calculateSizing(inputs) {
 
   ramPoolTable.total = totalRamPool;
 
-  // Comparison
-  let comparison = null;
-  if (deploymentTarget === 'ea' && currentContainerGB) {
-    const currentRamPool = currentContainerGB * dataBearingNodes * numReplicaSets + mongosTotal + configServerTotal;
-    comparison = {
-      current: { containerGB: currentContainerGB, ramPool: +currentRamPool.toFixed(1) },
-      recommended: { containerGB: containerLimitGB, ramPool: totalRamPool },
-      savingsGB: +(currentRamPool - totalRamPool).toFixed(1),
-      savingsPercent: +((1 - totalRamPool / currentRamPool) * 100).toFixed(1),
-    };
-  }
-
   // Atlas tier recommendation
   let atlasTiers = null;
   if (deploymentTarget === 'atlas') {
@@ -100,21 +86,9 @@ export function calculateSizing(inputs) {
       recommended: false,
     }));
 
-    // Find first tier that fits with adequate headroom
     const recommended = atlasTiers.find(t => t.wtCache >= cacheSizeGB);
     if (recommended) {
       recommended.recommended = true;
-    }
-
-    // Atlas comparison
-    if (currentTier) {
-      const currentTierInfo = ATLAS_TIERS.find(t => t.tier === currentTier);
-      if (currentTierInfo) {
-        comparison = {
-          current: { tier: currentTier, ram: currentTierInfo.ram },
-          recommended: { tier: recommended?.tier || 'N/A', ram: recommended?.ram || 0 },
-        };
-      }
     }
   }
 
@@ -155,7 +129,6 @@ spec:
     containerLimitGB,
     breakdown,
     ramPoolTable,
-    comparison,
     atlasTiers,
     yaml,
     deploymentTarget,

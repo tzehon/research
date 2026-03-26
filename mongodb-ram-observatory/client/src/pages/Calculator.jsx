@@ -15,8 +15,6 @@ const DEFAULT_INPUTS = {
   numReplicaSets: 1,
   mongosInstances: 0,
   mongosMemoryGB: 4,
-  currentContainerGB: null,
-  currentTier: null,
 };
 
 export default function Calculator({ metrics, clusterInfo }) {

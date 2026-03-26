@@ -251,38 +251,6 @@ export default function SizingForm({ inputs, onChange, onCalculate, onUseObserve
         </div>
       )}
 
-      {/* Comparison field */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-mongo-forest">
-        {inputs.deploymentTarget === 'ea' && (
-          <div>
-            <label className="label">Current Container Size (GB, optional) <Tooltip field="currentContainerGB" /></label>
-            <input
-              type="number"
-              value={inputs.currentContainerGB || ''}
-              onChange={e => update('currentContainerGB', parseFloat(e.target.value) || null)}
-              className="input-field"
-              min={0} step={1}
-              placeholder="For comparison"
-            />
-          </div>
-        )}
-        {inputs.deploymentTarget === 'atlas' && (
-          <div>
-            <label className="label">Current Atlas Tier (optional) <Tooltip field="currentTier" /></label>
-            <select
-              value={inputs.currentTier || ''}
-              onChange={e => update('currentTier', e.target.value || null)}
-              className="input-field"
-            >
-              <option value="">Select for comparison</option>
-              {['M10','M20','M30','M40','M50','M60','M80','M140','M200','M300','M400','M700'].map(t => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-          </div>
-        )}
-      </div>
-
       <div className="mt-6">
         <button onClick={onCalculate} className="btn-primary text-lg px-6 py-3">
           Calculate Sizing
