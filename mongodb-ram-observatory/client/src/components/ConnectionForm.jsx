@@ -73,11 +73,6 @@ export default function ConnectionForm({ status, onConnect, onDisconnect, cluste
         <p className="mt-2 text-sm text-mongo-red">{error}</p>
       )}
 
-      {isConnected && (
-        <p className="mt-2 text-xs text-gray-500">
-          Load will be generated against the 'ram_pool_demo' database only. No customer data will be accessed or modified.
-        </p>
-      )}
 
       {isConnected && clusterInfo && (
         <div className="mt-3 flex gap-4 text-xs text-gray-400">

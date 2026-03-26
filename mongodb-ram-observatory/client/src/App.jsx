@@ -106,7 +106,7 @@ export default function App() {
             </svg>
             <div>
               <h1 className="text-lg font-bold text-mongo-white">RAM Pool Observatory</h1>
-              <p className="text-xs text-gray-500">MongoDB Memory Sizing Demo</p>
+              <p className="text-xs text-gray-500">For educational and illustrative purposes only</p>
             </div>
           </div>
 
