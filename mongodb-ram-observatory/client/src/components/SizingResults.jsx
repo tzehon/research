@@ -149,14 +149,6 @@ export default function SizingResults({ result }) {
                 <td className="py-2 text-right text-gray-400">{result.ramPoolTable.dataBearing.nodes}</td>
                 <td className="py-2 text-right text-mongo-white">{result.ramPoolTable.dataBearing.subtotal} GB</td>
               </tr>
-              {result.ramPoolTable.analytics && (
-                <tr className="border-b border-mongo-forest/50">
-                  <td className="py-2 text-mongo-white">Analytics / Hidden Secondaries</td>
-                  <td className="py-2 text-right text-mongo-white">{result.ramPoolTable.analytics.perNode} GB</td>
-                  <td className="py-2 text-right text-gray-400">{result.ramPoolTable.analytics.nodes}</td>
-                  <td className="py-2 text-right text-mongo-white">{result.ramPoolTable.analytics.subtotal} GB</td>
-                </tr>
-              )}
               {result.ramPoolTable.mongos && (
                 <>
                   <tr className="border-b border-mongo-forest/50">

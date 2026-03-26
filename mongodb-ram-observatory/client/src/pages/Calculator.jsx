@@ -12,7 +12,6 @@ const DEFAULT_INPUTS = {
   internalOverheadGB: 1.0,
   tcmallocPercent: 12,
   fsCachePercent: 25,
-  topology: 'pss',
   numReplicaSets: 1,
   mongosInstances: 0,
   mongosMemoryGB: 4,

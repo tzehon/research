@@ -68,8 +68,3 @@ export const LOAD_PRESETS = [
   },
 ];
 
-export const TOPOLOGY_OPTIONS = [
-  { value: 'pss', label: 'PSS (3-node Replica Set)' },
-  { value: 'pss_analytics', label: 'PSS + Analytics Node' },
-  { value: 'pss_hidden', label: 'PSS + Hidden Member' },
-];

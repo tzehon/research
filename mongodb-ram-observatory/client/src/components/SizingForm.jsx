@@ -1,5 +1,4 @@
 import React from 'react';
-import { TOPOLOGY_OPTIONS } from '../utils/constants.js';
 
 export default function SizingForm({ inputs, onChange, onCalculate, onUseObserved, hasObserved }) {
   const update = (field, value) => {
@@ -149,20 +148,6 @@ export default function SizingForm({ inputs, onChange, onCalculate, onUseObserve
           <div className="flex justify-between text-xs text-gray-600">
             <span>10%</span><span>40%</span>
           </div>
-        </div>
-
-        {/* Topology */}
-        <div>
-          <label className="label">Topology</label>
-          <select
-            value={inputs.topology}
-            onChange={e => update('topology', e.target.value)}
-            className="input-field"
-          >
-            {TOPOLOGY_OPTIONS.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
         </div>
 
         {/* Number of Replica Sets */}

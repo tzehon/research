@@ -22,7 +22,6 @@ export function calculateSizing(inputs) {
     internalOverheadGB = 1.0,
     tcmallocPercent = 12,
     fsCachePercent = 25,
-    topology = 'pss',
     numReplicaSets = 1,
     mongosInstances = 0,
     mongosMemoryGB = 4,
@@ -59,24 +58,11 @@ export function calculateSizing(inputs) {
     total: containerLimitGB,
   };
 
-  // Topology nodes
-  let dataBearingNodes;
-  let analyticsNodes = 0;
-  switch (topology) {
-    case 'pss_analytics':
-      dataBearingNodes = 3;
-      analyticsNodes = 1;
-      break;
-    case 'pss_hidden':
-      dataBearingNodes = 3;
-      analyticsNodes = 1;
-      break;
-    default: // pss
-      dataBearingNodes = 3;
-  }
+  // PSS topology — 3 data-bearing nodes per replica set
+  const dataBearingNodes = 3;
 
   // RAM Pool calculation
-  const perReplicaSet = (dataBearingNodes + analyticsNodes) * containerLimitGB;
+  const perReplicaSet = dataBearingNodes * containerLimitGB;
   const mongosTotal = mongosInstances * mongosMemoryGB;
   const configServerTotal = mongosInstances > 0 ? 3 * 4 : 0; // 3 config servers × 4 GB each
   const totalRamPool = +(perReplicaSet * numReplicaSets + mongosTotal + configServerTotal).toFixed(1);
@@ -84,10 +70,6 @@ export function calculateSizing(inputs) {
   const ramPoolTable = {
     dataBearing: { perNode: containerLimitGB, nodes: dataBearingNodes * numReplicaSets, subtotal: +(dataBearingNodes * containerLimitGB * numReplicaSets).toFixed(1) },
   };
-
-  if (analyticsNodes > 0) {
-    ramPoolTable.analytics = { perNode: containerLimitGB, nodes: analyticsNodes * numReplicaSets, subtotal: +(analyticsNodes * containerLimitGB * numReplicaSets).toFixed(1) };
-  }
 
   if (mongosInstances > 0) {
     ramPoolTable.mongos = { perNode: mongosMemoryGB, nodes: mongosInstances, subtotal: mongosTotal };
@@ -99,7 +81,7 @@ export function calculateSizing(inputs) {
   // Comparison
   let comparison = null;
   if (deploymentTarget === 'ea' && currentContainerGB) {
-    const currentRamPool = currentContainerGB * (dataBearingNodes + analyticsNodes) * numReplicaSets + mongosTotal + configServerTotal;
+    const currentRamPool = currentContainerGB * dataBearingNodes * numReplicaSets + mongosTotal + configServerTotal;
     comparison = {
       current: { containerGB: currentContainerGB, ramPool: +currentRamPool.toFixed(1) },
       recommended: { containerGB: containerLimitGB, ramPool: totalRamPool },
