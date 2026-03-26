@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-ram-observatory
+  labels:
+    app: mongodb-ram-observatory
+spec:
+  selector:
+    app: mongodb-ram-observatory
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+  type: ClusterIP

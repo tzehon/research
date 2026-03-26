@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply antialiased;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #001E2B;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #023430;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #00ED64;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-mongo-dark-light border border-mongo-forest rounded-lg p-4;
+  }
+
+  .btn-primary {
+    @apply bg-mongo-green text-mongo-dark font-semibold px-4 py-2 rounded-lg hover:bg-opacity-90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-danger {
+    @apply bg-mongo-red text-white font-semibold px-4 py-2 rounded-lg hover:bg-opacity-90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply bg-mongo-forest text-mongo-white font-semibold px-4 py-2 rounded-lg hover:bg-opacity-80 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .input-field {
+    @apply bg-mongo-dark border border-mongo-forest text-mongo-white px-3 py-2 rounded-lg focus:outline-none focus:border-mongo-green transition-colors w-full;
+  }
+
+  .label {
+    @apply text-sm text-gray-400 mb-1 block;
+  }
+
+  .gauge-value {
+    @apply text-3xl font-bold tabular-nums;
+  }
+}

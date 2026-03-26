@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb-ram-observatory
+  labels:
+    app: mongodb-ram-observatory
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb-ram-observatory
+  template:
+    metadata:
+      labels:
+        app: mongodb-ram-observatory
+    spec:
+      containers:
+        - name: observatory
+          image: mongodb-ram-observatory:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: PORT
+              value: "3000"
+            - name: MONGODB_URI
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-ram-observatory-secret
+                  key: uri
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
