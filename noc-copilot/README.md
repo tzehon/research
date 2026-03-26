@@ -2,7 +2,7 @@
 
 ### Autonomous Network Incident Resolution Agent
 
-**MongoDB x Voyage AI x Claude x LangGraph**
+**MongoDB x Voyage AI x Anthropic x LangGraph**
 
 [![Python 3.11-3.13](https://img.shields.io/badge/python-3.11--3.13-blue.svg)](https://www.python.org/downloads/)
 [![MongoDB 8.2+](https://img.shields.io/badge/MongoDB-8.2%2B-green.svg)](https://www.mongodb.com/atlas)
