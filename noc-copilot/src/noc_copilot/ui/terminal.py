@@ -310,7 +310,148 @@ def display_remediation_results(state: dict) -> None:
     console.print()
 
 
-async def process_alarm(alarm: dict, db: AsyncIOMotorDatabase, embedder: VoyageEmbedder) -> dict:
+def display_level_explanation(state: dict) -> None:
+    """Display TM Forum Autonomous Network level mapping based on pipeline results."""
+    confidence = state.get("confidence", 0)
+    auto_remediable = state.get("auto_remediable", False)
+    correlated = state.get("correlated_alarms", [])
+    maintenance = state.get("recent_maintenance", [])
+    element = state.get("network_element")
+    incidents = state.get("similar_incidents", [])
+    alarm = state.get("alarm", {})
+    category = alarm.get("category", "")
+
+    console.print()
+    console.print(Panel(
+        "[bold cyan]TM Forum Autonomous Network Levels[/bold cyan]\n"
+        "[dim]Mapping this pipeline to the AN evaluation framework[/dim]",
+        border_style="cyan",
+    ))
+
+    # P/S Matrix table
+    table = Table(
+        title="Cognitive Dimensions (P = People, S = System)",
+        box=box.ROUNDED,
+        border_style="dim",
+        show_lines=True,
+    )
+    table.add_column("Dimension", style="bold", width=12)
+    table.add_column("L3 — What You Just Saw", width=44)
+    table.add_column("L4 — Agentic Upgrade", width=38)
+
+    # Execution — always S
+    table.add_row(
+        "Execution",
+        "[green]S[/green]  Pipeline ran end-to-end",
+        "[green]S[/green]  No change",
+    )
+
+    # Awareness — dynamic
+    awareness_parts = []
+    if element:
+        awareness_parts.append(f"looked up {element.get('element_id', '?')}")
+    if correlated:
+        n = len(correlated)
+        awareness_parts.append(f"correlated {n} alarm{'s' if n != 1 else ''}")
+    if maintenance:
+        n = len(maintenance)
+        awareness_parts.append(f"{n} maintenance hit{'s' if n != 1 else ''}")
+    awareness_summary = ", ".join(awareness_parts) if awareness_parts else "enriched alarm"
+
+    table.add_row(
+        "Awareness",
+        f"[green]S[/green]  {awareness_summary}",
+        "[green]S[/green]  Agent chooses what to\n     investigate (tool use)",
+    )
+
+    # Analysis
+    table.add_row(
+        "Analysis",
+        f"[yellow]P/S[/yellow]  Diagnosed at {confidence:.0%} confidence\n     — human reviews before acting",
+        "[green]S[/green]  Agent retries retrieval on\n     low confidence, refines its\n     own analysis",
+    )
+
+    # Decision — dynamic based on outcome
+    if confidence >= 0.9 and auto_remediable:
+        decision_l3 = (
+            "[green]S[/green]  Auto-remediated via policy\n"
+            "     gate (threshold + approved list)"
+        )
+    elif confidence >= 0.7:
+        decision_l3 = (
+            f"[yellow]P/S[/yellow]  {confidence:.0%} confidence → human\n"
+            f"     approval required"
+        )
+    else:
+        decision_l3 = (
+            f"[yellow]P/S[/yellow]  {confidence:.0%} confidence → escalated\n"
+            f"     to engineer"
+        )
+
+    table.add_row(
+        "Decision",
+        decision_l3,
+        "[green]S[/green]  AI reasons about whether to\n     act, not hardcoded thresholds",
+    )
+
+    # Intent
+    table.add_row(
+        "Intent",
+        "[red]P[/red]  You selected the alarm manually",
+        "[yellow]P/S[/yellow]  System prioritises and acts\n     on alarms proactively",
+    )
+
+    console.print(table)
+    console.print()
+
+    # L4 concrete changes
+    console.print("[bold]What changes to reach Level 4:[/bold]\n")
+
+    console.print("  [bold cyan]Triage →[/bold cyan] LLM picks investigation tools per alarm type")
+    console.print("  [dim]Now: 3 hardcoded queries. L4: agent decides — check topology for link-down,\n"
+                  "  pull KPI trends for degradation, check config changes for drift[/dim]\n")
+
+    top_score = incidents[0].get("score", 0) if incidents else 0
+    console.print("  [bold cyan]Retrieval →[/bold cyan] Search → evaluate → refine loop")
+    if top_score > 0:
+        if top_score < 0.6:
+            console.print(f"  [dim]Top match scored {top_score:.4f} — agent would reformulate and retry[/dim]\n")
+        else:
+            console.print(f"  [dim]Top match scored {top_score:.4f} — good hit. On a poor match, agent retries[/dim]\n")
+    else:
+        console.print("  [dim]No matches found — agent would reformulate query and retry[/dim]\n")
+
+    console.print("  [bold cyan]Diagnosis →[/bold cyan] Low confidence triggers re-investigation")
+    if confidence < 0.7:
+        console.print(f"  [dim]Confidence {confidence:.0%} → currently escalates. L4: retry with refined search[/dim]\n")
+    elif confidence < 0.9:
+        console.print(f"  [dim]Confidence {confidence:.0%} → needs approval. L4: loop back for more evidence[/dim]\n")
+    else:
+        console.print(f"  [dim]Confidence {confidence:.0%} → strong match. If lower, agent loops back with\n"
+                      "  differential diagnosis hints to refine retrieval[/dim]\n")
+
+    console.print("  [bold cyan]Remediation →[/bold cyan] Closed loop: check → execute → verify")
+    console.print("  [dim]Now: policy gate (threshold + approved list). L4: agent checks preconditions,\n"
+                  "  executes remediation, verifies alarm cleared[/dim]\n")
+
+    if category:
+        console.print("  [bold cyan]Cross-domain →[/bold cyan] Correlate across network domains")
+        console.print(f"  [dim]Now: searched only \"{category}\" incidents. L4: radio alarm checks\n"
+                      "  transport and core data to find cross-domain root causes[/dim]\n")
+
+    console.print(Panel(
+        "Pipeline (L3)                                           Agent (L4)\n"
+        "    │                                                       │\n"
+        "    ▼                                                       ▼\n"
+        " Fixed steps,           Conditional          Tool-calling        Autonomous:\n"
+        " no branching,          edges: retry          loops: LLM          investigate,\n"
+        " LLM fills slots        on low scores         chooses actions     act, verify",
+        title="[dim]The Spectrum[/dim]",
+        border_style="dim",
+    ))
+
+
+async def process_alarm(alarm: dict, db: AsyncIOMotorDatabase, embedder: VoyageEmbedder, explain_levels: bool = False) -> dict:
     """Process a single alarm through the NOC agent pipeline."""
     sev = alarm.get("severity", "")
     console.print(Panel(
@@ -351,6 +492,9 @@ async def process_alarm(alarm: dict, db: AsyncIOMotorDatabase, embedder: VoyageE
     display_diagnosis_results(final_state)
     display_remediation_results(final_state)
 
+    if explain_levels:
+        display_level_explanation(final_state)
+
     # Display timing summary
     console.print(Panel(
         f"[bold]Total Processing Time: [cyan]{total_elapsed:.1f}s[/cyan][/bold]\n\n"
@@ -364,7 +508,7 @@ async def process_alarm(alarm: dict, db: AsyncIOMotorDatabase, embedder: VoyageE
     return final_state
 
 
-async def run_demo(db: AsyncIOMotorDatabase, embedder: VoyageEmbedder) -> None:
+async def run_demo(db: AsyncIOMotorDatabase, embedder: VoyageEmbedder, explain_levels: bool = False) -> None:
     """Run the full demo flow."""
     console.print(Panel(
         "[bold cyan]NOC Copilot[/bold cyan] — Autonomous Network Incident Resolution Agent\n"
@@ -383,7 +527,7 @@ async def run_demo(db: AsyncIOMotorDatabase, embedder: VoyageEmbedder) -> None:
 
     # Sort by severity priority
     severity_order = {"critical": 0, "major": 1, "minor": 2, "warning": 3}
-    alarms.sort(key=lambda a: severity_order.get(a.get("severity", "warning"), 4))
+    alarms.sort(key=lambda a: (severity_order.get(a.get("severity", "warning"), 4), a.get("alarm_id", "")))
 
     display_alarm_dashboard(alarms)
 
@@ -397,14 +541,14 @@ async def run_demo(db: AsyncIOMotorDatabase, embedder: VoyageEmbedder) -> None:
             break
         elif choice == "all":
             for alarm in alarms:
-                await process_alarm(alarm, db, embedder)
+                await process_alarm(alarm, db, embedder, explain_levels=explain_levels)
                 console.print("─" * 80)
             break
         else:
             try:
                 idx = int(choice) - 1
                 if 0 <= idx < len(alarms):
-                    await process_alarm(alarms[idx], db, embedder)
+                    await process_alarm(alarms[idx], db, embedder, explain_levels=explain_levels)
                 else:
                     console.print("[red]Invalid selection.[/red]")
             except ValueError:

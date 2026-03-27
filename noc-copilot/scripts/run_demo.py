@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Run the full NOC Copilot demo flow."""
 
+import argparse
 import asyncio
 import sys
 from pathlib import Path
@@ -18,7 +19,7 @@ from noc_copilot.ui.terminal import run_demo
 console = Console()
 
 
-async def main_async() -> None:
+async def main_async(explain_levels: bool = False) -> None:
     console.print("[bold cyan]NOC Copilot — Demo Runner[/bold cyan]\n")
 
     settings = get_settings()
@@ -61,12 +62,19 @@ async def main_async() -> None:
     embedder = VoyageEmbedder(api_key=settings.voyage_api_key, model=settings.voyage_model)
 
     console.print()
-    await run_demo(db, embedder)
+    await run_demo(db, embedder, explain_levels=explain_levels)
     MongoDBConnection.close()
 
 
 def main() -> None:
-    asyncio.run(main_async())
+    parser = argparse.ArgumentParser(description="NOC Copilot Demo Runner")
+    parser.add_argument(
+        "--explain-levels",
+        action="store_true",
+        help="Show TM Forum Autonomous Network L3→L4 mapping after each alarm",
+    )
+    args = parser.parse_args()
+    asyncio.run(main_async(explain_levels=args.explain_levels))
 
 
 if __name__ == "__main__":

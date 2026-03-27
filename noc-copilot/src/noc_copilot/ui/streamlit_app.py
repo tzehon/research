@@ -86,7 +86,7 @@ def main():
     )
 
     severity_order = {"critical": 0, "major": 1, "minor": 2, "warning": 3}
-    alarms.sort(key=lambda a: severity_order.get(a.get("severity", "warning"), 4))
+    alarms.sort(key=lambda a: (severity_order.get(a.get("severity", "warning"), 4), a.get("alarm_id", "")))
 
     selected_alarm = None
     for alarm in alarms:
@@ -284,6 +284,95 @@ def main():
                     st.metric("NOC Copilot", f"{elapsed:.1f}s")
                 with col2:
                     st.metric("Manual Process (est.)", "~75 min")
+
+                # TM Forum Autonomous Network Levels
+                with st.expander("TM Forum Autonomous Network Levels — L3 → L4"):
+                    confidence = result.get("confidence", 0)
+                    auto_rem = result.get("auto_remediable", False)
+                    corr = result.get("correlated_alarms", [])
+                    maint = result.get("recent_maintenance", [])
+                    elem = result.get("network_element")
+                    incs_l = result.get("similar_incidents", [])
+                    alarm_cat = selected_alarm.get("category", "")
+
+                    # Awareness summary
+                    aw_parts = []
+                    if elem:
+                        aw_parts.append(f"looked up `{elem.get('element_id', '?')}`")
+                    if corr:
+                        aw_parts.append(f"correlated {len(corr)} alarm{'s' if len(corr) != 1 else ''}")
+                    if maint:
+                        aw_parts.append(f"{len(maint)} maintenance hit{'s' if len(maint) != 1 else ''}")
+                    aw_text = ", ".join(aw_parts) if aw_parts else "enriched alarm"
+
+                    # Decision summary
+                    if confidence >= 0.9 and auto_rem:
+                        dec_l3 = f"**S** — Auto-remediated via policy gate (threshold + approved list)"
+                    elif confidence >= 0.7:
+                        dec_l3 = f"**P/S** — {confidence:.0%} confidence → human approval required"
+                    else:
+                        dec_l3 = f"**P/S** — {confidence:.0%} confidence → escalated to engineer"
+
+                    st.markdown("#### What you just saw: Level 3 — Conditional Automation")
+                    st.markdown(
+                        "| Dimension | L3 — Current | L4 — Agentic Upgrade |\n"
+                        "|-----------|-------------|----------------------|\n"
+                        f"| **Execution** | **S** — Pipeline ran end-to-end | **S** — No change |\n"
+                        f"| **Awareness** | **S** — {aw_text} | **S** — Agent chooses what to investigate (tool use) |\n"
+                        f"| **Analysis** | **P/S** — Diagnosed at {confidence:.0%} confidence, human reviews | **S** — Agent retries retrieval on low confidence |\n"
+                        f"| **Decision** | {dec_l3} | **S** — AI reasons about whether to act |\n"
+                        f"| **Intent** | **P** — You selected the alarm manually | **P/S** — System prioritises alarms proactively |"
+                    )
+
+                    st.markdown("#### What changes to reach Level 4")
+
+                    st.markdown(
+                        "**Triage →** LLM picks investigation tools per alarm type  \n"
+                        "_Now: 3 hardcoded queries. L4: agent decides — check topology for link-down, "
+                        "pull KPI trends for degradation, check config changes for drift_"
+                    )
+
+                    top_sc = incs_l[0].get("score", 0) if incs_l else 0
+                    if top_sc > 0:
+                        if top_sc < 0.6:
+                            ret_note = f"Top match scored {top_sc:.4f} — agent would reformulate and retry"
+                        else:
+                            ret_note = f"Top match scored {top_sc:.4f} — good hit. On a poor match, agent retries"
+                    else:
+                        ret_note = "No matches found — agent would reformulate query and retry"
+                    st.markdown(f"**Retrieval →** Search → evaluate → refine loop  \n_{ret_note}_")
+
+                    if confidence < 0.7:
+                        diag_note = f"Confidence {confidence:.0%} → currently escalates. L4: retry with refined search"
+                    elif confidence < 0.9:
+                        diag_note = f"Confidence {confidence:.0%} → needs approval. L4: loop back for more evidence"
+                    else:
+                        diag_note = f"Confidence {confidence:.0%} → strong match. If lower, agent loops back with diagnosis hints"
+                    st.markdown(f"**Diagnosis →** Low confidence triggers re-investigation  \n_{diag_note}_")
+
+                    st.markdown(
+                        "**Remediation →** Closed loop: check → execute → verify  \n"
+                        "_Now: policy gate (threshold + approved list). L4: agent checks preconditions, "
+                        "executes remediation, verifies alarm cleared_"
+                    )
+
+                    if alarm_cat:
+                        st.markdown(
+                            f"**Cross-domain →** Correlate across network domains  \n"
+                            f"_Now: searched only \"{alarm_cat}\" incidents. L4: checks transport "
+                            f"and core data to find cross-domain root causes_"
+                        )
+
+                    st.markdown(
+                        "```\n"
+                        "Pipeline (L3)                                    Agent (L4)\n"
+                        "    │                                                │\n"
+                        "    ▼                                                ▼\n"
+                        " Fixed steps,         Conditional       Tool-calling      Autonomous:\n"
+                        " no branching,        edges: retry       loops: LLM        investigate,\n"
+                        " LLM fills slots      on low scores      chooses actions   act, verify\n"
+                        "```"
+                    )
         else:
             st.info("Select an alarm from the sidebar to process.")
 

@@ -475,7 +475,10 @@ uv run python scripts/setup_atlas.py
 # 6. Run the demo (terminal UI)
 uv run python scripts/run_demo.py
 
-# Or launch the Streamlit dashboard
+# Or with TM Forum Autonomous Network L3→L4 level mapping after each alarm
+uv run python scripts/run_demo.py --explain-levels
+
+# Or launch the Streamlit dashboard (level mapping available as an expander)
 uv run streamlit run src/noc_copilot/ui/streamlit_app.py
 ```
 
@@ -483,7 +486,7 @@ uv run streamlit run src/noc_copilot/ui/streamlit_app.py
 
 ## Demo Walkthrough
 
-The terminal demo walks through a realistic telco incident scenario end to end.
+The terminal demo walks through a realistic telco incident scenario end to end. Add `--explain-levels` to see the TM Forum Autonomous Network level mapping after each alarm.
 
 ### 1. Alarm Dashboard
 
@@ -593,6 +596,22 @@ STEP 4: REMEDIATION
 ```
 
 The full diagnosis record is persisted to the `diagnoses` collection in MongoDB for auditability.
+
+### 6. TM Forum Autonomous Network Level Mapping
+
+Run with `--explain-levels` (or expand the "TM Forum Autonomous Network Levels" section in Streamlit) to see a dynamic mapping of the pipeline results to the TM Forum Autonomous Network evaluation framework.
+
+The system maps each pipeline run to the **P/S cognitive dimension matrix** (People vs System), showing where the current pipeline sits at **Level 3 (Conditional Automation)** and what concrete changes would move it to **Level 4 (High Automation)**:
+
+| Dimension | L3 — Current Pipeline | L4 — Agentic Upgrade |
+|-----------|----------------------|---------------------|
+| **Execution** | **S** — Pipeline ran end-to-end | **S** — No change |
+| **Awareness** | **S** — Element lookup, maintenance, correlated alarms | **S** — Agent chooses what to investigate (tool use) |
+| **Analysis** | **P/S** — LLM diagnoses, human reviews | **S** — Agent retries retrieval on low confidence |
+| **Decision** | **P/S** — Confidence threshold gates human approval | **S** — AI reasons about whether to act |
+| **Intent** | **P** — User selects alarm manually | **P/S** — System prioritises alarms proactively |
+
+The output is dynamic — it references the actual confidence score, number of correlated alarms, top retrieval score, and remediation outcome from the alarm that was just processed. It then shows five concrete upgrades to reach Level 4: tool-calling triage, retrieval retry loops, diagnosis-driven re-investigation, closed-loop remediation with verification, and cross-domain correlation.
 
 ---
 
