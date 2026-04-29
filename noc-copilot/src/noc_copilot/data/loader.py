@@ -11,6 +11,7 @@ from noc_copilot.db.collections import (
     DIAGNOSES,
     INCIDENTS,
     NETWORK_INVENTORY,
+    REMEDIATION_ACTIONS,
     RUNBOOKS,
     ALL_COLLECTIONS,
 )
@@ -59,10 +60,14 @@ def load_all_data(db: Database) -> None:
         db[ALARMS].insert_many(alarms)
         console.print(f"  [green]✓[/green] {len(alarms)} alarms → {ALARMS}")
 
-    # Ensure diagnoses collection exists
-    if DIAGNOSES not in db.list_collection_names():
-        db.create_collection(DIAGNOSES)
-    console.print(f"  [green]✓[/green] {DIAGNOSES} collection ready")
+    # Ensure agent-memory collections exist (the agent inserts into these
+    # during runs; MongoDB auto-creates on first write but listing them up
+    # front means a fresh `show collections` lines up with the docs).
+    existing = set(db.list_collection_names())
+    for name in (DIAGNOSES, REMEDIATION_ACTIONS):
+        if name not in existing:
+            db.create_collection(name)
+        console.print(f"  [green]✓[/green] {name} collection ready")
 
     console.print("\n[bold green]Data loading complete![/bold green]")
     console.print(

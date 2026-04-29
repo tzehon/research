@@ -1,159 +1,121 @@
-"""Diagnosis node: LLM reasoning over enriched context."""
+"""Diagnosis phase: reason over evidence and either commit or loop back.
 
-import json
+Two terminal tools: `propose_diagnosis` (commit a structured diagnosis
+with calibrated confidence) or `request_more_evidence` (signal retrieval
+to run again with a refined query). The agent picks one based on how
+strong the gathered evidence is.
+"""
+
+from __future__ import annotations
+
 import logging
-import anthropic
 
-from noc_copilot.config import get_settings
+from langchain_core.messages import HumanMessage, SystemMessage
+from langgraph.prebuilt import create_react_agent
+
+from noc_copilot.agent.llm import get_chat_model
+from noc_copilot.agent.nodes._phase import (
+    phase_event,
+    render_alarm,
+    render_correlated,
+    render_element,
+    render_incidents,
+    render_maintenance,
+    render_runbooks,
+)
+from noc_copilot.agent.state import NOCAgentState
+from noc_copilot.agent.tools import make_diagnosis_tools
 
 logger = logging.getLogger(__name__)
 
 
-async def diagnosis_node(state: dict) -> dict:
-    alarm = state["alarm"]
-    element = state.get("network_element")
-    maintenance = state.get("recent_maintenance", [])
-    correlated = state.get("correlated_alarms", [])
-    incidents = state.get("similar_incidents", [])[:3]
-    runbooks = state.get("relevant_runbooks", [])[:3]
+SYSTEM_PROMPT = """You are the DIAGNOSIS agent. You have access to all the operational context that triage gathered, plus the top similar incidents and runbook sections that retrieval found. Reason over them and pick one of two actions:
 
-    settings = get_settings()
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+1. `propose_diagnosis(...)` — commit to a probable root cause with a calibrated confidence score. Required when the evidence supports a clear hypothesis.
+2. `request_more_evidence(refined_query, hypotheses, reason)` — bail out if the evidence is insufficient. The retrieval agent will run again with your refined query.
 
-    # Build prompt with XML-tagged context sections
-    prompt = _build_diagnosis_prompt(alarm, element, maintenance, correlated, incidents, runbooks)
+CONFIDENCE CALIBRATION (be honest, this drives auto-remediation):
+- 0.9–1.0: a similar past incident is a near-exact match AND recent maintenance or correlated alarms corroborate the hypothesis.
+- 0.7–0.9: strong similarity but some contextual uncertainty.
+- 0.5–0.7: moderate evidence, multiple plausible causes — call `request_more_evidence` if you can think of a sharper query.
+- <0.5: insufficient — call `request_more_evidence`.
 
-    response = client.messages.create(
-        model=settings.anthropic_model,
-        max_tokens=2000,
-        messages=[{"role": "user", "content": prompt}],
+REASONING:
+- Cite specific incidents (by id), specific maintenance entries, specific KPI deltas as supporting evidence. Vague evidence calibrates confidence down.
+- Always include 1–3 differential diagnoses with why each is less likely.
+
+Call exactly ONE tool, then stop."""
+
+
+def make_diagnosis_node():
+    """Build the diagnosis node. Has no external resource dependencies."""
+    tools = make_diagnosis_tools()
+    model = get_chat_model()
+    sub_agent = create_react_agent(
+        model,
+        tools=tools,
+        state_schema=NOCAgentState,
     )
 
-    # Parse JSON from response
-    text = response.content[0].text
-    # Handle potential markdown code fences
-    if "```json" in text:
-        text = text.split("```json")[1].split("```")[0]
-    elif "```" in text:
-        text = text.split("```")[1].split("```")[0]
+    async def diagnosis_node(state: NOCAgentState) -> dict:
+        alarm = state["alarm"]
+        retries_so_far = state.get("diagnosis_retries", 0) or 0
 
-    try:
-        diagnosis = json.loads(text.strip())
-    except json.JSONDecodeError:
-        logger.error("Failed to parse diagnosis JSON: %s", text[:200])
-        diagnosis = {
-            "probable_root_cause": "Unable to determine - LLM response parsing failed",
+        ctx = "\n\n".join([
+            f"<alarm>\n{render_alarm(alarm)}\n</alarm>",
+            f"<network_element>\n{render_element(state.get('network_element'))}\n</network_element>",
+            f"<recent_maintenance>\n{render_maintenance(state.get('recent_maintenance', []))}\n</recent_maintenance>",
+            f"<correlated_alarms>\n{render_correlated(state.get('correlated_alarms', []))}\n</correlated_alarms>",
+            f"<similar_past_incidents>\n{render_incidents(state.get('similar_incidents', []))}\n</similar_past_incidents>",
+            f"<relevant_runbooks>\n{render_runbooks(state.get('relevant_runbooks', []))}\n</relevant_runbooks>",
+        ])
+
+        if retries_so_far > 0:
+            ctx += (
+                f"\n\n<retry_context>\n"
+                f"  This is diagnosis retry #{retries_so_far}. The previous attempt was low-confidence "
+                f"and retrieval has just produced fresh results. If evidence still isn't strong enough, "
+                f"commit to your best guess at the appropriate confidence level rather than looping again.\n"
+                f"</retry_context>"
+            )
+
+        user_msg = ctx + "\n\nReason over the evidence and call exactly one tool."
+
+        inner_input: NOCAgentState = {
+            "messages": [SystemMessage(SYSTEM_PROMPT), HumanMessage(user_msg)],
+            "alarm": alarm,
+            "diagnosis": None,
             "confidence": 0.0,
-            "reasoning": text[:500],
-            "supporting_evidence": [],
-            "differential_diagnoses": [],
+            "next_phase": None,
+            "retrieval_query": state.get("retrieval_query", ""),
+            "tool_calls": [],
         }
 
-    return {
-        "diagnosis": diagnosis,
-        "confidence": diagnosis.get("confidence", 0.0),
-    }
+        result = await sub_agent.ainvoke(inner_input)
+        new_tool_calls = result.get("tool_calls", []) or []
+        diagnosis = result.get("diagnosis")
+        confidence = result.get("confidence", 0.0) or 0.0
+        next_phase = result.get("next_phase")
 
-
-def _build_diagnosis_prompt(alarm, element, maintenance, correlated, incidents, runbooks) -> str:
-    # Build element info
-    element_info = "No element information available."
-    if element:
-        element_info = (
-            f"Type: {element.get('type')}, Vendor: {element.get('vendor')}, "
-            f"Model: {element.get('model')}, Site: {element.get('site_name')}, "
-            f"Region: {element.get('region')}, Status: {element.get('status')}"
+        logger.info(
+            "Diagnosis agent finished: confidence=%.2f, next_phase=%s",
+            confidence, next_phase,
         )
 
-    # Build maintenance info
-    maint_info = "No recent maintenance."
-    if maintenance:
-        maint_lines = []
-        for m in maintenance:
-            maint_lines.append(f"- {m.get('date')}: {m.get('action')} (by {m.get('engineer', 'unknown')})")
-        maint_info = "\n".join(maint_lines)
+        return {
+            "diagnosis": diagnosis,
+            "confidence": confidence,
+            "next_phase": next_phase,
+            # If the agent asked for more evidence, surface its refined query
+            "retrieval_query": result.get("retrieval_query", state.get("retrieval_query", "")),
+            "tool_calls": new_tool_calls,
+            "phase_log": [phase_event(
+                "diagnosis",
+                "completed",
+                detail=(f"confidence={confidence:.2f}" if diagnosis
+                        else f"requested more evidence (next={next_phase})"),
+                iteration=retries_so_far + 1,
+            )],
+        }
 
-    # Build correlated alarms
-    corr_info = "No correlated alarms."
-    if correlated:
-        corr_lines = []
-        for a in correlated[:5]:
-            corr_lines.append(f"- [{a.get('severity')}] {a.get('description', '')[:100]}")
-        corr_info = "\n".join(corr_lines)
-
-    # Build similar incidents
-    inc_info = "No similar incidents found."
-    if incidents:
-        inc_lines = []
-        for i, inc in enumerate(incidents, 1):
-            inc_lines.append(
-                f"--- Incident {i} (score: {inc.get('score', 0):.3f}) ---\n"
-                f"Title: {inc.get('title')}\n"
-                f"Root Cause: {inc.get('root_cause')}\n"
-                f"Resolution: {inc.get('resolution')}\n"
-                f"Category: {inc.get('category')}, Severity: {inc.get('severity')}"
-            )
-        inc_info = "\n\n".join(inc_lines)
-
-    # Build runbook sections
-    rb_info = "No relevant runbooks found."
-    if runbooks:
-        rb_lines = []
-        for i, rb in enumerate(runbooks, 1):
-            rb_lines.append(
-                f"--- Runbook {i} (score: {rb.get('score', 0):.3f}) ---\n"
-                f"Title: {rb.get('title')} - {rb.get('section_title')}\n"
-                f"Content: {rb.get('content', '')[:500]}"
-            )
-        rb_info = "\n\n".join(rb_lines)
-
-    return f"""You are an expert telco network operations engineer. Analyze the following alarm and all available context to determine the most probable root cause.
-
-<alarm>
-Alarm ID: {alarm.get('alarm_id')}
-Severity: {alarm.get('severity')}
-Category: {alarm.get('category')}
-Source: {alarm.get('source')}
-Description: {alarm.get('description')}
-Metrics: {json.dumps(alarm.get('metrics', {}))}
-Region: {alarm.get('region')}
-</alarm>
-
-<network_element>
-{element_info}
-</network_element>
-
-<recent_maintenance>
-{maint_info}
-</recent_maintenance>
-
-<correlated_alarms>
-{corr_info}
-</correlated_alarms>
-
-<similar_past_incidents>
-{inc_info}
-</similar_past_incidents>
-
-<relevant_runbook_sections>
-{rb_info}
-</relevant_runbook_sections>
-
-Based on all available evidence, provide your diagnosis as a JSON object with this exact structure:
-{{
-    "probable_root_cause": "A clear, specific description of the most likely root cause",
-    "confidence": 0.85,
-    "reasoning": "Step-by-step reasoning chain explaining how you arrived at this diagnosis",
-    "supporting_evidence": ["evidence point 1", "evidence point 2", "..."],
-    "differential_diagnoses": [
-        {{"cause": "alternative cause", "confidence": 0.15, "why_less_likely": "reason"}}
-    ]
-}}
-
-Confidence calibration guidelines:
-- 0.9+: The top similar incident is a near-exact match AND recent maintenance or correlated alarms corroborate the hypothesis
-- 0.7-0.9: Strong similarity to a past incident but some uncertainty in the current context
-- 0.5-0.7: Moderate evidence but multiple plausible causes
-- Below 0.5: Insufficient evidence, manual investigation recommended
-
-Respond ONLY with the JSON object, no other text."""
+    return diagnosis_node

@@ -11,7 +11,7 @@ from rich.console import Console
 
 from noc_copilot.config import get_settings
 from noc_copilot.db.connection import MongoDBConnection
-from noc_copilot.db.indexes import create_all_indexes, wait_for_indexes
+from noc_copilot.db.indexes import create_all_indexes
 
 console = Console()
 

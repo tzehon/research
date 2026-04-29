@@ -1,179 +1,231 @@
-"""Remediation node: determine action, check auto-remediation eligibility, persist diagnosis."""
+"""Remediation phase: closed loop — check preconditions → act → verify.
 
-import json
+The agent decides between three terminal outcomes:
+
+- **auto_remediate**: high confidence + safe action + preconditions met →
+  call `execute_remediation_step` then `verify_alarm_cleared`.
+- **recommend_for_approval**: medium confidence or unsafe action →
+  recommend the action but require a human to approve.
+- **escalate**: low confidence, novel symptom, or risky preconditions →
+  hand off to a human with a suggested investigation direction.
+"""
+
+from __future__ import annotations
+
 import logging
 from datetime import datetime
+
+from langchain_core.messages import HumanMessage, SystemMessage
+from langgraph.prebuilt import create_react_agent
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-import anthropic
-
-from noc_copilot.config import get_settings
+from noc_copilot.agent.llm import get_chat_model
+from noc_copilot.agent.nodes._phase import (
+    phase_event,
+    render_alarm,
+    render_element,
+    render_incidents,
+    render_runbooks,
+)
+from noc_copilot.agent.state import NOCAgentState
+from noc_copilot.agent.tools import make_remediation_tools
 from noc_copilot.db.collections import DIAGNOSES
 
 logger = logging.getLogger(__name__)
 
-AUTO_REMEDIABLE_ACTIONS = [
-    "revert config parameter",
-    "revert RET angle",
-    "revert firmware",
-    "restart service",
-    "clear alarm",
-]
+
+SYSTEM_PROMPT = """You are the REMEDIATION agent. You have a diagnosis with a confidence score and a set of similar past resolutions. Your job: pick exactly one of three terminal actions.
+
+PRECONDITIONS (always run before deciding):
+- `estimate_blast_radius(element_id)` — what services share this site?
+- `check_maintenance_window(element_id)` — is the element already in maintenance?
+- `verify_backup_exists(element_id)` — can we revert if needed?
+
+DECISION RULES:
+- AUTO-REMEDIATE only if ALL of:
+  - confidence ≥ 0.9
+  - action matches one of: revert RET angle, revert config parameter, revert firmware, restart service, clear alarm
+  - blast_radius risk ∈ {low, medium}
+  - maintenance_window_ok = True
+  - backup_verified = True
+  Then: call `execute_remediation_step` followed by `verify_alarm_cleared`. Stop.
+
+- RECOMMEND FOR APPROVAL when confidence is 0.7–0.9, OR when the action is correct but outside the safe auto-list (e.g. hardware swap, vendor escalation). Use `recommend_for_approval(action, rationale)`. Stop.
+
+- ESCALATE when confidence < 0.7, or when blast radius is high, or when no clear safe action applies. Use `escalate(reason, suggested_direction)`. Stop.
+
+ACTION ADAPTATION:
+- Read the past resolutions of the top similar incidents. Adapt them to the current element (correct element_id, sector number, parameter values).
+- Be specific. "Revert RET angle on gNB-SG-C01 Sector 2 from 8 to 4 degrees" not "fix the antenna".
+
+Always run the three precondition tools first. Then commit to one terminal action."""
 
 
-async def remediation_node(state: dict, *, db: AsyncIOMotorDatabase) -> dict:
+def make_remediation_node(db: AsyncIOMotorDatabase):
+    """Build the remediation node, bound to a database connection."""
+    tools = make_remediation_tools(db)
+    model = get_chat_model()
+    sub_agent = create_react_agent(
+        model,
+        tools=tools,
+        state_schema=NOCAgentState,
+    )
+
+    async def remediation_node(state: NOCAgentState) -> dict:
+        alarm = state["alarm"]
+        diagnosis = state.get("diagnosis") or {}
+        confidence = state.get("confidence", 0.0) or 0.0
+        retries_so_far = state.get("remediation_retries", 0) or 0
+
+        ctx = "\n\n".join([
+            f"<alarm>\n{render_alarm(alarm)}\n</alarm>",
+            f"<network_element>\n{render_element(state.get('network_element'))}\n</network_element>",
+            f"<diagnosis>\n"
+            f"  probable_root_cause: {diagnosis.get('probable_root_cause', 'N/A')}\n"
+            f"  confidence: {confidence:.2f}\n"
+            f"  reasoning: {diagnosis.get('reasoning', 'N/A')}\n"
+            f"</diagnosis>",
+            f"<top_similar_incidents>\n{render_incidents(state.get('similar_incidents', []))}\n</top_similar_incidents>",
+            f"<top_runbooks>\n{render_runbooks(state.get('relevant_runbooks', []))}\n</top_runbooks>",
+        ])
+
+        if retries_so_far > 0:
+            ctx += (
+                f"\n\n<retry_context>\n"
+                f"  Remediation retry #{retries_so_far} after a verification failure. "
+                f"Re-evaluate whether to escalate.\n"
+                f"</retry_context>"
+            )
+
+        user_msg = ctx + "\n\nRun preconditions, then commit to exactly one terminal action."
+
+        inner_input: NOCAgentState = {
+            "messages": [SystemMessage(SYSTEM_PROMPT), HumanMessage(user_msg)],
+            "alarm": alarm,
+            "network_element": state.get("network_element"),
+            "diagnosis": diagnosis,
+            "confidence": confidence,
+            "blast_radius": None,
+            "maintenance_window_ok": None,
+            "backup_verified": None,
+            "execution_result": None,
+            "verification_result": None,
+            "recommended_action": None,
+            "final_status": None,
+            "tool_calls": [],
+        }
+
+        result = await sub_agent.ainvoke(inner_input)
+        new_tool_calls = result.get("tool_calls", []) or []
+        final_status = result.get("final_status")
+
+        # Build a human-readable evidence chain and persist diagnosis to MongoDB.
+        evidence_chain = _build_evidence_chain(state, diagnosis, confidence, result)
+
+        try:
+            await db[DIAGNOSES].insert_one({
+                "alarm_id": alarm.get("alarm_id"),
+                "alarm": alarm,
+                "network_element_id": (state.get("network_element") or {}).get("element_id"),
+                "diagnosis": diagnosis,
+                "confidence": confidence,
+                "recommended_action": result.get("recommended_action"),
+                "final_status": final_status,
+                "blast_radius": result.get("blast_radius"),
+                "execution_result": result.get("execution_result"),
+                "verification_result": result.get("verification_result"),
+                "evidence_chain": evidence_chain,
+                "tool_call_count": len(state.get("tool_calls", []) or []) + len(new_tool_calls),
+                "created_at": datetime.utcnow(),
+            })
+        except Exception as e:
+            logger.warning("Failed to persist diagnosis: %s", e)
+
+        # auto_remediable for backward-compat with old UI checks
+        auto_remediable = final_status == "auto_remediated"
+
+        logger.info(
+            "Remediation agent finished: status=%s, %d tool call(s)",
+            final_status, len(new_tool_calls),
+        )
+
+        return {
+            "blast_radius": result.get("blast_radius"),
+            "maintenance_window_ok": result.get("maintenance_window_ok"),
+            "backup_verified": result.get("backup_verified"),
+            "execution_result": result.get("execution_result"),
+            "verification_result": result.get("verification_result"),
+            "recommended_action": result.get("recommended_action"),
+            "final_status": final_status,
+            "auto_remediable": auto_remediable,
+            "tool_calls": new_tool_calls,
+            "evidence_chain": evidence_chain,
+            "phase_log": [phase_event(
+                "remediation",
+                "completed",
+                detail=f"final_status={final_status}",
+                iteration=retries_so_far + 1,
+            )],
+        }
+
+    return remediation_node
+
+
+def _build_evidence_chain(
+    state: NOCAgentState,
+    diagnosis: dict,
+    confidence: float,
+    result: dict,
+) -> list[str]:
+    """Render a human-readable evidence chain for audit."""
     alarm = state["alarm"]
-    diagnosis = state.get("diagnosis", {})
-    confidence = state.get("confidence", 0.0)
-    incidents = state.get("similar_incidents", [])
-    runbooks = state.get("relevant_runbooks", [])
+    chain: list[str] = []
+    chain.append(f"Alarm: [{alarm.get('severity')}] {(alarm.get('description') or '')[:120]}")
+
     element = state.get("network_element")
-    maintenance = state.get("recent_maintenance", [])
-
-    settings = get_settings()
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-
-    # Build evidence chain
-    evidence_chain = _build_evidence_chain(alarm, element, maintenance, incidents, diagnosis)
-
-    # Determine recommended action using LLM adaptation
-    recommended_action = await _adapt_resolution(
-        client, settings.anthropic_model, alarm, diagnosis, incidents, runbooks
-    )
-
-    # Check if action is auto-remediable
-    auto_remediable = False
-    if confidence > 0.9 and recommended_action:
-        action_lower = recommended_action.lower()
-        auto_remediable = any(
-            approved.lower() in action_lower for approved in AUTO_REMEDIABLE_ACTIONS
-        )
-
-    # Format action string based on confidence thresholds
-    if confidence > 0.9 and auto_remediable:
-        action_label = f"AUTO-REMEDIATION: {recommended_action}"
-    elif confidence >= 0.7:
-        action_label = f"RECOMMENDED ACTION (human approval required): {recommended_action}"
-    else:
-        action_label = (
-            f"ESCALATION REQUIRED: Insufficient confidence ({confidence:.2f}). "
-            f"Manual investigation needed. Suggested direction: {recommended_action}"
-        )
-
-    # Persist diagnosis to MongoDB
-    diagnosis_record = {
-        "alarm_id": alarm.get("alarm_id"),
-        "alarm": alarm,
-        "network_element_id": element.get("element_id") if element else None,
-        "diagnosis": diagnosis,
-        "confidence": confidence,
-        "recommended_action": action_label,
-        "auto_remediable": auto_remediable,
-        "evidence_chain": evidence_chain,
-        "similar_incident_ids": [inc.get("incident_id") for inc in incidents[:3]],
-        "created_at": datetime.utcnow(),
-    }
-    await db[DIAGNOSES].insert_one(diagnosis_record)
-    logger.info(
-        "Diagnosis persisted for alarm %s (confidence=%.2f, auto_remediable=%s)",
-        alarm.get("alarm_id"), confidence, auto_remediable,
-    )
-
-    return {
-        "recommended_action": action_label,
-        "auto_remediable": auto_remediable,
-        "evidence_chain": evidence_chain,
-    }
-
-
-def _build_evidence_chain(alarm, element, maintenance, incidents, diagnosis) -> list[str]:
-    """Build a human-readable evidence chain summarizing the reasoning path."""
-    chain = []
-
-    chain.append(f"Alarm received: [{alarm.get('severity')}] {alarm.get('description', '')[:120]}")
-
     if element:
         chain.append(
-            f"Source element identified: {element.get('type')} {element.get('vendor')} "
-            f"{element.get('model')} at {element.get('site_name', 'unknown site')}"
+            f"Element: {element.get('type')} {element.get('vendor')} {element.get('model')} "
+            f"@ {element.get('site_name')}"
         )
 
+    maintenance = state.get("recent_maintenance") or []
     if maintenance:
-        actions = [m.get("action", "unknown") for m in maintenance[:3]]
-        chain.append(f"Recent maintenance found: {', '.join(actions)}")
+        actions = [m.get("action", "?")[:80] for m in maintenance[:2]]
+        chain.append("Recent maintenance: " + " | ".join(actions))
 
+    incidents = state.get("similar_incidents") or []
     if incidents:
         top = incidents[0]
         chain.append(
-            f"Most similar past incident (score {top.get('score', 0):.3f}): "
-            f"{top.get('title', 'N/A')} -> root cause: {top.get('root_cause', 'N/A')}"
+            f"Top similar incident (score {top.get('score', 0):.3f}): "
+            f"{top.get('title', '?')} → {top.get('root_cause', '?')[:80]}"
         )
 
     if diagnosis:
-        chain.append(f"Diagnosis: {diagnosis.get('probable_root_cause', 'N/A')}")
-        chain.append(f"Confidence: {diagnosis.get('confidence', 0):.2f}")
-
-        for ev in diagnosis.get("supporting_evidence", [])[:3]:
+        chain.append(f"Diagnosis: {diagnosis.get('probable_root_cause', '?')}")
+        chain.append(f"Confidence: {confidence:.2f}")
+        for ev in (diagnosis.get("supporting_evidence") or [])[:3]:
             chain.append(f"  Evidence: {ev}")
 
+    radius = result.get("blast_radius")
+    if radius:
+        chain.append(
+            f"Blast radius: {radius.get('risk')} "
+            f"({radius.get('co_located_active_elements', 0)} co-located, "
+            f"high_traffic={radius.get('is_high_traffic')})"
+        )
+
+    final_status = result.get("final_status")
+    if final_status == "auto_remediated":
+        chain.append(f"Action executed: {result.get('recommended_action')}")
+        verification = result.get("verification_result") or {}
+        chain.append(f"Verification: alarm cleared = {verification.get('cleared')}")
+    elif final_status == "human_approval_required":
+        chain.append(f"Recommended (pending approval): {result.get('recommended_action')}")
+    elif final_status == "escalated":
+        chain.append(f"Escalated: {result.get('recommended_action')}")
+    elif final_status == "verification_failed":
+        chain.append(f"Action attempted but verification failed; loop-back required.")
+
     return chain
-
-
-async def _adapt_resolution(
-    client: anthropic.Anthropic,
-    model: str,
-    alarm: dict,
-    diagnosis: dict,
-    incidents: list[dict],
-    runbooks: list[dict],
-) -> str:
-    """Use Claude to adapt the most similar incident's resolution to the current context."""
-    # Gather resolution context
-    past_resolutions = []
-    for inc in incidents[:2]:
-        if inc.get("resolution"):
-            past_resolutions.append(
-                f"- Incident '{inc.get('title')}': {inc.get('resolution')}"
-            )
-
-    runbook_steps = []
-    for rb in runbooks[:2]:
-        if rb.get("content"):
-            runbook_steps.append(
-                f"- {rb.get('title', '')} / {rb.get('section_title', '')}: {rb.get('content', '')[:300]}"
-            )
-
-    prompt = f"""You are a telco NOC engineer. Based on the diagnosis and available resolution context, recommend a specific remediation action for this alarm.
-
-<alarm>
-{alarm.get('description')}
-Severity: {alarm.get('severity')}, Category: {alarm.get('category')}
-</alarm>
-
-<diagnosis>
-Root cause: {diagnosis.get('probable_root_cause', 'Unknown')}
-Confidence: {diagnosis.get('confidence', 0)}
-Reasoning: {diagnosis.get('reasoning', 'N/A')}
-</diagnosis>
-
-<past_resolutions>
-{chr(10).join(past_resolutions) if past_resolutions else 'No past resolutions available.'}
-</past_resolutions>
-
-<relevant_runbook_steps>
-{chr(10).join(runbook_steps) if runbook_steps else 'No relevant runbook steps available.'}
-</relevant_runbook_steps>
-
-Provide a single, specific, actionable remediation step. Be concise (1-2 sentences).
-If the action matches one of these pre-approved auto-remediation types, use the exact phrasing:
-{json.dumps(AUTO_REMEDIABLE_ACTIONS)}
-
-Respond with ONLY the remediation action, no other text."""
-
-    response = client.messages.create(
-        model=model,
-        max_tokens=300,
-        messages=[{"role": "user", "content": prompt}],
-    )
-
-    return response.content[0].text.strip()
