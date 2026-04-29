@@ -27,8 +27,18 @@ from noc_copilot.search.hybrid_search import (
 
 PHASE = "retrieval"
 
-# Threshold above which retrieval is considered "good enough"
-GOOD_SCORE_THRESHOLD = 0.5
+# Threshold above which retrieval is considered "good enough".
+#
+# Hybrid search uses MongoDB's $rankFusion (Reciprocal Rank Fusion), where
+# each result's score is sum(weight_p / (k + rank_p)) with k=60. With the
+# configured weights (vector=0.6, text=0.4) the theoretical maximum is
+# 1.0/61 ≈ 0.0164 — a result that is rank 1 in BOTH pipelines. Anything
+# above ~0.012 means top-of-list in one pipeline plus a strong rank in the
+# other, which is what we want for "proceed to diagnosis".
+#
+# If you change the vector/text weights or switch to $scoreFusion (which
+# normalises into [0, 1]), retune this threshold accordingly.
+GOOD_SCORE_THRESHOLD = 0.012
 
 
 def _strip_embeddings(docs: list[dict]) -> list[dict]:
