@@ -27,17 +27,18 @@ from noc_copilot.search.hybrid_search import (
 
 PHASE = "retrieval"
 
-# Threshold above which retrieval is considered "good enough".
-#
-# Hybrid search uses MongoDB's $rankFusion (Reciprocal Rank Fusion), where
-# each result's score is sum(weight_p / (k + rank_p)) with k=60. With the
-# configured weights (vector=0.6, text=0.4) the theoretical maximum is
-# 1.0/61 ≈ 0.0164 — a result that is rank 1 in BOTH pipelines. Anything
-# above ~0.012 means top-of-list in one pipeline plus a strong rank in the
-# other, which is what we want for "proceed to diagnosis".
-#
-# If you change the vector/text weights or switch to $scoreFusion (which
-# normalises into [0, 1]), retune this threshold accordingly.
+# MongoDB $rankFusion uses Reciprocal Rank Fusion: each document's score
+# is sum(weight_p / (RRF_K + rank_p)) across pipelines. With k=60 and the
+# configured weights (vector 0.6 + text 0.4 = 1.0), the theoretical max is
+# 1.0 / 61 ≈ 0.0164 — a result that's rank 1 in BOTH pipelines.
+RRF_K = 60
+RRF_MAX_SCORE = 1.0 / (RRF_K + 1)  # ≈ 0.0164 for current weights
+
+# Threshold above which retrieval is considered "good enough". 0.012 means
+# the top result is rank 1 in one pipeline and a strong rank in the other,
+# which is what we want for "proceed to diagnosis". If you change the
+# vector/text weights or switch to $scoreFusion (which normalises into
+# [0, 1]), retune this against RRF_MAX_SCORE.
 GOOD_SCORE_THRESHOLD = 0.012
 
 
@@ -97,7 +98,8 @@ def make_retrieval_tools(db: AsyncIOMotorDatabase, embedder: VoyageEmbedder):
                 for r in results[:5]
             ]
             summary = (
-                f"Found {len(results)} incidents (top score: {top_score:.3f}):\n"
+                f"Found {len(results)} incidents "
+                f"(top RRF score: {top_score:.3f} / max ≈ {RRF_MAX_SCORE:.3f}):\n"
                 + "\n".join(lines)
             )
 
@@ -154,7 +156,8 @@ def make_retrieval_tools(db: AsyncIOMotorDatabase, embedder: VoyageEmbedder):
                 for r in results[:5]
             ]
             summary = (
-                f"Found {len(results)} runbooks (top score: {top_score:.3f}):\n"
+                f"Found {len(results)} runbooks "
+                f"(top RRF score: {top_score:.3f} / max ≈ {RRF_MAX_SCORE:.3f}):\n"
                 + "\n".join(lines)
             )
 
@@ -202,7 +205,9 @@ def make_retrieval_tools(db: AsyncIOMotorDatabase, embedder: VoyageEmbedder):
         )
 
         summary = (
-            f"Retrieval quality: top_incident={top_inc:.3f}, top_runbook={top_rb:.3f}. "
+            f"Retrieval quality (RRF; threshold={GOOD_SCORE_THRESHOLD:.3f}, "
+            f"max≈{RRF_MAX_SCORE:.3f}): "
+            f"top_incident={top_inc:.3f}, top_runbook={top_rb:.3f}. "
             f"Verdict: {verdict}. Attempts so far: {attempts}. {recommendation}"
         )
 
