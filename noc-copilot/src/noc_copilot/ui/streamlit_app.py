@@ -76,6 +76,17 @@ async def _find_to_list(collection, filter, projection=None, sort=None, limit=No
     return await cursor.to_list(length=limit or 100)
 
 
+async def _collection_counts(db, names: list[str]) -> dict[str, int]:
+    """Count documents in several collections in one async call.
+
+    Motor 3.7's count_documents returns a `Future` when invoked outside an
+    async context, which `run_coroutine_threadsafe` rejects ("a coroutine
+    object is required"). Wrapping the calls in a coroutine fixes that and
+    also lets us batch the round-trips.
+    """
+    return {name: await db[name].count_documents({}) for name in names}
+
+
 SEVERITY_EMOJI = {
     "critical": "🔴",
     "major": "🟠",
@@ -377,14 +388,10 @@ def main() -> None:
 
         st.markdown("---")
         st.header("Collection counts")
-        counts = {
-            "alarms": run_async(db[ALARMS].count_documents({})),
-            "incidents": run_async(db[INCIDENTS].count_documents({})),
-            "runbooks": run_async(db[RUNBOOKS].count_documents({})),
-            "network_inventory": run_async(db[NETWORK_INVENTORY].count_documents({})),
-            "diagnoses": run_async(db[DIAGNOSES].count_documents({})),
-            "remediation_actions": run_async(db[REMEDIATION_ACTIONS].count_documents({})),
-        }
+        counts = run_async(_collection_counts(
+            db,
+            [ALARMS, INCIDENTS, RUNBOOKS, NETWORK_INVENTORY, DIAGNOSES, REMEDIATION_ACTIONS],
+        ))
         for name, n in counts.items():
             st.markdown(f"- **{name}**: {n}")
 
