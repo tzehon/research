@@ -33,3 +33,12 @@ Make multiple, self-contained, logically independent commits rather than one lar
 - Commits should be independently understandable and reviewable
 - Group related changes together, separate unrelated changes
 - Use imperative mood in commit messages (e.g., "Add feature" not "Added feature")
+
+## Working Directory Preference
+
+Work directly in the main checkout — do **not** spawn git worktrees for this repo unless the user explicitly asks. Concretely:
+- Do not pass `isolation: "worktree"` to `Agent` tool calls.
+- Do not call `EnterWorktree`.
+- Do not run `git worktree add ...` to isolate changes.
+
+All edits should land in the current working tree on the active branch. If isolation is needed for a risky change, ask before creating a worktree.
