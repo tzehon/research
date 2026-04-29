@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import queue as _queue
 import threading
 
 import streamlit as st
@@ -236,6 +237,111 @@ def render_evidence_chain(state: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Live streaming of agent runs
+# ---------------------------------------------------------------------------
+
+
+def _phase_from_namespace(namespace: tuple) -> str | None:
+    """Outer phase name from a LangGraph subgraph namespace tuple."""
+    if not namespace:
+        return None
+    head = namespace[0]
+    if ":" in head:
+        head = head.split(":", 1)[0]
+    return head if head in PHASE_EMOJI else None
+
+
+def stream_agent_to_status(agent, init_state: dict, config: dict, status) -> dict:
+    """Drive `agent.astream` from the background loop; render each tool call.
+
+    Streamlit is synchronous, so we shuttle (namespace, update) tuples
+    from the background asyncio loop through a thread-safe queue. The
+    main script thread drains the queue, appends a markdown line per
+    tool call into the open `st.status` container, and accumulates the
+    full final state to return.
+    """
+    q: _queue.Queue = _queue.Queue()
+    SENTINEL = object()
+    holder: dict = {}
+
+    async def _run():
+        accum = dict(init_state)
+        try:
+            async for ns, update in agent.astream(
+                init_state, config, stream_mode="updates", subgraphs=True
+            ):
+                q.put((ns, update))
+                # Outer-graph updates carry the canonical state deltas.
+                if not ns and isinstance(update, dict):
+                    for _node, node_update in update.items():
+                        if not isinstance(node_update, dict):
+                            continue
+                        for k, v in node_update.items():
+                            if k in {"tool_calls", "phase_log", "evidence_chain", "messages"}:
+                                existing = accum.get(k) or []
+                                accum[k] = list(existing) + list(v or [])
+                            elif k == "kpi_history":
+                                merged = dict(accum.get(k) or {})
+                                merged.update(v or {})
+                                accum[k] = merged
+                            else:
+                                accum[k] = v
+        finally:
+            holder["state"] = accum
+            q.put(SENTINEL)
+
+    fut = asyncio.run_coroutine_threadsafe(_run(), _get_background_loop())
+
+    current_phase: tuple[str, int] | None = None
+
+    while True:
+        item = q.get()
+        if item is SENTINEL:
+            break
+        ns, update = item
+        if not isinstance(update, dict):
+            continue
+
+        for node_name, node_update in update.items():
+            if not isinstance(node_update, dict):
+                continue
+
+            phase = _phase_from_namespace(ns) or (
+                node_name if node_name in PHASE_EMOJI else None
+            )
+
+            new_tool_calls = node_update.get("tool_calls") or []
+            if phase and new_tool_calls:
+                iteration = new_tool_calls[0].get("iteration", 1)
+                key = (phase, iteration)
+                if key != current_phase:
+                    suffix = f" (iteration {iteration})" if iteration > 1 else ""
+                    status.markdown(f"\n**{PHASE_EMOJI[phase]} {phase.upper()}{suffix}**")
+                    status.update(label=f"{PHASE_EMOJI[phase]} {phase.capitalize()}…")
+                    current_phase = key
+                for tc in new_tool_calls:
+                    name = tc.get("tool", "")
+                    summary = (tc.get("result_summary") or "").splitlines()
+                    first = summary[0] if summary else ""
+                    if len(first) > 140:
+                        first = first[:137] + "…"
+                    latency = tc.get("latency_ms", 0)
+                    status.markdown(f"- ✓ `{name}` → {first}  _({latency}ms)_")
+
+            for event in node_update.get("phase_log") or []:
+                ev = event.get("event")
+                if ev == "looped_back":
+                    status.markdown(f"\n⚠️ **Loop-back:** {event.get('detail', '')}")
+                    current_phase = None
+                elif ev == "escalated":
+                    status.markdown(f"\n🚨 **Escalated:** {event.get('detail', '')}")
+                    current_phase = None
+
+    fut.result()  # surface any background exception
+    return holder["state"]
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -298,15 +404,18 @@ def main() -> None:
     last_run = st.session_state.get("last_run")
     if last_run is None or last_run.get("alarm_id") != selected.get("alarm_id"):
         if st.button("▶  Run agent", type="primary"):
-            with st.spinner("Agent is investigating…"):
-                agent = build_noc_agent(db, embedder)
-                state = initial_state(selected)
-                final_state = run_async(agent.ainvoke(state, {"recursion_limit": 80}))
-                st.session_state["last_run"] = {
-                    "alarm_id": selected.get("alarm_id"),
-                    "state": final_state,
-                }
-                st.rerun()
+            agent = build_noc_agent(db, embedder)
+            init = initial_state(selected)
+            with st.status("Starting agent…", expanded=True) as status:
+                final_state = stream_agent_to_status(
+                    agent, init, {"recursion_limit": 80}, status,
+                )
+                status.update(label="✓ Agent run complete", state="complete", expanded=False)
+            st.session_state["last_run"] = {
+                "alarm_id": selected.get("alarm_id"),
+                "state": final_state,
+            }
+            st.rerun()
         return
 
     state = last_run["state"]

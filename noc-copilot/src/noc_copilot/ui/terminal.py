@@ -219,6 +219,142 @@ def display_phase_log(state: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Live streaming progress
+# ---------------------------------------------------------------------------
+
+
+PHASE_EMOJI = {
+    "triage": "🔍",
+    "retrieval": "📚",
+    "diagnosis": "🧠",
+    "remediation": "🛠️",
+}
+
+
+def _phase_from_namespace(namespace: tuple) -> str | None:
+    """Extract the outer phase name from a LangGraph subgraph namespace.
+
+    `namespace` looks like ('triage:abc123', 'tools:def456'); the outer
+    node name is the prefix before the first ':' of the first element.
+    """
+    if not namespace:
+        return None
+    head = namespace[0]
+    if ":" in head:
+        head = head.split(":", 1)[0]
+    if head in PHASE_EMOJI:
+        return head
+    return None
+
+
+def _format_args(args: dict) -> str:
+    parts = []
+    for k, v in (args or {}).items():
+        s = repr(v)
+        if len(s) > 40:
+            s = s[:37] + "…"
+        parts.append(f"{k}={s}")
+    out = ", ".join(parts)
+    return out if len(out) <= 80 else out[:77] + "…"
+
+
+def _print_tool_call_live(tc: dict, color: str) -> None:
+    name = tc.get("tool", "")
+    args = _format_args(tc.get("args", {}))
+    summary = (tc.get("result_summary") or "").splitlines()
+    first_line = summary[0] if summary else ""
+    if len(first_line) > 100:
+        first_line = first_line[:97] + "…"
+    latency = tc.get("latency_ms", 0)
+    console.print(
+        f"  [bold {color}]✓[/bold {color}] [bold]{name}[/bold]"
+        f"[dim]({args})[/dim] "
+        f"[dim]→[/dim] {first_line} "
+        f"[dim]({latency}ms)[/dim]"
+    )
+
+
+def _print_phase_header(phase: str, iteration: int) -> None:
+    color = PHASE_COLORS.get(phase, "white")
+    emoji = PHASE_EMOJI.get(phase, "•")
+    suffix = f" [dim](iteration {iteration})[/dim]" if iteration > 1 else ""
+    console.print()
+    console.print(
+        f"[bold {color}]{emoji} {phase.upper()}[/bold {color}]{suffix} [dim]…[/dim]"
+    )
+
+
+async def stream_agent(agent, state: dict, config: dict) -> dict:
+    """Run the agent via astream and emit live progress as tools fire.
+
+    We subscribe to subgraph updates so individual tool calls inside each
+    phase's ReAct loop are visible in real time, instead of the user
+    staring at a single spinner for the entire run. The full final state
+    is rebuilt by accumulating updates so we can return it at the end.
+    """
+    current_phase: tuple[str, int] | None = None
+    final_state: dict = dict(state)
+
+    async for namespace, update in agent.astream(
+        state, config, stream_mode="updates", subgraphs=True
+    ):
+        if not isinstance(update, dict):
+            continue
+
+        for node_name, node_update in update.items():
+            if not isinstance(node_update, dict):
+                continue
+
+            phase = _phase_from_namespace(namespace) or (
+                node_name if node_name in PHASE_EMOJI else None
+            )
+
+            new_tool_calls = node_update.get("tool_calls") or []
+            if phase and new_tool_calls:
+                # Use the iteration recorded on the tool call itself so
+                # loop-backs render under the right header.
+                iteration = new_tool_calls[0].get("iteration", 1)
+                key = (phase, iteration)
+                if key != current_phase:
+                    _print_phase_header(phase, iteration)
+                    current_phase = key
+                color = PHASE_COLORS.get(phase, "white")
+                for tc in new_tool_calls:
+                    _print_tool_call_live(tc, color)
+
+            for event in node_update.get("phase_log") or []:
+                ev = event.get("event")
+                if ev == "looped_back":
+                    display_loop_marker(event.get("detail", ""))
+                    current_phase = None
+                elif ev == "escalated":
+                    console.print()
+                    console.print(Panel(
+                        f"[bold red]ESCALATED BY ROUTER[/bold red]: "
+                        f"{event.get('detail', '')}",
+                        border_style="red",
+                    ))
+                    current_phase = None
+
+            # Outer-graph updates (no namespace) carry the canonical
+            # state deltas — fold them into our accumulating snapshot so
+            # we can render the final cards.
+            if not namespace:
+                for key, value in node_update.items():
+                    if key in {"tool_calls", "phase_log", "evidence_chain", "messages"}:
+                        existing = final_state.get(key) or []
+                        final_state[key] = list(existing) + list(value or [])
+                    elif key == "kpi_history":
+                        merged = dict(final_state.get(key) or {})
+                        merged.update(value or {})
+                        final_state[key] = merged
+                    else:
+                        final_state[key] = value
+
+    return final_state
+
+
+# ---------------------------------------------------------------------------
 # Final-state rendering
 # ---------------------------------------------------------------------------
 
@@ -354,13 +490,12 @@ async def process_alarm(
     state = initial_state(alarm)
 
     total_start = time.time()
-    with console.status("[bold cyan]Running agent (live tool calls)…[/bold cyan]"):
-        # Allow plenty of recursion budget for loop-backs and inner ReAct steps
-        final_state = await agent.ainvoke(state, {"recursion_limit": 80})
+    # Stream tool calls live instead of sitting on a single spinner for
+    # the whole run — see stream_agent for the rendering.
+    final_state = await stream_agent(agent, state, {"recursion_limit": 80})
     elapsed = time.time() - total_start
 
     console.print()
-    display_phase_log(final_state)
     display_diagnosis(final_state)
     display_remediation_outcome(final_state)
     display_evidence_chain(final_state)
