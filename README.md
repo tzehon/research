@@ -85,13 +85,15 @@ This app visually demonstrates WiredTiger cache behavior and memory sizing. The 
 
 ### [noc-copilot](https://github.com/tzehon/research/tree/main/noc-copilot) (2026-03-25)
 
-NOC Copilot demonstrates Level 3 autonomous operations for telecommunications Network Operations Centers by combining MongoDB's unified data platform with Voyage AI embeddings and Claude reasoning. When a 5G network alarm fires, the [LangGraph](https://langchain-ai.github.io/langgraph/)-based agent autonomously enriches it with network inventory and maintenance history, retrieves semantically similar past incidents and relevant runbook sections using native `$rankFusion` hybrid search, generates a structured diagnosis with calibrated confidence scoring, and either auto-remediates (confidence ≥0.9) or escalates with a full evidence chain. The system leverages [MongoDB Atlas](https://www.mongodb.com/atlas) as a single unified platform for operational data, full-text search, and vector search—executing hybrid retrieval entirely server-side in one aggregation pipeline—while Voyage AI's `voyage-4-large` provides asymmetric embeddings for semantic matching and `voyage-context-3` delivers contextualized chunk embeddings that preserve global document structure for runbook retrieval.
+NOC Copilot is an **agentic workflow** for 5G network operations: a [LangGraph](https://langchain-ai.github.io/langgraph/) supervisor with a fixed phase order (triage → retrieval → diagnosis → remediation), where each phase node is itself a [ReAct](https://arxiv.org/abs/2210.03629) sub-agent that picks tools, evaluates results, and decides when to stop. Conditional edges between phases let diagnosis loop back to retrieval on low confidence and let remediation loop back when verification fails — both bounded by retry counters. Following [Anthropic's "Building effective agents"](https://www.anthropic.com/research/building-effective-agents) taxonomy: the outer graph is a workflow (deterministic phase order, code-driven routing); the inner phases are agents (LLM-driven tool selection, self-evaluation, terminal action choice). MongoDB Atlas is the unified data plane: operational data, full-text search, and vector search live in one platform, with hybrid retrieval running server-side via native `$rankFusion`. Voyage AI's `voyage-4-large` provides asymmetric query/document embeddings; Claude reasons over the gathered evidence.
 
-**Key capabilities:**
-- **Native hybrid search** with `$rankFusion` combining Voyage AI vector embeddings and full-text search in a single server-side pipeline
-- **Contextualized embeddings** via Voyage AI's `voyage-context-3` that encode both section content and surrounding runbook context
-- **Confidence-based escalation** enabling auto-remediation for high-confidence matches (≥0.9) while routing ambiguous cases to human engineers
-- **Complete auditability** with full evidence chains (alarm → enrichment → retrieval → diagnosis → action) persisted to MongoDB
+**Where the agency lives:**
+- **Within a phase** — each phase exposes a tool belt (lookup_network_element, check_topology_neighbors, query_kpi_history, hybrid_search_incidents, evaluate_retrieval_quality, estimate_blast_radius, execute_remediation_step, verify_alarm_cleared, …). The LLM picks tools per alarm — a link-down alarm calls topology tools, a power alarm calls correlated-alarm tools.
+- **Across phases** — phase order is hardcoded; conditional edges (`route_after_diagnosis`, `route_after_remediation`) are deterministic Python functions reading state. The *decision* to loop back is the LLM's (it chooses `request_more_evidence` over `propose_diagnosis`, or it sees a failed `verify_alarm_cleared`); the *plumbing* of looping back is code.
+- **Bounded loops** — `MAX_DIAGNOSIS_RETRIES=2` and `MAX_REMEDIATION_RETRIES=1` prevent infinite spinning while still letting the agent refine its understanding.
+- **Closed-loop remediation** — agent checks blast radius, maintenance window, and backup before acting; executes the change; verifies the alarm cleared.
+
+**Reproducibility for live demos:** `temperature=0` plus engineered alarm fixtures keeps runs stable across re-executions. There's no replay layer — the agent always calls Claude live.
 
 ### [atlas-custom-role-test](https://github.com/tzehon/research/tree/main/atlas-custom-role-test) (2026-02-27)
 
