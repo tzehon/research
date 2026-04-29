@@ -305,10 +305,12 @@ async def stream_agent(agent, state: dict, config: dict) -> dict:
             if not isinstance(node_update, dict):
                 continue
 
-            phase = _phase_from_namespace(namespace) or (
-                node_name if node_name in PHASE_EMOJI else None
-            )
+            phase = _phase_from_namespace(namespace)
 
+            # Render tool calls only from subgraph updates (mid-phase tool
+            # firings). The outer phase node returns the same tool_calls
+            # list when it completes — printing both would duplicate every
+            # row.
             new_tool_calls = node_update.get("tool_calls") or []
             if phase and new_tool_calls:
                 # Use the iteration recorded on the tool call itself so

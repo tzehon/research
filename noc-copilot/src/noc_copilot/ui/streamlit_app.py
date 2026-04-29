@@ -306,10 +306,11 @@ def stream_agent_to_status(agent, init_state: dict, config: dict, status) -> dic
             if not isinstance(node_update, dict):
                 continue
 
-            phase = _phase_from_namespace(ns) or (
-                node_name if node_name in PHASE_EMOJI else None
-            )
+            phase = _phase_from_namespace(ns)
 
+            # Render only mid-phase subgraph tool firings. The outer
+            # phase node re-emits the same tool_calls list when it
+            # completes; printing both would duplicate every row.
             new_tool_calls = node_update.get("tool_calls") or []
             if phase and new_tool_calls:
                 iteration = new_tool_calls[0].get("iteration", 1)
