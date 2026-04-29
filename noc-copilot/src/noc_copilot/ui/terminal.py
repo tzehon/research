@@ -1,28 +1,32 @@
-"""Rich-based terminal demo runner for NOC Copilot."""
+"""Rich-based terminal demo runner for NOC Copilot.
 
-import asyncio
+Streams the agent through LangGraph and renders, in order:
+1. The static graph as an ASCII tree (so the audience sees the loops).
+2. Per-phase tool timelines (which tools the LLM picked, latency, summary).
+3. Loop markers when control jumps back to retrieval.
+4. The final state — diagnosis, action, evidence chain.
+
+The agent is genuinely live; the rendering just makes its decisions
+legible.
+"""
+
+from __future__ import annotations
+
 import time
-import logging
-
-from rich.console import Console
-from rich.table import Table
-from rich.panel import Panel
-from rich.layout import Layout
-from rich.text import Text
-from rich.progress import Progress, SpinnerColumn, TextColumn
-from rich.columns import Columns
-from rich.markdown import Markdown
-from rich.syntax import Syntax
-from rich import box
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
+from rich import box
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+from rich.text import Text
+from rich.tree import Tree
 
-from noc_copilot.db.collections import ALARMS
-from noc_copilot.agent.state import NOCAgentState
 from noc_copilot.agent.graph import build_noc_agent
+from noc_copilot.agent.state import initial_state
+from noc_copilot.db.collections import ALARMS
 from noc_copilot.embeddings.voyage import VoyageEmbedder
 
-logger = logging.getLogger(__name__)
 console = Console()
 
 SEVERITY_COLORS = {
@@ -39,9 +43,55 @@ SEVERITY_EMOJI = {
     "warning": "🔵",
 }
 
+PHASE_COLORS = {
+    "triage": "cyan",
+    "retrieval": "magenta",
+    "diagnosis": "yellow",
+    "remediation": "green",
+    "router": "white",
+}
+
+
+# ---------------------------------------------------------------------------
+# Static rendering
+# ---------------------------------------------------------------------------
+
+
+def display_graph_tree() -> None:
+    """ASCII tree of the agent graph, including the loops.
+
+    This is the headline visual — it shows the agentic shape (per-phase
+    ReAct loops + cross-phase conditional edges) before any alarm runs.
+    """
+    tree = Tree("[bold cyan]NOC Agent Graph[/bold cyan] — phase nodes are themselves ReAct loops")
+
+    triage = tree.add("[cyan]triage[/cyan] (ReAct)")
+    triage.add("[dim]tools: lookup_network_element, check_recent_maintenance,[/dim]")
+    triage.add("[dim]       find_correlated_alarms, check_topology_neighbors,[/dim]")
+    triage.add("[dim]       query_kpi_history, check_recent_config_changes[/dim]")
+
+    retrieval = tree.add("[magenta]retrieval[/magenta] (ReAct, search→evaluate→refine)")
+    retrieval.add("[dim]tools: search_similar_incidents, search_runbooks,[/dim]")
+    retrieval.add("[dim]       evaluate_retrieval_quality (closes the loop)[/dim]")
+
+    diagnosis = tree.add("[yellow]diagnosis[/yellow] (ReAct)")
+    diagnosis.add("[dim]tools: propose_diagnosis | request_more_evidence[/dim]")
+    diagnosis.add("[bold yellow]↺ if confidence < 0.7 and retries < 2 → retrieval[/bold yellow]")
+
+    remediation = tree.add("[green]remediation[/green] (ReAct, check→act→verify)")
+    remediation.add("[dim]tools: estimate_blast_radius, check_maintenance_window,[/dim]")
+    remediation.add("[dim]       verify_backup_exists, execute_remediation_step,[/dim]")
+    remediation.add("[dim]       verify_alarm_cleared, recommend_for_approval, escalate[/dim]")
+    remediation.add("[bold yellow]↺ if verification failed and retries < 1 → retrieval[/bold yellow]")
+
+    end = tree.add("[bold]END[/bold] — final_status ∈ {auto_remediated, human_approval_required, escalated}")
+    end.add("[dim]Diagnosis + evidence chain persisted to MongoDB[/dim]")
+
+    console.print(tree)
+    console.print()
+
 
 def display_alarm_dashboard(alarms: list[dict]) -> None:
-    """Display the active alarm dashboard."""
     table = Table(
         title="🛰️  NOC Copilot — Active Alarm Dashboard",
         box=box.DOUBLE_EDGE,
@@ -61,6 +111,7 @@ def display_alarm_dashboard(alarms: list[dict]) -> None:
         sev = alarm.get("severity", "warning")
         color = SEVERITY_COLORS.get(sev, "white")
         emoji = SEVERITY_EMOJI.get(sev, "⚪")
+        desc = (alarm.get("description") or "")[:80]
         table.add_row(
             str(i),
             alarm.get("alarm_id", ""),
@@ -68,7 +119,7 @@ def display_alarm_dashboard(alarms: list[dict]) -> None:
             alarm.get("category", ""),
             alarm.get("source", ""),
             alarm.get("region", ""),
-            alarm.get("description", "")[:80] + "...",
+            desc + ("…" if len(alarm.get("description", "")) > 80 else ""),
         )
 
     console.print()
@@ -76,383 +127,220 @@ def display_alarm_dashboard(alarms: list[dict]) -> None:
     console.print()
 
 
-def display_triage_results(state: dict) -> None:
-    """Display triage/enrichment results."""
-    console.print(Panel("[bold cyan]STEP 1: TRIAGE & ENRICHMENT[/bold cyan]", border_style="cyan"))
+# ---------------------------------------------------------------------------
+# Per-phase rendering of the captured trace
+# ---------------------------------------------------------------------------
 
-    alarm = state.get("alarm", {})
-    source_id = alarm.get("source", "?")
-    region = alarm.get("region", "?")
-    element = state.get("network_element")
-    site_id = element.get("site_id", "?") if element else "?"
-    pseudo = (
-        f'# 1. Look up network element\n'
-        f'db.network_inventory.find_one({{ element_id: "{source_id}" }})\n'
-        f'\n'
-        f'# 2. Find correlated active alarms (same site or region)\n'
-        f'db.alarms.find({{\n'
-        f'  status: "active",\n'
-        f'  $or: [{{ source: /.*{site_id}.*/ }}, {{ region: "{region}" }}]\n'
-        f'}})'
+
+def display_tool_timeline(tool_calls: list[dict], phase: str, iteration: int = 1) -> None:
+    """Render tool calls for a single phase iteration."""
+    phase_calls = [tc for tc in tool_calls if tc.get("phase") == phase and tc.get("iteration", 1) == iteration]
+    if not phase_calls:
+        return
+
+    color = PHASE_COLORS.get(phase, "white")
+    title = f"[bold {color}]{phase.upper()}[/bold {color}]"
+    if iteration > 1:
+        title += f" [dim](iteration {iteration})[/dim]"
+
+    table = Table(
+        title=title,
+        box=box.SIMPLE,
+        border_style=color,
+        show_header=True,
+        header_style=f"bold {color}",
+        show_lines=False,
     )
-    console.print(Panel(Syntax(pseudo, "javascript", theme="monokai"), title="[dim]MongoDB Queries[/dim]", border_style="dim"))
+    table.add_column("#", width=3)
+    table.add_column("Tool", style=f"bold {color}", width=30)
+    table.add_column("Args", overflow="fold", width=40)
+    table.add_column("Result", overflow="fold")
+    table.add_column("ms", justify="right", width=6)
 
-    if element:
-        table = Table(title="Network Element", box=box.SIMPLE, border_style="dim")
-        table.add_column("Field", style="bold")
-        table.add_column("Value")
-        for key in ["element_id", "type", "vendor", "model", "site_name", "region", "status"]:
-            if key in element:
-                table.add_row(key, str(element[key]))
-        console.print(table)
-    else:
-        console.print("[dim]No network element found for this alarm source.[/dim]")
+    for i, tc in enumerate(phase_calls, 1):
+        args = tc.get("args", {})
+        args_str = ", ".join(f"{k}={v!r}" for k, v in args.items())
+        if len(args_str) > 60:
+            args_str = args_str[:57] + "…"
+        summary = (tc.get("result_summary") or "")
+        # Strip multi-line result summaries to first 2 lines for table fit
+        summary_lines = summary.splitlines()
+        if len(summary_lines) > 2:
+            summary = "\n".join(summary_lines[:2]) + " …"
+        table.add_row(
+            str(i),
+            tc.get("tool", ""),
+            args_str,
+            summary,
+            str(tc.get("latency_ms", 0)),
+        )
 
-    maintenance = state.get("recent_maintenance", [])
-    if maintenance:
-        console.print(f"\n[bold yellow]⚠ Recent Maintenance ({len(maintenance)} entries):[/bold yellow]")
-        for m in maintenance:
-            console.print(f"  • {m.get('date', 'N/A')}: {m.get('action', 'N/A')} (by {m.get('engineer', 'unknown')})")
-    else:
-        console.print("\n[dim]No recent maintenance activity.[/dim]")
+    console.print(table)
 
-    correlated = state.get("correlated_alarms", [])
-    if correlated:
-        console.print(f"\n[bold]Correlated Active Alarms ({len(correlated)}):[/bold]")
-        for a in correlated[:5]:
-            sev = a.get("severity", "")
-            console.print(f"  • [{SEVERITY_COLORS.get(sev, 'white')}][{sev.upper()}][/] {a.get('description', '')[:80]}")
-    else:
-        console.print("\n[dim]No correlated alarms found.[/dim]")
 
+def display_loop_marker(detail: str) -> None:
+    """Print a divider when control loops back to a prior phase."""
+    console.print()
+    console.print(Panel(
+        Text(f"↺  LOOP-BACK  ↺   {detail}", style="bold yellow", justify="center"),
+        border_style="yellow",
+        padding=(0, 2),
+    ))
     console.print()
 
 
-def display_retrieval_results(state: dict) -> None:
-    """Display search/retrieval results."""
-    console.print(Panel("[bold cyan]STEP 2: KNOWLEDGE RETRIEVAL[/bold cyan]", border_style="cyan"))
+def display_phase_log(state: dict) -> None:
+    """Replay the phase log in order, with tool tables interleaved."""
+    log = state.get("phase_log", []) or []
+    tool_calls = state.get("tool_calls", []) or []
 
-    alarm = state.get("alarm", {})
-    category = alarm.get("category", "?")
-    desc_short = alarm.get("description", "")[:60]
-    pseudo = (
-        f'# 1. Generate query embedding\n'
-        f'query_embedding = voyage.embed("{desc_short}...",\n'
-        f'                              model="voyage-4-large", input_type="query")  // 1024 dims\n'
-        f'\n'
-        f'# 2. Hybrid search for similar incidents\n'
-        f'db.incidents.aggregate([{{ $rankFusion: {{\n'
-        f'  pipelines: {{\n'
-        f'    vector: [{{ $vectorSearch: {{ queryVector: query_embedding,\n'
-        f'                               filter: {{ category: "{category}" }}, limit: 5 }} }}],\n'
-        f'    text:   [{{ $search: {{ compound: {{ must: [{{ text: {{ query: "...", path: [...] }} }}] }} }} }}]\n'
-        f'  }},\n'
-        f'  weights: {{ vector: 0.6, text: 0.4 }}\n'
-        f'}} }}])\n'
-        f'\n'
-        f'# 3. Hybrid search for relevant runbooks (same pattern, domain="{category}")'
-    )
-    console.print(Panel(Syntax(pseudo, "javascript", theme="monokai"), title="[dim]Embedding + MongoDB Queries[/dim]", border_style="dim"))
+    # Group log events by phase + iteration
+    rendered_keys: set[tuple[str, int]] = set()
 
-    incidents = state.get("similar_incidents", [])
-    if incidents:
-        table = Table(title="Similar Past Incidents (Hybrid Search — $rankFusion)", box=box.SIMPLE, border_style="dim")
-        table.add_column("Score", style="cyan", width=8)
-        table.add_column("ID", width=10)
-        table.add_column("Title", width=45)
-        table.add_column("Root Cause", width=50)
-        for inc in incidents[:5]:
-            table.add_row(
-                f"{inc.get('score', 0):.4f}",
-                inc.get("incident_id", ""),
-                inc.get("title", "")[:45],
-                inc.get("root_cause", "")[:50],
-            )
-        console.print(table)
-    else:
-        console.print("[dim]No similar incidents found.[/dim]")
+    for event in log:
+        phase = event.get("phase", "")
+        iteration = event.get("iteration", 1)
+        ev = event.get("event", "")
+        key = (phase, iteration)
 
-    runbooks = state.get("relevant_runbooks", [])
-    if runbooks:
-        table = Table(title="Relevant Runbook Sections (Hybrid Search — $rankFusion)", box=box.SIMPLE, border_style="dim")
-        table.add_column("Score", style="cyan", width=8)
-        table.add_column("ID", width=10)
-        table.add_column("Runbook", width=35)
-        table.add_column("Section", width=35)
-        for rb in runbooks[:5]:
-            table.add_row(
-                f"{rb.get('score', 0):.4f}",
-                rb.get("runbook_id", ""),
-                rb.get("title", "")[:35],
-                rb.get("section_title", "")[:35],
-            )
-        console.print(table)
-    else:
-        console.print("[dim]No relevant runbooks found.[/dim]")
-
-    console.print()
+        if ev == "completed":
+            if key not in rendered_keys:
+                display_tool_timeline(tool_calls, phase, iteration)
+                rendered_keys.add(key)
+        elif ev == "looped_back":
+            display_loop_marker(event.get("detail", ""))
+        elif ev == "escalated":
+            console.print()
+            console.print(Panel(
+                f"[bold red]ESCALATED BY ROUTER[/bold red]: {event.get('detail', '')}",
+                border_style="red",
+            ))
+            console.print()
 
 
-def display_diagnosis_results(state: dict) -> None:
-    """Display the LLM diagnosis."""
-    console.print(Panel("[bold cyan]STEP 3: AI DIAGNOSIS[/bold cyan]", border_style="cyan"))
+# ---------------------------------------------------------------------------
+# Final-state rendering
+# ---------------------------------------------------------------------------
 
-    pseudo = (
-        '# Send all context to Claude for diagnosis\n'
-        'claude.messages.create(\n'
-        '  model="claude-sonnet",\n'
-        '  prompt=f"""\n'
-        '    <alarm>{alarm description + severity + category}</alarm>\n'
-        '    <network_element>{type, vendor, model, site}</network_element>\n'
-        '    <maintenance>{recent maintenance actions}</maintenance>\n'
-        '    <similar_incidents>{top 5 incidents with root causes}</similar_incidents>\n'
-        '    <runbooks>{top 5 runbook sections}</runbooks>\n'
-        '  """\n'
-        ')\n'
-        '# Returns: { probable_root_cause, confidence, reasoning,\n'
-        '#            supporting_evidence[], differential_diagnoses[] }'
-    )
-    console.print(Panel(Syntax(pseudo, "python", theme="monokai"), title="[dim]LLM Call[/dim]", border_style="dim"))
 
-    diagnosis = state.get("diagnosis", {})
-    confidence = state.get("confidence", 0)
+def display_diagnosis(state: dict) -> None:
+    diagnosis = state.get("diagnosis") or {}
+    confidence = state.get("confidence", 0.0) or 0.0
+    if not diagnosis:
+        return
 
-    # Confidence meter
     bar_len = 30
     filled = int(confidence * bar_len)
-    if confidence >= 0.9:
-        color = "green"
-    elif confidence >= 0.7:
-        color = "yellow"
-    else:
-        color = "red"
+    color = "green" if confidence >= 0.9 else ("yellow" if confidence >= 0.7 else "red")
     bar = f"[{color}]{'█' * filled}[/{color}]{'░' * (bar_len - filled)}"
-    console.print(f"Confidence: {bar} {confidence:.1%}\n")
 
-    console.print(f"[bold]Probable Root Cause:[/bold] {diagnosis.get('probable_root_cause', 'Unknown')}\n")
+    console.print(Panel(
+        f"[bold]Probable Root Cause:[/bold] {diagnosis.get('probable_root_cause', '?')}\n\n"
+        f"Confidence: {bar} {confidence:.1%}\n\n"
+        f"[bold]Reasoning:[/bold]\n{diagnosis.get('reasoning', '')}",
+        title="[bold yellow]Diagnosis[/bold yellow]",
+        border_style="yellow",
+    ))
 
-    reasoning = diagnosis.get("reasoning", "")
-    if reasoning:
-        console.print(Panel(reasoning, title="Reasoning Chain", border_style="dim"))
-
-    evidence = diagnosis.get("supporting_evidence", [])
+    evidence = diagnosis.get("supporting_evidence") or []
     if evidence:
         console.print("\n[bold]Supporting Evidence:[/bold]")
         for e in evidence:
             console.print(f"  ✓ {e}")
 
-    diffs = diagnosis.get("differential_diagnoses", [])
+    diffs = diagnosis.get("differential_diagnoses") or []
     if diffs:
         console.print("\n[bold]Differential Diagnoses:[/bold]")
         for d in diffs:
             console.print(
-                f"  • {d.get('cause', '')} (confidence: {d.get('confidence', 0):.0%}) — {d.get('why_less_likely', '')}"
+                f"  • {d.get('cause', '')} "
+                f"(confidence: {(d.get('confidence', 0) or 0):.0%}) — "
+                f"{d.get('why_less_likely', '')}"
             )
-
     console.print()
 
 
-def display_remediation_results(state: dict) -> None:
-    """Display the remediation recommendation."""
-    console.print(Panel("[bold cyan]STEP 4: REMEDIATION[/bold cyan]", border_style="cyan"))
-
-    pseudo = (
-        '# 1. Adapt resolution from similar incidents to current context\n'
-        'claude.messages.create(\n'
-        '  model="claude-sonnet",\n'
-        '  prompt=f"""\n'
-        '    <alarm>{alarm}</alarm>\n'
-        '    <diagnosis>{root_cause, confidence, reasoning}</diagnosis>\n'
-        '    <past_resolutions>{top 2 incident resolutions}</past_resolutions>\n'
-        '    <runbook_steps>{top 2 runbook procedures}</runbook_steps>\n'
-        '  """\n'
-        ')  // Returns: specific remediation action\n'
-        '\n'
-        '# 2. Check auto-remediation eligibility\n'
-        'auto = confidence > 0.9 AND action matches\n'
-        '       ["revert config parameter", "revert RET angle",\n'
-        '        "revert firmware", "restart service", "clear alarm"]\n'
-        '\n'
-        '# 3. Persist diagnosis record\n'
-        'db.diagnoses.insert_one({ alarm, diagnosis, confidence, action, evidence_chain })'
-    )
-    console.print(Panel(Syntax(pseudo, "python", theme="monokai"), title="[dim]LLM Call + MongoDB Write[/dim]", border_style="dim"))
-
-    confidence = state.get("confidence", 0)
-    auto = state.get("auto_remediable", False)
+def display_remediation_outcome(state: dict) -> None:
+    final_status = state.get("final_status")
     action = state.get("recommended_action", "No action determined.")
 
-    if confidence >= 0.9 and auto:
-        console.print(Panel(
-            f"[bold green]AUTO-REMEDIATION[/bold green]\n\n{action}",
-            border_style="green",
-            title="✅ Auto-Remediation Approved",
-        ))
-    elif confidence >= 0.7:
-        console.print(Panel(
-            f"[bold yellow]RECOMMENDED ACTION (human approval required)[/bold yellow]\n\n{action}",
-            border_style="yellow",
-            title="⚠️  Human Approval Required",
-        ))
+    radius = state.get("blast_radius") or {}
+    preconditions: list[str] = []
+    if radius.get("risk"):
+        preconditions.append(
+            f"blast_radius: {radius.get('risk')} "
+            f"({radius.get('co_located_active_elements', 0)} co-located, "
+            f"high_traffic={radius.get('is_high_traffic')})"
+        )
+    if state.get("maintenance_window_ok") is not None:
+        preconditions.append(f"maintenance_window_ok: {state.get('maintenance_window_ok')}")
+    if state.get("backup_verified") is not None:
+        preconditions.append(f"backup_verified: {state.get('backup_verified')}")
+
+    pre_block = "\n".join(f"  • {p}" for p in preconditions)
+
+    if final_status == "auto_remediated":
+        verification = state.get("verification_result") or {}
+        cleared = verification.get("cleared")
+        body = (
+            f"[bold green]AUTO-REMEDIATED[/bold green]\n\n"
+            f"[bold]Action:[/bold] {action}\n\n"
+            f"[bold]Preconditions:[/bold]\n{pre_block}\n\n"
+            f"[bold]Verification:[/bold] alarm cleared = {cleared}"
+        )
+        title = "✅ Auto-Remediated"
+        border = "green"
+    elif final_status == "human_approval_required":
+        body = (
+            f"[bold yellow]RECOMMENDED ACTION (human approval required)[/bold yellow]\n\n"
+            f"[bold]Action:[/bold] {action}\n\n"
+            f"[bold]Preconditions:[/bold]\n{pre_block}"
+        )
+        title = "⚠️  Approval Required"
+        border = "yellow"
+    elif final_status == "escalated":
+        body = (
+            f"[bold red]ESCALATED[/bold red]\n\n{action}\n\n"
+            f"[bold]Preconditions checked:[/bold]\n{pre_block or '  (n/a)'}"
+        )
+        title = "🚨 Escalation"
+        border = "red"
+    elif final_status == "verification_failed":
+        body = (
+            f"[bold red]VERIFICATION FAILED[/bold red]\n\nAction was attempted but the alarm did not clear.\n"
+            f"{action}"
+        )
+        title = "❌ Verification Failed"
+        border = "red"
     else:
-        console.print(Panel(
-            f"[bold red]ESCALATION REQUIRED[/bold red]\n\nInsufficient confidence ({confidence:.0%}). Manual investigation needed.\n\n{action}",
-            border_style="red",
-            title="🚨 Escalation Required",
-        ))
+        body = f"[bold]{final_status}[/bold]\n\n{action}"
+        title = "Outcome"
+        border = "white"
 
-    evidence_chain = state.get("evidence_chain", [])
-    if evidence_chain:
-        console.print("\n[bold]Evidence Chain:[/bold]")
-        for i, e in enumerate(evidence_chain, 1):
-            console.print(f"  {i}. {e}")
-
+    console.print(Panel(body, title=title, border_style=border))
     console.print()
 
 
-def display_level_explanation(state: dict) -> None:
-    """Display TM Forum Autonomous Network level mapping based on pipeline results."""
-    confidence = state.get("confidence", 0)
-    auto_remediable = state.get("auto_remediable", False)
-    correlated = state.get("correlated_alarms", [])
-    maintenance = state.get("recent_maintenance", [])
-    element = state.get("network_element")
-    incidents = state.get("similar_incidents", [])
-    alarm = state.get("alarm", {})
-    category = alarm.get("category", "")
-
-    console.print()
-    console.print(Panel(
-        "[bold cyan]TM Forum Autonomous Network Levels[/bold cyan]\n"
-        "[dim]Mapping this pipeline to the AN evaluation framework[/dim]",
-        border_style="cyan",
-    ))
-
-    # P/S Matrix table
-    table = Table(
-        title="Cognitive Dimensions (P = People, S = System)",
-        box=box.ROUNDED,
-        border_style="dim",
-        show_lines=True,
-    )
-    table.add_column("Dimension", style="bold", width=12)
-    table.add_column("L3 — What You Just Saw", width=44)
-    table.add_column("L4 — Agentic Upgrade", width=38)
-
-    # Execution — always S
-    table.add_row(
-        "Execution",
-        "[green]S[/green]  Pipeline ran end-to-end",
-        "[green]S[/green]  No change",
-    )
-
-    # Awareness — dynamic
-    awareness_parts = []
-    if element:
-        awareness_parts.append(f"looked up {element.get('element_id', '?')}")
-    if correlated:
-        n = len(correlated)
-        awareness_parts.append(f"correlated {n} alarm{'s' if n != 1 else ''}")
-    if maintenance:
-        n = len(maintenance)
-        awareness_parts.append(f"{n} maintenance hit{'s' if n != 1 else ''}")
-    awareness_summary = ", ".join(awareness_parts) if awareness_parts else "enriched alarm"
-
-    table.add_row(
-        "Awareness",
-        f"[green]S[/green]  {awareness_summary}",
-        "[green]S[/green]  Agent chooses what to\n     investigate (tool use)",
-    )
-
-    # Analysis
-    table.add_row(
-        "Analysis",
-        f"[yellow]P/S[/yellow]  Diagnosed at {confidence:.0%} confidence\n     — human reviews before acting",
-        "[green]S[/green]  Agent retries retrieval on\n     low confidence, refines its\n     own analysis",
-    )
-
-    # Decision — dynamic based on outcome
-    if confidence >= 0.9 and auto_remediable:
-        decision_l3 = (
-            "[green]S[/green]  Auto-remediated via policy\n"
-            "     gate (threshold + approved list)"
-        )
-    elif confidence >= 0.7:
-        decision_l3 = (
-            f"[yellow]P/S[/yellow]  {confidence:.0%} confidence → human\n"
-            f"     approval required"
-        )
-    else:
-        decision_l3 = (
-            f"[yellow]P/S[/yellow]  {confidence:.0%} confidence → escalated\n"
-            f"     to engineer"
-        )
-
-    table.add_row(
-        "Decision",
-        decision_l3,
-        "[green]S[/green]  AI reasons about whether to\n     act, not hardcoded thresholds",
-    )
-
-    # Intent
-    table.add_row(
-        "Intent",
-        "[red]P[/red]  You selected the alarm manually",
-        "[yellow]P/S[/yellow]  System prioritises and acts\n     on alarms proactively",
-    )
-
-    console.print(table)
+def display_evidence_chain(state: dict) -> None:
+    chain = state.get("evidence_chain") or []
+    if not chain:
+        return
+    console.print("[bold]Evidence Chain (audit):[/bold]")
+    for i, e in enumerate(chain, 1):
+        console.print(f"  {i}. {e}")
     console.print()
 
-    # L4 concrete changes
-    console.print("[bold]What changes to reach Level 4:[/bold]\n")
 
-    console.print("  [bold cyan]Triage →[/bold cyan] LLM picks investigation tools per alarm type")
-    console.print("  [dim]Now: 3 hardcoded queries. L4: agent decides — check topology for link-down,\n"
-                  "  pull KPI trends for degradation, check config changes for drift[/dim]\n")
-
-    top_score = incidents[0].get("score", 0) if incidents else 0
-    console.print("  [bold cyan]Retrieval →[/bold cyan] Search → evaluate → refine loop")
-    if top_score > 0:
-        if top_score < 0.6:
-            console.print(f"  [dim]Top match scored {top_score:.4f} — agent would reformulate and retry[/dim]\n")
-        else:
-            console.print(f"  [dim]Top match scored {top_score:.4f} — good hit. On a poor match, agent retries[/dim]\n")
-    else:
-        console.print("  [dim]No matches found — agent would reformulate query and retry[/dim]\n")
-
-    console.print("  [bold cyan]Diagnosis →[/bold cyan] Low confidence triggers re-investigation")
-    if confidence < 0.7:
-        console.print(f"  [dim]Confidence {confidence:.0%} → currently escalates. L4: retry with refined search[/dim]\n")
-    elif confidence < 0.9:
-        console.print(f"  [dim]Confidence {confidence:.0%} → needs approval. L4: loop back for more evidence[/dim]\n")
-    else:
-        console.print(f"  [dim]Confidence {confidence:.0%} → strong match. If lower, agent loops back with\n"
-                      "  differential diagnosis hints to refine retrieval[/dim]\n")
-
-    console.print("  [bold cyan]Remediation →[/bold cyan] Closed loop: check → execute → verify")
-    console.print("  [dim]Now: policy gate (threshold + approved list). L4: agent checks preconditions,\n"
-                  "  executes remediation, verifies alarm cleared[/dim]\n")
-
-    if category:
-        console.print("  [bold cyan]Cross-domain →[/bold cyan] Correlate across network domains")
-        console.print(f"  [dim]Now: searched only \"{category}\" incidents. L4: radio alarm checks\n"
-                      "  transport and core data to find cross-domain root causes[/dim]\n")
-
-    console.print(Panel(
-        "Pipeline (L3)                                           Agent (L4)\n"
-        "    │                                                       │\n"
-        "    ▼                                                       ▼\n"
-        " Fixed steps,           Conditional          Tool-calling        Autonomous:\n"
-        " no branching,          edges: retry          loops: LLM          investigate,\n"
-        " LLM fills slots        on low scores         chooses actions     act, verify",
-        title="[dim]The Spectrum[/dim]",
-        border_style="dim",
-    ))
+# ---------------------------------------------------------------------------
+# Main run loop
+# ---------------------------------------------------------------------------
 
 
-async def process_alarm(alarm: dict, db: AsyncIOMotorDatabase, embedder: VoyageEmbedder, explain_levels: bool = False) -> dict:
-    """Process a single alarm through the NOC agent pipeline."""
+async def process_alarm(
+    alarm: dict,
+    db: AsyncIOMotorDatabase,
+    embedder: VoyageEmbedder,
+) -> dict:
     sev = alarm.get("severity", "")
     console.print(Panel(
         f"[{SEVERITY_COLORS.get(sev, 'white')}]Processing Alarm: {alarm.get('alarm_id', '')}[/]\n"
@@ -463,61 +351,47 @@ async def process_alarm(alarm: dict, db: AsyncIOMotorDatabase, embedder: VoyageE
     console.print()
 
     agent = build_noc_agent(db, embedder)
-    initial_state: NOCAgentState = {
-        "alarm": alarm,
-        "network_element": None,
-        "recent_maintenance": [],
-        "correlated_alarms": [],
-        "similar_incidents": [],
-        "relevant_runbooks": [],
-        "diagnosis": None,
-        "confidence": 0.0,
-        "recommended_action": None,
-        "auto_remediable": False,
-        "evidence_chain": [],
-        "messages": [],
-    }
+    state = initial_state(alarm)
 
     total_start = time.time()
+    with console.status("[bold cyan]Running agent (live tool calls)…[/bold cyan]"):
+        # Allow plenty of recursion budget for loop-backs and inner ReAct steps
+        final_state = await agent.ainvoke(state, {"recursion_limit": 80})
+    elapsed = time.time() - total_start
 
-    # LangGraph ainvoke runs the full pipeline (triage → retrieval → diagnosis → remediation)
-    with console.status("[bold cyan]Running agent pipeline (triage → retrieval → diagnosis → remediation)...[/bold cyan]"):
-        final_state = await agent.ainvoke(initial_state)
+    console.print()
+    display_phase_log(final_state)
+    display_diagnosis(final_state)
+    display_remediation_outcome(final_state)
+    display_evidence_chain(final_state)
 
-    total_elapsed = time.time() - total_start
-
-    # Display results for each step
-    display_triage_results(final_state)
-    display_retrieval_results(final_state)
-    display_diagnosis_results(final_state)
-    display_remediation_results(final_state)
-
-    if explain_levels:
-        display_level_explanation(final_state)
-
-    # Display timing summary
+    n_tool_calls = len(final_state.get("tool_calls", []) or [])
+    n_phases = len(final_state.get("phase_log", []) or [])
     console.print(Panel(
-        f"[bold]Total Processing Time: [cyan]{total_elapsed:.1f}s[/cyan][/bold]\n\n"
-        f"[dim]Manual NOC process: ~45 min TTD + ~30 min TTR = ~75 min[/dim]\n"
-        f"[bold green]NOC Copilot: {total_elapsed:.1f}s total[/bold green]  →  "
-        f"[bold]{75 * 60 / max(total_elapsed, 0.1):.0f}x faster[/bold]",
-        title="⏱️  Performance Comparison",
+        f"[bold]Wall time: [cyan]{elapsed:.1f}s[/cyan][/bold]\n"
+        f"Tool calls: {n_tool_calls}   Phase events: {n_phases}\n"
+        f"[dim]Manual NOC process: ~45 min TTD + ~30 min TTR ≈ ~75 min[/dim]",
+        title="⏱️  Performance",
         border_style="green",
     ))
-
     return final_state
 
 
-async def run_demo(db: AsyncIOMotorDatabase, embedder: VoyageEmbedder, explain_levels: bool = False) -> None:
-    """Run the full demo flow."""
+async def run_demo(
+    db: AsyncIOMotorDatabase,
+    embedder: VoyageEmbedder,
+) -> None:
+    """Top-level demo loop. Lists active alarms and processes the chosen one."""
     console.print(Panel(
-        "[bold cyan]NOC Copilot[/bold cyan] — Autonomous Network Incident Resolution Agent\n"
+        "[bold cyan]NOC Copilot[/bold cyan] — Agentic Workflow for Network Incident Resolution\n"
         "[dim]MongoDB × Voyage AI × Anthropic × LangGraph[/dim]",
         border_style="cyan",
         padding=(1, 2),
     ))
+    console.print()
 
-    # Fetch active alarms
+    display_graph_tree()
+
     cursor = db[ALARMS].find({"status": "active"}, {"embedding": 0}).sort("severity", 1)
     alarms = await cursor.to_list(length=20)
 
@@ -525,33 +399,37 @@ async def run_demo(db: AsyncIOMotorDatabase, embedder: VoyageEmbedder, explain_l
         console.print("[red]No active alarms found. Run load_data.py first.[/red]")
         return
 
-    # Sort by severity priority
     severity_order = {"critical": 0, "major": 1, "minor": 2, "warning": 3}
     alarms.sort(key=lambda a: (severity_order.get(a.get("severity", "warning"), 4), a.get("alarm_id", "")))
 
     display_alarm_dashboard(alarms)
 
-    # Process alarms interactively
-    console.print("[bold]Select an alarm to process (enter number), or 'all' to process all, or 'q' to quit:[/bold]")
+    console.print("[bold]Select an alarm to process (enter number), 'all' to process all, or 'q' to quit:[/bold]")
 
     while True:
-        choice = console.input("[cyan]> [/cyan]").strip().lower()
+        try:
+            choice = console.input("[cyan]> [/cyan]").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            break
 
         if choice == "q":
             break
         elif choice == "all":
             for alarm in alarms:
-                await process_alarm(alarm, db, embedder, explain_levels=explain_levels)
+                await process_alarm(alarm, db, embedder)
                 console.print("─" * 80)
             break
         else:
             try:
                 idx = int(choice) - 1
                 if 0 <= idx < len(alarms):
-                    await process_alarm(alarms[idx], db, embedder, explain_levels=explain_levels)
+                    await process_alarm(alarms[idx], db, embedder)
                 else:
                     console.print("[red]Invalid selection.[/red]")
             except ValueError:
                 console.print("[red]Enter a number, 'all', or 'q'.[/red]")
 
     console.print("\n[bold cyan]Demo complete. Thank you![/bold cyan]")
+
+
+__all__ = ["run_demo", "process_alarm", "display_graph_tree", "display_alarm_dashboard"]
