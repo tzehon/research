@@ -11,58 +11,68 @@
 
 ## Overview
 
-NOC Copilot is an agentic AI system purpose-built for telecommunications Network Operations Centers (NOCs). When a 5G network alarm fires, the agent autonomously triages the alarm by enriching it with network element data and maintenance history, retrieves semantically similar past incidents and relevant runbook sections from a knowledge base, uses an LLM to diagnose the probable root cause with a calibrated confidence score, and proposes a concrete remediation action. If the confidence exceeds a threshold and the action matches a pre-approved pattern, the system can auto-remediate without human intervention; otherwise it escalates with a full evidence chain for the on-call engineer.
+NOC Copilot is an **agentic workflow** for telco Network Operations Centers — a LangGraph supervisor with a fixed phase order (triage → retrieval → diagnosis → remediation), where **each phase node is itself a [ReAct](https://arxiv.org/abs/2210.03629) sub-agent** with its own tool belt. When a 5G alarm fires, the LLM picks tools per alarm shape (a link-down alarm calls topology tools, a power alarm calls correlated-alarm tools), evaluates its own retrieval results and re-searches if they're poor, commits to a diagnosis with calibrated confidence, runs preconditions before any action, and verifies the alarm cleared. If confidence is too low or verification fails, conditional edges loop control back to retrieval for re-investigation, bounded by retry counters so the workflow never spins forever.
 
-This architecture maps directly to the **TM Forum Autonomous Network** framework, which defines six levels of network autonomy from Level 0 (manual operations) through Level 5 (full autonomy). Today most telco NOCs operate at Level 1 (assisted operations), where engineers manually correlate alarms, search knowledge bases, and apply runbook procedures. NOC Copilot demonstrates what **Level 3 (conditional automation)** looks like in practice: the system handles the full detect-diagnose-remediate loop autonomously for high-confidence scenarios and escalates to a human for ambiguous or novel situations. The confidence-based escalation mechanism is the critical boundary between Level 3 and Level 4.
+**Be explicit about what this is and isn't.** The phase *order* is hardcoded in the graph — the LLM cannot decide to skip retrieval or jump straight to remediation. The conditional edges between phases are deterministic Python functions reading state, not LLM calls. **What is genuinely LLM-driven** is *within* each phase: the LLM picks which tools to call and in what order, evaluates the results, decides whether to keep going or stop, and (in diagnosis and remediation) chooses among terminal actions including loop-back-for-more-evidence and escalate-to-human. This is the supervisor-of-ReAct-workers pattern — not a fully autonomous agent, but a real agentic workflow with substantive within-phase agency. See [Anthropic's "Building effective agents"](https://www.anthropic.com/research/building-effective-agents) for the workflow-vs-agent distinction this borrows from.
 
-The system is built on **MongoDB as a single unified data platform**. Rather than stitching together separate databases for operational data, full-text search, and vector search, NOC Copilot stores all five collections (alarms, incidents, runbooks, network inventory, diagnoses) in MongoDB and leverages native `$rankFusion` hybrid search to combine Full Text Search for precise keyword lookups with Vector Search for semantic similarity -- all executing server-side in a single aggregation pipeline. **Voyage AI** generates high-quality embeddings via `voyage-4-large` (standard asymmetric embeddings) and `voyage-context-3` (contextualized chunk embeddings for runbooks), **Claude** provides the reasoning engine for diagnosis and remediation adaptation, and **LangGraph** orchestrates the four-node agent pipeline as a deterministic state machine.
+The system is built on **MongoDB as the unified data and agent-memory plane**. All operational collections (alarms, incidents, runbooks, network_inventory, diagnoses) plus `remediation_actions` live in MongoDB. Hybrid retrieval runs server-side in a single `$rankFusion` aggregation combining Voyage AI vector search and full-text search. Every diagnosis and every remediation action the agent takes is persisted alongside the rest of the operational data — that's the audit trail and the seed for fine-tuning the next iteration.
+
+**Voyage AI** generates embeddings via `voyage-4-large` (asymmetric query/document) and `voyage-context-3` (contextualized chunk embeddings for runbooks). **Claude** drives reasoning at every phase. **LangGraph** orchestrates the supervisor graph and provides `create_react_agent` for the per-phase ReAct sub-loops.
+
+**Reproducibility for live demos.** `temperature=0` plus engineered alarm fixtures keeps runs stable across re-executions. There's no replay layer — the agent always calls Claude live — so any demo run does talk to the API.
 
 ---
 
 ## Architecture
 
 ```mermaid
-graph LR
-    A["5G Network Alarm<br/>(critical/major/minor)"] -->|"alarm"| B["Triage Node<br/>enrich + correlate"]
-    B -->|"alarm + network_element<br/>+ recent_maintenance<br/>+ correlated_alarms"| C["Retrieval Node<br/>hybrid search"]
-    C -->|"+ similar_incidents<br/>+ relevant_runbooks"| D["Diagnosis Node<br/>LLM reasoning"]
-    D -->|"+ diagnosis<br/>+ confidence"| E["Remediation Node<br/>action + persist"]
+flowchart LR
+    START([START]) --> triage["triage<br/>(ReAct)"]
+    triage --> retrieval["retrieval<br/>(ReAct)"]
+    retrieval --> diagnosis["diagnosis<br/>(ReAct)"]
+    diagnosis -->|"confidence ≥ 0.7"| remediation["remediation<br/>(ReAct)"]
+    diagnosis -->|"low conf, retries < 2"| retry1[+1 diagnosis_retry]
+    retry1 --> retrieval
+    diagnosis -->|"retries exhausted"| escalation["escalation"]
+    remediation -->|"verification failed,<br/>retries < 1"| retry2[+1 remediation_retry]
+    retry2 --> retrieval
+    remediation -->|"terminal status"| END([END])
+    escalation --> END
 
-    B -->|"lookup element"| F[("MongoDB<br/><b>network_inventory</b>")]
-    B -->|"find correlated"| G[("MongoDB<br/><b>alarms</b>")]
-    C -->|"Hybrid Search<br/>$rankFusion"| H[("MongoDB<br/><b>incidents</b>")]
-    C -->|"Hybrid Search<br/>$rankFusion"| I[("MongoDB<br/><b>runbooks</b>")]
-
-    C -->|"embed query<br/>(input_type=query)"| J["Voyage AI<br/>voyage-4-large<br/>1024 dims"]
-    D -->|"diagnose"| K["Claude<br/>claude-sonnet"]
-    E -->|"adapt resolution"| K
-    E -->|"persist diagnosis"| L[("MongoDB<br/><b>diagnoses</b>")]
-
-    style A fill:#ff6b6b,stroke:#c0392b,color:#fff
-    style B fill:#74b9ff,stroke:#0984e3,color:#fff
-    style C fill:#74b9ff,stroke:#0984e3,color:#fff
-    style D fill:#74b9ff,stroke:#0984e3,color:#fff
-    style E fill:#74b9ff,stroke:#0984e3,color:#fff
-    style F fill:#00b894,stroke:#00695c,color:#fff
-    style G fill:#00b894,stroke:#00695c,color:#fff
-    style H fill:#00b894,stroke:#00695c,color:#fff
-    style I fill:#00b894,stroke:#00695c,color:#fff
-    style L fill:#00b894,stroke:#00695c,color:#fff
-    style J fill:#a29bfe,stroke:#6c5ce7,color:#fff
-    style K fill:#fd79a8,stroke:#e84393,color:#fff
+    classDef phase fill:#74b9ff,stroke:#0984e3,color:#fff
+    classDef counter fill:#fdcb6e,stroke:#e17055,color:#000
+    classDef terminal fill:#d63031,stroke:#b71540,color:#fff
+    class triage,retrieval,diagnosis,remediation phase
+    class retry1,retry2 counter
+    class escalation terminal
 ```
 
-**Data flow:** An incoming alarm enters the **Triage Node**, which looks up the source network element and checks for recent maintenance and correlated active alarms in MongoDB. The enriched context flows to the **Retrieval Node**, which generates a Voyage AI embedding of the alarm description and runs hybrid search (`$rankFusion`) against both historical incidents and runbook sections. The **Diagnosis Node** passes all gathered evidence to Claude, which returns a structured JSON diagnosis with confidence score, reasoning chain, supporting evidence, and differential diagnoses. Finally, the **Remediation Node** uses Claude to adapt the most similar past resolution to the current context, checks whether the action qualifies for auto-remediation (confidence > 0.9 and action matches a pre-approved pattern), persists the full diagnosis record back to MongoDB, and returns the recommendation.
+**Where the agency lives:**
+
+- **Within a phase (LLM-driven)** — each phase node is a ReAct sub-agent built with `langgraph.prebuilt.create_react_agent` and a phase-specific tool belt. The LLM picks which tools to call (a link-down alarm calls topology tools, a power alarm calls correlated-alarm tools), evaluates each result, and stops when it has enough context. Within retrieval, the LLM also evaluates its own search-quality and decides whether to reformulate.
+- **Across phases (code-driven)** — phase order is hardcoded. `route_after_diagnosis` and `route_after_remediation` are deterministic Python functions: they read state and decide where control goes next. Loop-backs are triggered by the LLM emitting a specific tool call (`request_more_evidence`, or a `verify_alarm_cleared` that returns failure), but the routing itself is code. Bounded by `MAX_DIAGNOSIS_RETRIES=2` and `MAX_REMEDIATION_RETRIES=1`; the router escalates when budgets are exhausted.
+
+**The phases:**
+
+| Phase | Tools the LLM picks from | Terminal action |
+| ----- | ------------------------ | --------------- |
+| **triage** | `lookup_network_element`, `check_recent_maintenance`, `find_correlated_alarms`, `check_topology_neighbors`, `query_kpi_history`, `check_recent_config_changes` | LLM stops when it has a coherent operational picture |
+| **retrieval** | `search_similar_incidents` (hybrid `$rankFusion`), `search_runbooks` (hybrid `$rankFusion`), `evaluate_retrieval_quality` (search → evaluate → refine loop) | LLM stops when verdict is "good" or attempts ≥ 2 |
+| **diagnosis** | `propose_diagnosis` (commit), `request_more_evidence` (loop back to retrieval) | One terminal tool call |
+| **remediation** | `estimate_blast_radius`, `check_maintenance_window`, `verify_backup_exists`, `execute_remediation_step`, `verify_alarm_cleared`, `recommend_for_approval`, `escalate` | One of: auto_remediated / human_approval_required / escalated |
+
+All MongoDB queries (operational data + hybrid search) and the final diagnosis + remediation_action records flow through one platform. Voyage AI provides embeddings; Claude drives reasoning. See [WALKTHROUGH.md](WALKTHROUGH.md) for the agentic anatomy in depth.
 
 ---
 
 ## Key Features
 
-- **Hybrid search with native `$rankFusion`** -- combines Voyage AI vector search (semantic similarity) and full-text search (compound queries, fuzzy matching, facet-based filtering) server-side in a single aggregation pipeline. Used for both incident matching and runbook retrieval — finds semantically similar results even when the vocabulary differs entirely (e.g., "packet loss" matched to "UL quality degradation") while also boosting results that contain exact technical terms
-- **Multi-step agentic reasoning** -- LangGraph state machine with four deterministic nodes (triage, retrieval, diagnosis, remediation) and dependency-injected database and embedder resources
-- **Maintenance correlation and alarm enrichment** -- checks for recent maintenance windows on the affected element and finds correlated active alarms at the same site or region
-- **Confidence-based auto-remediation vs. human escalation** -- confidence >= 0.9 with a pre-approved action pattern triggers auto-remediation; 0.7-0.9 recommends action with human approval; below 0.7 escalates with a suggested investigation direction
-- **Full evidence chain for auditability** -- every diagnosis record includes the alarm, network element context, maintenance history, similar incident IDs, reasoning chain, supporting evidence, and recommended action, all persisted to MongoDB
+- **Per-phase ReAct loops** — within each phase the LLM picks tools from a phase-specific belt, sees results, and decides what to call next, until it stops. Implemented with `langgraph.prebuilt.create_react_agent`.
+- **Search → evaluate → refine retrieval** — the LLM runs hybrid `$rankFusion` search, judges its own result quality with `evaluate_retrieval_quality`, and reformulates the query if scores are weak; bounded by retry counters.
+- **Closed-loop remediation** — preconditions (blast radius, maintenance window, backup) → execute → verify; failed verification loops back through retrieval for re-investigation.
+- **Hybrid search with native `$rankFusion`** — Voyage AI vector + full-text search combined server-side in one aggregation pipeline. Used as the workflow's core retrieval primitive.
+- **MongoDB as agent memory** — diagnoses and remediation_actions persist to MongoDB alongside operational data; every workflow decision is auditable and serves as fine-tuning material for the next iteration.
+- **Legible decisions** — every tool call, retry, and routing decision is captured in state and rendered by both the rich terminal UI (with a static graph tree, per-phase tool tables, and loop-back markers) and the Streamlit dashboard (with a live Mermaid graph render).
 
 ---
 
@@ -252,34 +262,51 @@ For `$scoreFusion` with sigmoid normalization, the scoreDetails show the normali
 
 ### LangGraph Agent Architecture
 
-The agent is built as a **LangGraph StateGraph** with a linear four-node pipeline:
-
-```
-triage --> retrieval --> diagnosis --> remediation --> END
-```
-
-Key design decisions:
-
-1. **State machine approach** -- the `NOCAgentState` TypedDict defines the complete state schema (alarm, enrichment data, retrieval results, diagnosis, remediation outcome). Each node receives the full state and returns its updates, which LangGraph merges.
-
-2. **Deterministic linear pipeline** -- unlike a ReAct agent that decides which tool to call next, this pipeline always executes all four nodes in sequence. This is intentional: for a NOC incident, you always need enrichment, always need retrieval, always need diagnosis, and always need a remediation recommendation. The deterministic flow makes the system predictable and auditable.
-
-3. **Dependency injection** -- the database connection and embedder are injected into nodes via `functools.partial` at graph build time, keeping the nodes testable and the graph definition clean:
+The agent is a **supervisor `StateGraph`** where each phase node is itself a compiled ReAct sub-agent.
 
 ```python
 def build_noc_agent(db: AsyncIOMotorDatabase, embedder: VoyageEmbedder):
     graph = StateGraph(NOCAgentState)
-    graph.add_node("triage", partial(triage_node, db=db))
-    graph.add_node("retrieval", partial(retrieval_node, db=db, embedder=embedder))
-    graph.add_node("diagnosis", diagnosis_node)
-    graph.add_node("remediation", partial(remediation_node, db=db))
-    graph.set_entry_point("triage")
+
+    graph.add_node("triage", make_triage_node(db))
+    graph.add_node("retrieval", make_retrieval_node(db, embedder))
+    graph.add_node("diagnosis", make_diagnosis_node())
+    graph.add_node("remediation", make_remediation_node(db))
+    graph.add_node("inc_diagnosis_retry", increment_diagnosis_retry)
+    graph.add_node("inc_remediation_retry", increment_remediation_retry)
+    graph.add_node("escalation", escalation_node)
+
+    graph.add_edge(START, "triage")
     graph.add_edge("triage", "retrieval")
     graph.add_edge("retrieval", "diagnosis")
-    graph.add_edge("diagnosis", "remediation")
-    graph.add_edge("remediation", END)
+
+    graph.add_conditional_edges("diagnosis", route_after_diagnosis, {
+        "remediation": "remediation",
+        "retrieval":   "inc_diagnosis_retry",
+        "escalate":    "escalation",
+    })
+    graph.add_edge("inc_diagnosis_retry", "retrieval")
+
+    graph.add_conditional_edges("remediation", route_after_remediation, {
+        "end":       END,
+        "retrieval": "inc_remediation_retry",
+    })
+    graph.add_edge("inc_remediation_retry", "retrieval")
+    graph.add_edge("escalation", END)
     return graph.compile()
 ```
+
+Key design decisions:
+
+1. **Inner ReAct loops, outer conditional edges.** Each `make_*_node` function returns a closure that internally invokes `langgraph.prebuilt.create_react_agent` with a phase-specific tool belt. The inner agent runs a ReAct loop (LLM → tool → LLM → tool → ...) until the LLM produces no tool calls. The outer graph then routes on state.
+
+2. **Phase-isolated `messages`.** Each phase node initialises a fresh `messages: [SystemMessage, HumanMessage]` for its inner agent, so phases don't see each other's intermediate tool reasoning. Facts (network_element, similar_incidents, diagnosis, …) flow forward via state; raw chains-of-thought don't.
+
+3. **`Command`-returning tools.** Tools in `agent/tools/*.py` return `langgraph.types.Command(update=…, messages=…)`. The `update` writes to the typed `NOCAgentState` (so downstream phases can read it directly), and the `messages` payload carries a human-readable digest back into the inner ReAct loop for the LLM's next turn. Tool calls are also recorded under a separate `tool_calls` field for the UI.
+
+4. **Bounded loops.** `MAX_DIAGNOSIS_RETRIES=2` and `MAX_REMEDIATION_RETRIES=1` cap the loop-backs. Counter nodes (`inc_diagnosis_retry`, `inc_remediation_retry`) increment the counter on each loop iteration, and `route_after_diagnosis` escalates when the budget is exhausted.
+
+5. **`temperature=0` for reproducible runs.** All Claude calls go through `agent/llm.py` which builds a `ChatAnthropic` at zero temperature. Combined with engineered alarm fixtures, the same alarm produces broadly the same trace across runs.
 
 ---
 
@@ -391,43 +418,76 @@ Network element inventory with configuration and maintenance history.
 
 ### `diagnoses` Collection
 
-Agent diagnosis records, persisted for auditability and continuous improvement.
+Agent diagnosis records, persisted at the end of every run for auditability and as fine-tuning material.
 
 ```json
 {
-  "alarm_id": "ALM-20240115-0042",
+  "alarm_id": "ALM-DEMO-001",
   "alarm": { "...full alarm document..." },
-  "network_element_id": "gNB-SITE-A12-001",
+  "network_element_id": "gNB-SG-C01",
   "diagnosis": {
-    "probable_root_cause": "RET antenna electrical tilt was over-adjusted during maintenance on 2024-01-14, causing UL coverage degradation on Sector 3.",
+    "probable_root_cause": "RET antenna tilt was over-adjusted on Sector 2 during recent maintenance, causing severe UL packet loss.",
     "confidence": 0.92,
-    "reasoning": "The alarm describes UL BLER exceeding threshold with RSRP degradation. The network element had a RET adjustment 24 hours prior. A highly similar past incident (score 0.943) had the same root cause and was resolved by reverting the RET angle.",
+    "reasoning": "The alarm describes severe UL packet loss on Sector 2. The element had a RET adjustment 2 days prior (4 → 8 degrees). The top similar past incident (score 0.752) had the exact same pattern and was resolved by reverting the RET angle.",
     "supporting_evidence": [
-      "Recent maintenance: RET tilt adjustment from 2 to 8 degrees on Sector 3",
-      "Similar incident INC-2024-0891 (score 0.943): same root cause, resolved by RET revert",
-      "Runbook RB-RADIO-001 Section 4: RET rollback procedure when delta exceeds 2 degrees"
+      "Maintenance log entry 2 days ago: RET adjusted from 4 to 8 degrees on Sector 2",
+      "Top similar incident scored 0.752 — same root cause and resolution",
+      "Runbook RB-RADIO-001 §4: RET rollback procedure"
     ],
     "differential_diagnoses": [
-      {
-        "cause": "Hardware failure on Sector 3 antenna module",
-        "confidence": 0.06,
-        "why_less_likely": "RSRP degradation pattern is gradual, not sudden, and correlates with the tilt change timeline"
-      }
+      {"cause": "Hardware failure", "confidence": 0.06, "why_less_likely": "Pattern is sudden, not gradual"},
+      {"cause": "External interference", "confidence": 0.02, "why_less_likely": "No correlated alarms in the area"}
     ]
   },
   "confidence": 0.92,
-  "recommended_action": "AUTO-REMEDIATION: revert RET angle on gNB-SITE-A12-001 Sector 3 from 8 degrees to the planned 5 degrees",
-  "auto_remediable": true,
+  "recommended_action": "revert RET angle on gNB-SG-C01 Sector 2 from 8 to 4 degrees",
+  "final_status": "auto_remediated",
+  "blast_radius": {
+    "site_id": "SITE-C01",
+    "co_located_active_elements": 1,
+    "is_high_traffic": true,
+    "risk": "high"
+  },
+  "execution_result": {
+    "action": "revert RET angle on gNB-SG-C01 Sector 2 from 8 to 4 degrees",
+    "params": { "element_id": "gNB-SG-C01", "sector": 2, "from": 8, "to": 4 },
+    "outcome": "success",
+    "reason": "Action executed (mock)"
+  },
+  "verification_result": {
+    "alarm_id": "ALM-DEMO-001",
+    "cleared": true
+  },
   "evidence_chain": [
-    "Alarm received: [critical] Excessive UL BLER on Cell-3 sector of gNB-SITE-A12-001...",
-    "Source element identified: gNodeB Ericsson AIR 6449 at Downtown Tower Alpha-12",
-    "Recent maintenance found: RET antenna tilt adjustment on Sector 3 (2 deg to 8 deg)",
-    "Most similar past incident (score 0.943): Uplink Quality Degradation Due to Antenna Misconfiguration...",
-    "Diagnosis: RET antenna electrical tilt was over-adjusted...",
-    "Confidence: 0.92"
+    "Alarm: [critical] Severe packet loss on uploads from Sector 2…",
+    "Element: gNodeB Ericsson 6648 @ Marina Bay Tower",
+    "Recent maintenance: RET angle adjustment on Sector 2, 4 → 8 degrees",
+    "Top similar incident (score 0.752): UL BLER after RET adjustment → root cause: over-tilt",
+    "Diagnosis: RET antenna tilt over-adjusted on Sector 2…",
+    "Confidence: 0.92",
+    "Blast radius: high (1 co-located, high_traffic=True)",
+    "Action executed: revert RET angle on gNB-SG-C01 Sector 2 from 8 to 4 degrees",
+    "Verification: alarm cleared = True"
   ],
-  "similar_incident_ids": ["INC-2024-0891", "INC-2024-0734", "INC-2024-0612"],
-  "created_at": "2024-01-15T14:24:12Z"
+  "tool_call_count": 14,
+  "created_at": "2026-04-28T11:24:12Z"
+}
+```
+
+### `remediation_actions` Collection
+
+Every action the agent attempted (executed or rejected), keyed by `alarm_id`. Provides a separate audit trail for what *changes* the agent made versus what it *concluded*.
+
+```json
+{
+  "alarm_id": "ALM-DEMO-001",
+  "element_id": "gNB-SG-C01",
+  "action": "revert RET angle on gNB-SG-C01 Sector 2 from 8 to 4 degrees",
+  "params": { "element_id": "gNB-SG-C01", "sector": 2, "from": 8, "to": 4 },
+  "confidence": 0.92,
+  "outcome": "success",
+  "reason": "Action executed (mock)",
+  "executed_at": "2026-04-28T11:24:11Z"
 }
 ```
 
@@ -472,13 +532,10 @@ uv run python scripts/load_data.py
 # 5. Create Full Text Search and Vector Search indexes (waits until READY)
 uv run python scripts/setup_atlas.py
 
-# 6. Run the demo (terminal UI)
+# 6. Run the terminal demo
 uv run python scripts/run_demo.py
 
-# Or with TM Forum Autonomous Network L3→L4 level mapping after each alarm
-uv run python scripts/run_demo.py --explain-levels
-
-# Or launch the Streamlit dashboard (level mapping available as an expander)
+# Or launch the Streamlit dashboard with a live Mermaid graph render
 uv run streamlit run src/noc_copilot/ui/streamlit_app.py
 ```
 
@@ -486,132 +543,103 @@ uv run streamlit run src/noc_copilot/ui/streamlit_app.py
 
 ## Demo Walkthrough
 
-The terminal demo walks through a realistic telco incident scenario end to end. Add `--explain-levels` to see the TM Forum Autonomous Network level mapping after each alarm.
+The terminal demo opens with a static rendering of the agent graph (so the audience sees the loops before the agent runs), then lists active alarms. Pick one and the agent investigates it live; each phase's tool calls are rendered as a table, with loop-back markers when control jumps back to retrieval.
 
-### 1. Alarm Dashboard
-
-When you run `uv run python scripts/run_demo.py`, the system connects to MongoDB Atlas, verifies that data and search indexes are loaded, and presents an **Active Alarm Dashboard** showing all active alarms sorted by severity (critical first). Each alarm displays its ID, severity level (with color coding), category, source element, region, and description.
+### 1. Graph + alarm dashboard
 
 ```
-╔═══╦══════════════╦══════════╦═══════════╦═════════╦═════════════╗
-║ # ║ Alarm ID     ║ Severity ║ Category  ║ Source  ║ Description ║
-╠═══╬══════════════╬══════════╬═══════════╬═════════╬═════════════╣
-║ 1 ║ ALM-...-0042 ║ CRITICAL ║ radio     ║ gNB-... ║ Excessive   ║
-║ 2 ║ ALM-...-0043 ║ MAJOR    ║ transport ║ MW-...  ║ Microwave   ║
-║ 3 ║ ALM-...-0044 ║ MINOR    ║ core      ║ UPF-... ║ Session     ║
-╚═══╩══════════════╩══════════╩═══════════╩═════════╩═════════════╝
-
-Select an alarm to process (enter number), or 'all' to process all, or 'q' to quit:
-> 1
+NOC Agent Graph — phase nodes are themselves ReAct loops
+├── triage (ReAct)
+│   tools: lookup_network_element, check_recent_maintenance,
+│          find_correlated_alarms, check_topology_neighbors,
+│          query_kpi_history, check_recent_config_changes
+├── retrieval (ReAct, search→evaluate→refine)
+│   tools: search_similar_incidents, search_runbooks,
+│          evaluate_retrieval_quality (closes the loop)
+├── diagnosis (ReAct)
+│   tools: propose_diagnosis | request_more_evidence
+│   ↺ if confidence < 0.7 and retries < 2 → retrieval
+├── remediation (ReAct, check→act→verify)
+│   tools: estimate_blast_radius, check_maintenance_window,
+│          verify_backup_exists, execute_remediation_step,
+│          verify_alarm_cleared, recommend_for_approval, escalate
+│   ↺ if verification failed and retries < 1 → retrieval
+└── END — final_status ∈ {auto_remediated, human_approval_required, escalated}
 ```
 
-### 2. Step 1: Triage & Enrichment
+### 2. Per-alarm narrative arc
 
-The triage node looks up the source network element in `network_inventory`, displays its type, vendor, model, site, and status. It checks for **recent maintenance** (last 7 days) on the element, which is often the smoking gun for post-change incidents. It also finds **correlated active alarms** at the same site or region that might indicate a wider issue.
+The seed data is engineered so each of the six demo alarms exercises a different agentic pattern. Together they cover the full surface area an agent engineer cares about — within-phase tool selection, retrieval refinement, low-confidence loop-back, precondition guardrails, and graceful escalation. Live LLM choices vary slightly run-to-run; the column below describes the *expected* path given the engineered fixtures.
 
-```
-STEP 1: TRIAGE & ENRICHMENT
-Network Element: gNodeB | Ericsson AIR 6449 | Downtown Tower Alpha-12 | us-west-2
+| Alarm | Likely path |
+| ----- | ----------- |
+| `ALM-DEMO-001` (critical, radio, RET-related on `gNB-SG-C01`) | Tight triage (`lookup_network_element` + `check_recent_maintenance` finds the 2-day-old RET adjustment), one solid retrieval, high-confidence diagnosis → auto-remediation: `revert RET angle` is on the safe list, all preconditions OK, `verify_alarm_cleared` succeeds. |
+| `ALM-DEMO-002` (major, transport, microwave link on `RTR-SG-01`) | Triage shape changes — agent calls `find_correlated_alarms` and `check_topology_neighbors` instead of maintenance tools (no recent maintenance on this router). Diagnosis points to weather-related rain fade; remediation has no auto-remediable action for atmospheric conditions → `recommend_for_approval`. |
+| `ALM-DEMO-003` (minor, core, N4 timeouts on `UPF-SG-01`, no user impact) | Low-severity monitoring case. Triage gathers context but no smoking gun; retrieval finds N4/SMF incidents; diagnosis lands at moderate confidence (0.6–0.8); remediation either recommends a watchful action or escalates for monitoring. |
+| `ALM-DEMO-004` (major, radio, DL throughput on `gNB-SG-W01`) | `check_recent_config_changes` surfaces the 3-day-old firmware upgrade. First retrieval may score poorly without the firmware angle → `evaluate_retrieval_quality` returns "poor" → LLM reformulates with firmware hypothesis → second retrieval lands. |
+| `ALM-DEMO-005` (critical, power, AC mains + generator failure on `gNB-SG-N01`) | No auto-remediable action exists for hardware failure (generator, batteries) → even with high diagnostic confidence the agent calls `escalate` rather than `execute_remediation_step`. Demonstrates the safe-action allow-list as a guardrail. |
+| `ALM-DEMO-006` (warning, radio, ambient interference on `gNB-SG-E02`) | Empty maintenance log + ambiguous symptoms → diagnosis < 0.7 → `request_more_evidence` loops back to retrieval with new hypotheses → still ambiguous → escalate after the retry budget. |
 
-  Recent Maintenance (1 entry):
-    - 2024-01-14: RET antenna tilt adjustment on Sector 3 (2 deg to 8 deg) (by J. Smith)
+### 3. Per-phase tool tables
 
-  Correlated Active Alarms (0):
-    No correlated alarms found.
-```
-
-### 3. Step 2: Knowledge Retrieval
-
-The retrieval node generates a Voyage AI embedding of the alarm description enriched with element context and maintenance history, then executes two searches:
-
-- **Hybrid Search** (`$rankFusion`) against `incidents` returns the top 5 similar past incidents, combining vector similarity and full-text keyword relevance
-- **Hybrid Search** (`$rankFusion`) against `runbooks` returns the top 5 relevant runbook sections, combining vector similarity and full-text keyword relevance
+For every phase the terminal prints a table of the LLM's tool selections — name, arguments, result summary, latency. Loop-backs print a divider so it's obvious when control jumps back to retrieval.
 
 ```
-STEP 2: KNOWLEDGE RETRIEVAL
+TRIAGE
+─────────────────────────────────────────────────────────────────────────────────
+ #  Tool                          Args                            Result          ms
+ 1  lookup_network_element        element_id='gNB-SG-C01'          Found gNodeB…  18
+ 2  check_recent_maintenance      element_id='gNB-SG-C01', days=7  Found 1 entry  12
+ 3  find_correlated_alarms        site_id='SITE-C01'…              No correlated  21
 
-Similar Past Incidents (Hybrid Search — $rankFusion):
-  0.0234  INC-2024-0891  Uplink Quality Degradation Due to Antenna Misc...
-  0.0198  INC-2024-0734  Cell Edge Coverage Hole After RET Parameter Ch...
-  0.0156  INC-2024-0612  Sector Outage Following Antenna Maintenance...
+RETRIEVAL
+─────────────────────────────────────────────────────────────────────────────────
+ 1  search_similar_incidents      query='RET tilt UL BLER…',
+                                  category='radio'                 5 incidents,
+                                                                   top=0.752     420
+ 2  search_runbooks               query='RET antenna…'             5 runbooks,
+                                                                   top=0.681     310
+ 3  evaluate_retrieval_quality    {}                               Verdict: good  4
 
-Relevant Runbook Sections (Hybrid Search — $rankFusion):
-  0.0234  RB-RADIO-001   5G NR Radio Performance Troubleshooting — RET Antenna Tilt Verification
-  0.0198  RB-RADIO-001   5G NR Radio Performance Troubleshooting — UL BLER Diagnostics
-  0.0156  RB-RADIO-003   Antenna System Maintenance — Post-Change Verification
+DIAGNOSIS
+─────────────────────────────────────────────────────────────────────────────────
+ 1  propose_diagnosis             confidence=0.92                  Diagnosis
+                                                                   committed     —
+
+REMEDIATION
+─────────────────────────────────────────────────────────────────────────────────
+ 1  estimate_blast_radius         element_id='gNB-SG-C01'          Risk: low      8
+ 2  check_maintenance_window      element_id='gNB-SG-C01'          safe_to_act    5
+ 3  verify_backup_exists          element_id='gNB-SG-C01'          backup yes     6
+ 4  execute_remediation_step      action='revert RET angle…'        success       9
+ 5  verify_alarm_cleared          alarm_id='ALM-DEMO-001'          cleared        4
 ```
 
-### 4. Step 3: AI Diagnosis
-
-The diagnosis node passes the alarm, network element, maintenance history, correlated alarms, similar incidents, and runbook sections to Claude, which returns a structured diagnosis:
+### 4. Final state
 
 ```
-STEP 3: AI DIAGNOSIS
+Diagnosis
+  Probable Root Cause: RET antenna tilt over-adjusted on Sector 2 during recent
+  maintenance, causing severe UL packet loss.
+  Confidence: ████████████████████████░░░░░░ 92%
 
-Confidence: ██████████████████████████████░░ 92%
+  Supporting Evidence:
+    ✓ Maintenance log: 2 days ago — RET adjusted from 4° to 8° on Sector 2
+    ✓ Top similar incident scored 0.752 — same root cause, RET revert resolved it
+    ✓ Runbook RB-RADIO-001 §4 — RET rollback procedure
+  Differential Diagnoses:
+    • Hardware failure (6%) — pattern is sudden, not gradual
+    • External interference (2%) — no correlated alarms
 
-Probable Root Cause:
-  RET antenna electrical tilt was over-adjusted during maintenance on 2024-01-14,
-  causing UL coverage degradation on Sector 3.
-
-Reasoning Chain:
-  The alarm describes UL BLER exceeding threshold with RSRP degradation. The network
-  element had a RET adjustment 24 hours prior (from 2 to 8 degrees — a 6 degree delta
-  far exceeding the planned 3 degree change). A highly similar past incident
-  (score 0.943) had the exact same root cause and was resolved by reverting the RET angle.
-
-Supporting Evidence:
-  - Recent maintenance: RET tilt adjustment from 2 to 8 degrees on Sector 3
-  - Similar incident INC-2024-0891 (score 0.943): same root cause
-  - Runbook RB-RADIO-001 Section 4: RET rollback procedure
-
-Differential Diagnoses:
-  - Hardware failure (6%) — gradual pattern rules out sudden failure
-  - Interference from adjacent cell (2%) — no correlated alarms on neighbors
+  ✅ AUTO-REMEDIATED
+  Action: revert RET angle on gNB-SG-C01 Sector 2 from 8 to 4 degrees
+  Preconditions: blast_radius=low, maintenance_window_ok=True, backup_verified=True
+  Verification: alarm cleared = True
 ```
 
-### 5. Step 4: Remediation
+### 5. Streamlit dashboard
 
-With confidence at 0.92 (above the 0.9 threshold) and the recommended action matching the pre-approved "revert RET angle" pattern, the system produces an **auto-remediation** decision:
-
-```
-STEP 4: REMEDIATION
-
-  [Auto-Remediation Approved]
-  AUTO-REMEDIATION: revert RET angle on gNB-SITE-A12-001
-  Sector 3 from 8 degrees to the planned 5 degrees
-
-  Evidence Chain:
-    1. Alarm received: [critical] Excessive UL BLER on Cell-3 sector...
-    2. Source element identified: gNodeB Ericsson AIR 6449
-    3. Recent maintenance found: RET antenna tilt adjustment on Sector 3
-    4. Most similar past incident (score 0.943): Uplink Quality Degradation...
-    5. Diagnosis: RET antenna electrical tilt was over-adjusted...
-    6. Confidence: 0.92
-
-  [Performance Comparison]
-  NOC Copilot:         8.3s total
-  Manual NOC process:  ~75 min (45 min TTD + 30 min TTR)
-  Speed improvement:   ~542x faster
-```
-
-The full diagnosis record is persisted to the `diagnoses` collection in MongoDB for auditability.
-
-### 6. TM Forum Autonomous Network Level Mapping
-
-Run with `--explain-levels` (or expand the "TM Forum Autonomous Network Levels" section in Streamlit) to see a dynamic mapping of the pipeline results to the TM Forum Autonomous Network evaluation framework.
-
-The system maps each pipeline run to the **P/S cognitive dimension matrix** (People vs System), showing where the current pipeline sits at **Level 3 (Conditional Automation)** and what concrete changes would move it to **Level 4 (High Automation)**:
-
-| Dimension | L3 — Current Pipeline | L4 — Agentic Upgrade |
-|-----------|----------------------|---------------------|
-| **Execution** | **S** — Pipeline ran end-to-end | **S** — No change |
-| **Awareness** | **S** — Element lookup, maintenance, correlated alarms | **S** — Agent chooses what to investigate (tool use) |
-| **Analysis** | **P/S** — LLM diagnoses, human reviews | **S** — Agent retries retrieval on low confidence |
-| **Decision** | **P/S** — Confidence threshold gates human approval | **S** — AI reasons about whether to act |
-| **Intent** | **P** — User selects alarm manually | **P/S** — System prioritises alarms proactively |
-
-The output is dynamic — it references the actual confidence score, number of correlated alarms, top retrieval score, and remediation outcome from the alarm that was just processed. It then shows five concrete upgrades to reach Level 4: tool-calling triage, retrieval retry loops, diagnosis-driven re-investigation, closed-loop remediation with verification, and cross-domain correlation.
+Same workflow, browser-friendly rendering. The main panel shows a live Mermaid render of the agent graph, then per-phase expanders with tool tables, then diagnosis and remediation cards. Raw final state is available as a collapsed JSON inspector for debugging.
 
 ---
 
@@ -781,62 +809,63 @@ Your connection string goes in `.env` as `MONGODB_URI`. The `setup_atlas.py` scr
 noc-copilot/
 ├── pyproject.toml                          # Package metadata and dependencies
 ├── .env.example                            # Environment variable template
-├── .gitignore                              # Git ignore rules
 ├── README.md                               # This file
+├── WALKTHROUGH.md                          # Code walkthrough for AI/agent engineers
 │
 ├── scripts/
-│   ├── setup_atlas.py                      # Create Full Text Search + Vector Search indexes
+│   ├── setup_atlas.py                      # Create Atlas Search + Vector Search indexes
 │   ├── load_data.py                        # Generate embeddings and seed the database
 │   ├── run_demo.py                         # Launch the terminal demo
 │   └── test_search.py                      # Run individual search type tests
 │
 ├── src/
 │   └── noc_copilot/
-│       ├── __init__.py
 │       ├── config.py                       # Settings loaded from .env (Pydantic)
 │       ├── models.py                       # Pydantic models: Alarm, Incident, Runbook, etc.
 │       │
 │       ├── agent/
-│       │   ├── __init__.py
-│       │   ├── graph.py                    # LangGraph StateGraph definition
-│       │   ├── state.py                    # NOCAgentState TypedDict
-│       │   ├── tools.py                    # Reserved for future tool definitions
-│       │   └── nodes/
-│       │       ├── __init__.py
-│       │       ├── triage.py               # Triage node: element lookup, maintenance, correlation
-│       │       ├── retrieval.py            # Retrieval node: hybrid search for incidents + runbooks
-│       │       ├── diagnosis.py            # Diagnosis node: Claude LLM reasoning
-│       │       └── remediation.py          # Remediation node: action, persist, escalation
+│       │   ├── __init__.py                 # Package — installs deprecation-warning filter
+│       │   ├── graph.py                    # Supervisor StateGraph + render_graph_mermaid()
+│       │   ├── state.py                    # NOCAgentState — facts, control, observability
+│       │   ├── llm.py                      # get_chat_model() — central ChatAnthropic factory
+│       │   ├── nodes/
+│       │   │   ├── _phase.py               # Shared rendering helpers for prompts
+│       │   │   ├── triage.py               # ReAct sub-agent: enrichment tools
+│       │   │   ├── retrieval.py            # ReAct sub-agent: search→evaluate→refine
+│       │   │   ├── diagnosis.py            # ReAct sub-agent: propose | request_more_evidence
+│       │   │   ├── remediation.py          # ReAct sub-agent: check→act→verify
+│       │   │   └── routing.py              # Conditional edge functions + counter nodes
+│       │   └── tools/
+│       │       ├── _common.py              # Tool helpers (Command builder, summary truncate)
+│       │       ├── triage_tools.py         # 6 tools — operational lookups
+│       │       ├── retrieval_tools.py      # 3 tools — hybrid search + quality eval
+│       │       ├── diagnosis_tools.py      # 2 tools — propose | request_more_evidence
+│       │       └── remediation_tools.py    # 7 tools — preconditions + terminal actions
 │       │
 │       ├── db/
-│       │   ├── __init__.py
 │       │   ├── collections.py              # Collection name constants
 │       │   ├── connection.py               # Sync + async MongoDB connection manager
-│       │   └── indexes.py                  # Full Text Search / Vector Search index definitions
+│       │   └── indexes.py                  # Atlas Search / Vector Search index definitions
 │       │
 │       ├── embeddings/
-│       │   ├── __init__.py
-│       │   └── voyage.py                   # VoyageEmbedder: batch embed + query embed
+│       │   └── voyage.py                   # VoyageEmbedder: batch + query + contextualised
 │       │
 │       ├── search/
-│       │   ├── __init__.py
-│       │   ├── vector_search.py            # $vectorSearch queries (standalone vector search)
-│       │   ├── full_text_search.py         # $search queries (standalone full-text search)
-│       │   └── hybrid_search.py            # $rankFusion hybrid search (agent) + $scoreFusion (explorer)
+│       │   ├── vector_search.py            # $vectorSearch (standalone)
+│       │   ├── full_text_search.py         # $search (standalone)
+│       │   └── hybrid_search.py            # $rankFusion + $scoreFusion
 │       │
 │       ├── data/
-│       │   ├── __init__.py
 │       │   ├── generator.py                # Embedding generation for seed data
 │       │   └── loader.py                   # Database seeding with embeddings
 │       │
 │       └── ui/
-│           ├── __init__.py
-│           ├── terminal.py                 # Rich-based terminal demo UI
-│           └── streamlit_app.py            # Streamlit web dashboard
+│           ├── terminal.py                 # Rich-based terminal — graph tree + tool tables
+│           └── streamlit_app.py            # Streamlit dashboard — live Mermaid graph render
 │
 └── tests/
-    ├── test_agent.py                       # Agent pipeline tests
-    ├── test_embeddings.py                  # Embedding generation tests
-    └── test_search.py                      # Search function tests
+    ├── test_agent.py                       # Compile-time + routing + integration smoke
+    ├── test_embeddings.py                  # Embedding generation (requires API key)
+    └── test_search.py                      # Search function tests (requires Atlas + API key)
 ```
 
