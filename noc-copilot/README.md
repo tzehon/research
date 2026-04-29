@@ -72,7 +72,7 @@ All MongoDB queries (operational data + hybrid search) and the final diagnosis +
 - **Closed-loop remediation** — preconditions (blast radius, maintenance window, backup) → execute → verify; failed verification loops back through retrieval for re-investigation.
 - **Hybrid search with native `$rankFusion`** — Voyage AI vector + full-text search combined server-side in one aggregation pipeline. Used as the workflow's core retrieval primitive.
 - **MongoDB as agent memory** — diagnoses and remediation_actions persist to MongoDB alongside operational data; every workflow decision is auditable and serves as fine-tuning material for the next iteration.
-- **Legible decisions** — every tool call, retry, and routing decision is captured in state and rendered by both the rich terminal UI (with a static graph tree, per-phase tool tables, and loop-back markers) and the Streamlit dashboard (with a live Mermaid graph render).
+- **Legible decisions** — every tool call, retry, and routing decision is captured in state and streamed live as it happens: the terminal prints each tool call (name, args, summary, latency) under a coloured phase header as the ReAct sub-agents fire; the Streamlit dashboard pipes the same stream into an open `st.status` panel and renders a live Mermaid graph alongside.
 
 ---
 
@@ -543,7 +543,7 @@ uv run streamlit run src/noc_copilot/ui/streamlit_app.py
 
 ## Demo Walkthrough
 
-The terminal demo opens with a static rendering of the agent graph (so the audience sees the loops before the agent runs), then lists active alarms. Pick one and the agent investigates it live; each phase's tool calls are rendered as a table, with loop-back markers when control jumps back to retrieval.
+The terminal demo opens with a static rendering of the agent graph (so the audience sees the loops before the agent runs), then lists active alarms. Pick one and the agent investigates it live — tool calls stream to the terminal as they fire, grouped under coloured phase headers, with loop-back banners when control jumps back to retrieval.
 
 ### 1. Graph + alarm dashboard
 
@@ -580,39 +580,30 @@ The seed data is engineered so each of the six demo alarms exercises a different
 | `ALM-DEMO-005` (critical, power, AC mains + generator failure on `gNB-SG-N01`) | No auto-remediable action exists for hardware failure (generator, batteries) → even with high diagnostic confidence the agent calls `escalate` rather than `execute_remediation_step`. Demonstrates the safe-action allow-list as a guardrail. |
 | `ALM-DEMO-006` (warning, radio, ambient interference on `gNB-SG-E02`) | Empty maintenance log + ambiguous symptoms → diagnosis < 0.7 → `request_more_evidence` loops back to retrieval with new hypotheses → still ambiguous → escalate after the retry budget. |
 
-### 3. Per-phase tool tables
+### 3. Live tool-call stream
 
-For every phase the terminal prints a table of the LLM's tool selections — name, arguments, result summary, latency. Loop-backs print a divider so it's obvious when control jumps back to retrieval.
+For every phase the terminal prints a coloured header followed by one line per tool call — name, arguments, result summary, latency — as each call lands. Loop-backs print a divider so it's obvious when control jumps back to retrieval.
 
 ```
-TRIAGE
-─────────────────────────────────────────────────────────────────────────────────
- #  Tool                          Args                            Result          ms
- 1  lookup_network_element        element_id='gNB-SG-C01'          Found gNodeB…  18
- 2  check_recent_maintenance      element_id='gNB-SG-C01', days=7  Found 1 entry  12
- 3  find_correlated_alarms        site_id='SITE-C01'…              No correlated  21
+🔍 TRIAGE …
+  ✓ lookup_network_element(element_id='gNB-SG-C01') → Found gNodeB… (18ms)
+  ✓ check_recent_maintenance(element_id='gNB-SG-C01', days=7) → Found 1 entry (12ms)
+  ✓ find_correlated_alarms(site_id='SITE-C01') → No correlated (21ms)
 
-RETRIEVAL
-─────────────────────────────────────────────────────────────────────────────────
- 1  search_similar_incidents      query='RET tilt UL BLER…',
-                                  category='radio'                 5 incidents,
-                                                                   top=0.752     420
- 2  search_runbooks               query='RET antenna…'             5 runbooks,
-                                                                   top=0.681     310
- 3  evaluate_retrieval_quality    {}                               Verdict: good  4
+📚 RETRIEVAL …
+  ✓ search_similar_incidents(query='RET tilt UL BLER…', category='radio') → 5 incidents, top=0.752 (420ms)
+  ✓ search_runbooks(query='RET antenna…') → 5 runbooks, top=0.681 (310ms)
+  ✓ evaluate_retrieval_quality() → Verdict: good (4ms)
 
-DIAGNOSIS
-─────────────────────────────────────────────────────────────────────────────────
- 1  propose_diagnosis             confidence=0.92                  Diagnosis
-                                                                   committed     —
+🧠 DIAGNOSIS …
+  ✓ propose_diagnosis(confidence=0.92) → Diagnosis committed (—)
 
-REMEDIATION
-─────────────────────────────────────────────────────────────────────────────────
- 1  estimate_blast_radius         element_id='gNB-SG-C01'          Risk: low      8
- 2  check_maintenance_window      element_id='gNB-SG-C01'          safe_to_act    5
- 3  verify_backup_exists          element_id='gNB-SG-C01'          backup yes     6
- 4  execute_remediation_step      action='revert RET angle…'        success       9
- 5  verify_alarm_cleared          alarm_id='ALM-DEMO-001'          cleared        4
+🛠️  REMEDIATION …
+  ✓ estimate_blast_radius(element_id='gNB-SG-C01') → Risk: low (8ms)
+  ✓ check_maintenance_window(element_id='gNB-SG-C01') → safe_to_act (5ms)
+  ✓ verify_backup_exists(element_id='gNB-SG-C01') → backup yes (6ms)
+  ✓ execute_remediation_step(action='revert RET angle…') → success (9ms)
+  ✓ verify_alarm_cleared(alarm_id='ALM-DEMO-001') → cleared (4ms)
 ```
 
 ### 4. Final state
@@ -639,7 +630,7 @@ Diagnosis
 
 ### 5. Streamlit dashboard
 
-Same workflow, browser-friendly rendering. The main panel shows a live Mermaid render of the agent graph, then per-phase expanders with tool tables, then diagnosis and remediation cards. Raw final state is available as a collapsed JSON inspector for debugging.
+Same workflow, browser-friendly rendering. The main panel shows a live Mermaid render of the agent graph. When you run the agent an `st.status` panel opens and streams each tool call into the dashboard as it lands. Once the run completes the panel collapses and the page renders per-phase expanders with tool tables, then diagnosis and remediation cards. Raw final state is available as a collapsed JSON inspector for debugging.
 
 ---
 
