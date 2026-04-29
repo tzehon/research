@@ -26,6 +26,7 @@ import queue as _queue
 import threading
 
 import streamlit as st
+import streamlit.components.v1 as components
 
 from noc_copilot.agent.graph import build_noc_agent, render_graph_mermaid
 from noc_copilot.agent.state import initial_state
@@ -116,7 +117,23 @@ def render_graph_section() -> None:
         "loop back to retrieval when the diagnosis is low-confidence or when a "
         "remediation step fails verification."
     )
-    st.markdown(f"```mermaid\n{render_graph_mermaid()}\n```")
+    # st.markdown does not render Mermaid fenced blocks — embed the
+    # Mermaid runtime in an iframe via components.html so the diagram
+    # actually renders in the browser.
+    diagram = render_graph_mermaid()
+    components.html(
+        f"""
+        <html><body style="margin:0;background:transparent;">
+          <pre class="mermaid">{diagram}</pre>
+          <script type="module">
+            import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+            mermaid.initialize({{ startOnLoad: true, theme: 'default', securityLevel: 'loose' }});
+          </script>
+        </body></html>
+        """,
+        height=320,
+        scrolling=False,
+    )
 
 
 def render_tool_timeline(tool_calls: list[dict], phase: str, iteration: int = 1) -> None:
