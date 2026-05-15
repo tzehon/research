@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     voyage_model: str = "voyage-4-large"
     voyage_context_model: str = "voyage-context-3"
     voyage_dimensions: int = 1024
-    anthropic_model: str = "claude-sonnet-4-20250514"
+    anthropic_model: str = "claude-sonnet-4-5"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
