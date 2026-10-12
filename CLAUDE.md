@@ -4,18 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This is a monorepo containing multiple independent MongoDB research/demonstration projects. Each subdirectory is a self-contained project with its own dependencies and README.
+This is a monorepo containing multiple independent projects. Each project directory is self-contained with its own dependencies and README.
 
 ## Project-Specific Guidance
 
-Each project has its own `CLAUDE.md` with build commands and architecture details:
-- `mongodb-ops-manager-kubernetes/CLAUDE.md`
-- `mongodb-failover-tester/CLAUDE.md`
-- `atlas-alerts-creation/CLAUDE.md`
-- `ops-manager-alerts-creation/CLAUDE.md`
-- `invoice_processor/CLAUDE.md`
+Project-specific `CLAUDE.md` files contain build commands and architecture details.
 
-When working in a specific project directory, refer to that project's `CLAUDE.md`.
+When working in a specific project directory, read that project's `CLAUDE.md` if present.
 
 ## README Auto-Generation
 
