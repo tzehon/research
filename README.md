@@ -1,6 +1,6 @@
 # research
 
-Research projects, mostly carried out by LLM tools.
+A collection of independent projects, including applications, tools, experiments, and demonstrations, mostly developed with LLM tools. Each project directory has its own README and dependencies.
 
 <!--[[[cog
 import os
@@ -24,18 +24,18 @@ def get_summary(folder):
 
     readme_file = Path(folder) / "README.md"
     if not readme_file.exists():
-        return f"Research project in `{folder}`"
+        return f"Project in `{folder}`"
 
     # Generate summary using LLM
     result = subprocess.run(
         ["llm", "-m", MODEL],
-        input=f"Summarize this research project concisely. Write just 1 paragraph (3-5 sentences) followed by an optional short bullet list if there are key findings. Vary your opening - don't start with 'This report' or 'This research'. Include 1-2 links to key tools/projects mentioned.\n\n{readme_file.read_text()}",
+        input=f"Summarize this project concisely. Write just 1 paragraph (3-5 sentences) followed by an optional short bullet list if there are key features or findings. Vary your opening - don't start with 'This project'. Include 1-2 links to key tools/projects mentioned.\n\n{readme_file.read_text()}",
         capture_output=True, text=True
     )
     summary = result.stdout.strip()
     if summary:
         summary_file.write_text(summary)
-    return summary or f"Research project in `{folder}`"
+    return summary or f"Project in `{folder}`"
 
 def get_repo_url():
     result = subprocess.run(
@@ -63,7 +63,7 @@ projects.sort(reverse=True)
 repo_url = get_repo_url()
 
 # Print heading with project count
-print(f"## {len(projects)} research projects\n")
+print(f"## {len(projects)} projects\n")
 
 for date, folder in projects:
     date_str = date[:10] if date else "unknown"
@@ -71,7 +71,7 @@ for date, folder in projects:
     print(get_summary(folder))
     print()
 ]]]-->
-## 9 research projects
+## 9 projects
 
 ### [mongodb-ram-observatory](https://github.com/tzehon/research/tree/main/mongodb-ram-observatory) (2026-03-26)
 
