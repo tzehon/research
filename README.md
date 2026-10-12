@@ -1,4 +1,4 @@
-# research
+# Projects
 
 A collection of independent projects, including applications, tools, experiments, and demonstrations, mostly developed with LLM tools. Each project directory has its own README and dependencies.
 
