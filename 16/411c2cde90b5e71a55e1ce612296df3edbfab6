@@ -1,0 +1,20 @@
+AGENTS.md
+  s_bde36544fa60f7::t_902d1735ebe2b6 7,11
+  s_bde36544fa60f7::t_771f0d4c637d39 1-6,8-10,12-39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "16411c2cde90b5e71a55e1ce612296df3edbfab6",
+  "prompts": {},
+  "sessions": {
+    "s_bde36544fa60f7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12dcb-f948-7c70-bf38-ef1a2fd89a06",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tth <xyz@foo.com>"
+    }
+  }
+}
