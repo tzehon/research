@@ -1,0 +1,11 @@
+{
+  "thresholdMs": 180,
+  "windowSeconds": 300,
+  "sustainSeconds": 180,
+  "minSamples": 500,
+  "freshnessSeconds": 15,
+  "recoveryRatio": 0.7,
+  "recoverySeconds": 120,
+  "cooldownSeconds": 600,
+  "pollSeconds": 5
+}

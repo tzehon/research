@@ -1,0 +1,6 @@
+.local
+node_modules
+dist
+docs/protocol
+package-lock.json
+demo-app/package-lock.json
