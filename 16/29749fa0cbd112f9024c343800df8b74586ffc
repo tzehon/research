@@ -1,0 +1,169 @@
+perf-agent/src/system.ts
+  s_2af8f63ddecc57::t_5962530d5740d3 54
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 1-3,5-16,18-53,55-67,69-122,125-157
+  s_2af8f63ddecc57::t_c3356c409edc15 4,17,68,123-124,158
+perf-agent/web/index.html
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 1-13
+perf-agent/tests/mcp.test.ts
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 1,3-31
+  s_fd7dacf07fd1d5::t_6d2738868beb5f 2
+perf-agent/web/main.ts
+  s_fd7dacf07fd1d5::t_88efe506ddbdf4 2-3
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 1,4
+perf-agent/tests/state.test.ts
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 1-42
+perf-agent/tsconfig.app.json
+  s_2af8f63ddecc57::t_ffa7ffaa6b0455 1-14
+perf-agent/src/cli.ts
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 1,4-32,34-45,51-181
+  s_2af8f63ddecc57::t_5962530d5740d3 33,46-50
+  s_fd7dacf07fd1d5::t_05033c41a401a9 2-3
+perf-agent/src/state.ts
+  s_2af8f63ddecc57::t_90b84ad52c3725 39,94
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 1-38,40-93
+perf-agent/.env.example
+  s_2af8f63ddecc57::t_6f0e43aac8bfa4 1-3
+perf-agent/src/benchmark.ts
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 2-43,47-203
+  s_2af8f63ddecc57::t_c3356c409edc15 1
+  s_fd7dacf07fd1d5::t_668c16e2d3ef5c 44-46
+perf-agent/tests/benchmark.test.ts
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 1-47
+perf-agent/src/config.ts
+  s_2af8f63ddecc57::t_90b84ad52c3725 2
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 1,3-59
+perf-agent/web/App.svelte
+  s_2af8f63ddecc57::t_b5f78f81d09352 366
+  s_fd7dacf07fd1d5::t_88efe506ddbdf4 1,187-188,190
+  s_2af8f63ddecc57::t_70ba2540e63093 610
+  s_2af8f63ddecc57::t_7a7ad7cccb3bc1 454-469
+  s_fd7dacf07fd1d5::t_668c16e2d3ef5c 383-386,501
+  s_2af8f63ddecc57::t_076717f356e1f5 55-84,137-143,423
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 2-54,85-136,144-186,189,191-365,367-382,387-422,424-453,470-500,502-532,534-609,611-624
+  s_2af8f63ddecc57::t_a233b76fd1d05f 533
+perf-agent/tests/evidence.test.ts
+  s_2af8f63ddecc57::t_bacece11b20ab3 6-16,19-21,23-34
+  s_2af8f63ddecc57::t_d7cc7c1db48239 1-5,17-18,22,35-36
+perf-agent/scripts/protocol-smoke.ts
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 1-23
+perf-agent/src/publish.ts
+  s_fd7dacf07fd1d5::t_bfa3ad8e47874e 1,143
+  s_2af8f63ddecc57::t_a233b76fd1d05f 9,19
+  s_2af8f63ddecc57::t_51be8f0ce2a647 8,10-18,20-48,94,101-106,135-141
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 2-7,49-93,95-100,107-134,142
+perf-agent/src/telemetry-mcp.ts
+  s_2af8f63ddecc57::t_c3356c409edc15 60
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 1-6,16-31,33-59
+  s_2af8f63ddecc57::t_74a44ba6d89195 7-15,32
+perf-agent/.prettierignore
+  s_2af8f63ddecc57::t_a2eb1e279389f2 1-6
+perf-agent/.prettierrc.json
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 1-7
+perf-agent/tsconfig.json
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 1-14
+perf-agent/tests/monitor.test.ts
+  s_2af8f63ddecc57::t_6a59e9f2d6a11a 2
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 1,3-101
+perf-agent/scripts/e2e.ts
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 1,4-66
+  s_fd7dacf07fd1d5::t_05033c41a401a9 2-3
+perf-agent/config/local.example.json
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 1-6
+perf-agent/tsconfig.web.json
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 1-15
+perf-agent/web/style.css
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 1-714
+  s_fd7dacf07fd1d5::t_402f92662a0ae7 715-726
+perf-agent/src/agent.ts
+  s_fd7dacf07fd1d5::t_668c16e2d3ef5c 183-187
+  s_2af8f63ddecc57::t_bf06896b26383c 1-8,191-213
+  s_2af8f63ddecc57::t_b9db366ca90f77 188-190
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 11-98,100-182,214-300,302-313
+  s_fd7dacf07fd1d5::t_bfa3ad8e47874e 9-10,99,301,314
+perf-agent/config/monitor.json
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 1-11
+perf-agent/tests/rpc.test.ts
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 1-61
+perf-agent/src/metrics.ts
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 1-80,82-107
+  s_2af8f63ddecc57::t_90b84ad52c3725 81
+perf-agent/.github/workflows/ci.yml
+  s_2af8f63ddecc57::t_38574653a85d93 1-17
+perf-agent/src/monitor.ts
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 1-48
+perf-agent/src/evidence.ts
+  s_2af8f63ddecc57::t_bacece11b20ab3 5-9,12-18,22-24,26-31
+  s_2af8f63ddecc57::t_d7cc7c1db48239 1-4,10-11,19-21,25,32
+perf-agent/web/svelte.config.js
+  s_2af8f63ddecc57::t_38574653a85d93 1
+perf-agent/vite.config.ts
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 1-8
+perf-agent/src/controller.ts
+  s_2af8f63ddecc57::t_79e5c38e99a7cf 18,335,350
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 3-17,19-21,24-169,172-179,183-303,305-334,351-536
+  s_2af8f63ddecc57::t_718110adc9234e 304
+  s_fd7dacf07fd1d5::t_076bb270c9059d 1-2,23,537
+  s_2af8f63ddecc57::t_a233b76fd1d05f 180-182
+  s_2af8f63ddecc57::t_b9db366ca90f77 170
+  s_fd7dacf07fd1d5::t_668c16e2d3ef5c 336-349
+  s_2af8f63ddecc57::t_14702ead76bbe6 22,171
+perf-agent/src/rpc.ts
+  s_2af8f63ddecc57::t_90b84ad52c3725 4,78-79,106
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 1-3,5-77,80-105,107-136
+perf-agent/config/demo.json
+  s_2af8f63ddecc57::t_74a44ba6d89195 13
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 1-12,14-24
+perf-agent/package.json
+  s_2af8f63ddecc57::t_a2eb1e279389f2 27,29-31,34,40-41,45
+  s_2af8f63ddecc57::t_ffa7ffaa6b0455 16,20-21
+  s_2af8f63ddecc57::t_6f0e43aac8bfa4 1,9,35,48
+  s_2af8f63ddecc57::t_14e92c65899b6a 2-8,10-15,17-19,22-26,28,32-33,36-39,42-44,46-47
+perf-agent/docs/protocol/ClientRequest.json
+  s_fd7dacf07fd1d5::t_1493f8fb2d3511 1-8299
+perf-agent/docs/protocol/ServerNotification.json
+  s_fd7dacf07fd1d5::t_7fbea6d4546192 1-8437
+perf-agent/docs/protocol/ServerRequest.json
+  s_fd7dacf07fd1d5::t_2b863296322878 1-2096
+perf-agent/docs/protocol/v1/InitializeParams.json
+  s_fd7dacf07fd1d5::t_b85bdd71b08bb5 1-84
+perf-agent/docs/protocol/v1/InitializeResponse.json
+  s_fd7dacf07fd1d5::t_6574c8f4c132de 1-38
+perf-agent/docs/protocol/v2/ThreadResumeParams.json
+  s_fd7dacf07fd1d5::t_4539a0f167664b 1-1531
+perf-agent/docs/protocol/v2/ThreadStartParams.json
+  s_fd7dacf07fd1d5::t_9eb2622029512b 1-424
+perf-agent/docs/protocol/v2/ThreadTokenUsageUpdatedNotification.json
+  s_fd7dacf07fd1d5::t_da073d778262ad 1-82
+perf-agent/docs/protocol/v2/TurnInterruptParams.json
+  s_fd7dacf07fd1d5::t_a5309f620fc7f5 1-17
+perf-agent/docs/protocol/v2/TurnStartParams.json
+  s_fd7dacf07fd1d5::t_2ae5be1af9d236 1-841
+perf-agent/package-lock.json
+  s_2af8f63ddecc57::t_ea955e015b1db4 1-4228
+perf-agent/tests/publish.test.ts
+  s_2af8f63ddecc57::t_b41fe14347824f 1-42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1629749fa0cbd112f9024c343800df8b74586ffc",
+  "prompts": {},
+  "sessions": {
+    "s_2af8f63ddecc57": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12dad-472c-7ad3-bd9a-f7e536f0786a",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tth <xyz@foo.com>"
+    },
+    "s_fd7dacf07fd1d5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a12dad-472c-7ad3-bd9a-f7e536f0786a",
+        "model": "unknown"
+      },
+      "human_author": "tth <xyz@foo.com>"
+    }
+  }
+}
