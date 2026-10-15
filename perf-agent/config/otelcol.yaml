@@ -1,0 +1,43 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+      grpc:
+        endpoint: 0.0.0.0:4317
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: storefront
+          scrape_interval: 2s
+          static_configs:
+            - targets:
+                [host.docker.internal:4100, host.docker.internal:4101, host.docker.internal:4102]
+processors:
+  batch:
+    timeout: 1s
+exporters:
+  otlphttp/metrics:
+    endpoint: http://127.0.0.1:9090/api/v1/otlp
+  otlphttp/traces:
+    endpoint: http://127.0.0.1:4418
+  otlphttp/logs:
+    endpoint: http://127.0.0.1:3100/otlp
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+service:
+  extensions: [health_check]
+  pipelines:
+    metrics:
+      receivers: [prometheus]
+      processors: [batch]
+      exporters: [otlphttp/metrics]
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlphttp/traces]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlphttp/logs]

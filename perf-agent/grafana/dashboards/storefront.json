@@ -1,0 +1,137 @@
+{
+  "uid": "storefront",
+  "title": "Local storefront",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "tags": ["perf-agent", "local"],
+  "templating": {
+    "list": [
+      {
+        "name": "deployment",
+        "type": "query",
+        "datasource": {
+          "uid": "metrics",
+          "type": "prometheus"
+        },
+        "query": "label_values(storefront_heartbeat_seconds{service=\"storefront\"}, deployment)",
+        "refresh": 2,
+        "includeAll": false
+      },
+      {
+        "name": "window",
+        "type": "custom",
+        "query": "30s,300s",
+        "current": {
+          "text": "30s",
+          "value": "30s"
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "p95 latency",
+      "type": "timeseries",
+      "datasource": {
+        "uid": "metrics",
+        "type": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 8,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(storefront_request_duration_seconds_bucket{service=\"storefront\",route=\"/api/products\",deployment=\"$deployment\"}[$window])))"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Request rate",
+      "type": "timeseries",
+      "datasource": {
+        "uid": "metrics",
+        "type": "prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 0,
+        "w": 8,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(storefront_request_duration_seconds_count{service=\"storefront\",route=\"/api/products\",deployment=\"$deployment\"}[$window]))"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Server errors",
+      "type": "timeseries",
+      "datasource": {
+        "uid": "metrics",
+        "type": "prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 0,
+        "w": 8,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(storefront_request_duration_seconds_count{service=\"storefront\",route=\"/api/products\",deployment=\"$deployment\",status=~\"5..\"}[$window])) or vector(0)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Correlated request logs \u2014 click a trace ID",
+      "type": "logs",
+      "datasource": {
+        "uid": "logs",
+        "type": "loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 24,
+        "h": 12
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{service_name=\"storefront\"} | json"
+        }
+      ]
+    }
+  ]
+}

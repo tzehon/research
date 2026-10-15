@@ -1,0 +1,7 @@
+apiVersion: 1
+providers:
+  - name: perf-agent
+    folder: Performance Agent
+    type: file
+    options:
+      path: /demo-provisioning/dashboards

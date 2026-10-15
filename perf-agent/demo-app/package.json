@@ -1,0 +1,22 @@
+{
+  "name": "forma-storefront",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "1.9.0",
+    "@opentelemetry/sdk-node": "0.223.0",
+    "@opentelemetry/exporter-trace-otlp-http": "0.223.0",
+    "@opentelemetry/exporter-logs-otlp-http": "0.223.0",
+    "@opentelemetry/sdk-logs": "0.223.0",
+    "@opentelemetry/resources": "2.9.0",
+    "pg": "8.23.1",
+    "prom-client": "15.1.3"
+  }
+}

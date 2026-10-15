@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>Forma — Objects for everyday</title
+  ><style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      background: #f7f5ef;
+      color: #26362c;
+      font: 16px system-ui;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      padding: 24px 6%;
+      border-bottom: 1px solid #d8ddd3;
+    }
+    .brand {
+      font: 32px Georgia;
+    }
+    main {
+      max-width: 1200px;
+      margin: auto;
+      padding: 50px 24px;
+    }
+    small {
+      letter-spacing: 2px;
+      color: #718276;
+    }
+    h1 {
+      font: 64px Georgia;
+      max-width: 650px;
+      margin: 20px 0;
+    }
+    p {
+      color: #738073;
+    }
+    input {
+      width: 100%;
+      padding: 18px;
+      border: 1px solid #c8d0c3;
+      border-radius: 12px;
+      background: white;
+      font: inherit;
+      margin: 24px 0;
+    }
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background: white;
+      border: 1px solid #e4e7de;
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .art {
+      height: 150px;
+      display: grid;
+      place-items: center;
+      font-size: 70px;
+      background: #e7ecdf;
+    }
+    .info {
+      padding: 20px;
+    }
+    .info h2 {
+      font: 23px Georgia;
+      margin: 0 0 12px;
+    }
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: #74806d;
+    }
+    #status {
+      min-height: 24px;
+      font-size: 13px;
+    }
+    footer {
+      padding: 30px;
+      text-align: center;
+      color: #82907c;
+      font-size: 12px;
+    }
+  </style>
+  <header><span class="brand">forma.</span><span>Thoughtfully made. Simply lived.</span></header>
+  <main>
+    <small>THE EVERYDAY COLLECTION</small>
+    <h1>A little more considered.</h1>
+    <p>Warm textures, quiet shapes, and useful things for your space.</p>
+    <label for="search">Find your next favourite</label
+    ><input id="search" placeholder="Search lamps, chairs, throws…" type="search" />
+    <div id="status" role="status">Opening the collection…</div>
+    <div id="grid"></div>
+  </main>
+  <footer>Local demo · deterministic catalog · live inventory</footer>
+  <script>
+    let sequence = 0;
+    async function load() {
+      const n = ++sequence,
+        start = performance.now();
+      document.querySelector('#status').textContent = 'Finding your objects…';
+      try {
+        const r = await fetch(
+          '/api/products?q=' + encodeURIComponent(document.querySelector('input').value)
+        );
+        if (!r.ok) throw new Error('Catalog unavailable');
+        const data = await r.json();
+        if (n !== sequence) return;
+        document.querySelector('#grid').replaceChildren(
+          ...data.products.map((p) => {
+            const card = document.createElement('article');
+            card.className = 'card';
+            const art = document.createElement('div');
+            art.className = 'art';
+            art.textContent = { Lighting: '◒', Objects: '◡', Furniture: '▱', Textiles: '▧' }[
+              p.category
+            ];
+            const info = document.createElement('div');
+            info.className = 'info';
+            const title = document.createElement('h2');
+            title.textContent = p.name;
+            const meta = document.createElement('div');
+            meta.className = 'meta';
+            meta.textContent =
+              '$' + (p.price_cents / 100).toFixed(2) + ' · ' + p.stock + ' in stock';
+            info.append(title, meta);
+            card.append(art, info);
+            return card;
+          })
+        );
+        document.querySelector('#status').textContent =
+          data.products.length +
+          ' objects · ' +
+          Math.round(performance.now() - start) +
+          ' ms · revision ' +
+          data.revision.slice(0, 8);
+      } catch (e) {
+        document.querySelector('#status').textContent = e.message;
+      }
+    }
+    let timer;
+    document.querySelector('input').addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = setTimeout(load, 200);
+    });
+    load();
+  </script>
+</html>
