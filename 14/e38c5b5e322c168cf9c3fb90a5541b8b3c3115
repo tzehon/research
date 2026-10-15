@@ -1,0 +1,74 @@
+perf-agent/demo-app/server.mjs
+  s_2af8f63ddecc57::t_1b1ece509b661a 1,12-14,28-30,32,91,152-153
+  s_2af8f63ddecc57::t_74a44ba6d89195 24-26
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 2-11,15-23,27,31,33-90,92-151,154-164
+perf-agent/demo-app/package.json
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 1-22
+perf-agent/demo-app/index.html
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 1-157
+perf-agent/config/otelcol.yaml
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 14-15
+  s_2af8f63ddecc57::t_6f0e43aac8bfa4 1-13,16-43
+perf-agent/demo-app/README.md
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 2
+  s_2af8f63ddecc57::t_6f0e43aac8bfa4 1,3
+perf-agent/compose.yaml
+  s_fd7dacf07fd1d5::t_19e73a79c45c76 13
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 9,15,27,30-41
+  s_2af8f63ddecc57::t_5962530d5740d3 20-24
+  s_2af8f63ddecc57::t_6f0e43aac8bfa4 1-3,5-8,10-12,14,16-19,26,28-29,42-48
+  s_2af8f63ddecc57::t_47972a61db3c64 4,25
+perf-agent/LICENSE
+  s_fd7dacf07fd1d5::t_924039516ca71b 1-21
+perf-agent/grafana/datasources/local.yaml
+  s_2af8f63ddecc57::t_6f0e43aac8bfa4 1-34
+perf-agent/scenario/regression.mjs
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 2-5,8-11
+  s_2af8f63ddecc57::t_6f0e43aac8bfa4 1,6-7,12-14
+perf-agent/grafana/dashboards/provider.yaml
+  s_2af8f63ddecc57::t_6f0e43aac8bfa4 1-7
+perf-agent/demo-app/src/search.mjs
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 2-11
+  s_2af8f63ddecc57::t_6f0e43aac8bfa4 1,12
+perf-agent/demo-app/AGENTS.md
+  s_2af8f63ddecc57::t_6f0e43aac8bfa4 1-7
+perf-agent/.gitignore
+  s_2af8f63ddecc57::t_6f0e43aac8bfa4 1-9
+perf-agent/fixtures/data.sql
+  s_fd7dacf07fd1d5::t_19e73a79c45c76 1-5
+perf-agent/demo-app/.gitignore
+  s_2af8f63ddecc57::t_6f0e43aac8bfa4 1-3
+perf-agent/grafana/dashboards/storefront.json
+  s_fd7dacf07fd1d5::t_88efe506ddbdf4 1-10,12-23,33-53,55-79,81-105,107-137
+  s_2af8f63ddecc57::t_c22f80d6c09c1a 11
+  s_fd7dacf07fd1d5::t_924039516ca71b 24-32,54,80,106
+perf-agent/fixtures/seed.sql
+  s_2af8f63ddecc57::t_6f0e43aac8bfa4 1-2,4-10
+  s_fd7dacf07fd1d5::t_19e73a79c45c76 3
+perf-agent/demo-app/package-lock.json
+  s_fd7dacf07fd1d5::t_a3cc1485c95e71 1-1277
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "14e38c5b5e322c168cf9c3fb90a5541b8b3c3115",
+  "prompts": {},
+  "sessions": {
+    "s_2af8f63ddecc57": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12dad-472c-7ad3-bd9a-f7e536f0786a",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tth <xyz@foo.com>"
+    },
+    "s_fd7dacf07fd1d5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a12dad-472c-7ad3-bd9a-f7e536f0786a",
+        "model": "unknown"
+      },
+      "human_author": "tth <xyz@foo.com>"
+    }
+  }
+}
