@@ -8,17 +8,57 @@ Everything except Codex inference and optional GitHub operations runs on your Ma
 
 Requirements:
 
-- Apple Silicon Mac, **OrbStack** running with its `orbstack` Docker context; Docker Compose v2.
+- Apple Silicon Mac, **OrbStack or Colima** (Docker runtime); Docker CLI with the `docker compose` plugin (v2 or newer).
 - Node.js 24–26 and npm; Git; Google Chrome 149+ in `/Applications`.
 - **Codex CLI 0.155.1**, authenticated with `codex login`. The protocol is pinned to the installed version used to build this project.
 - Optional GitHub CLI `gh`, authenticated with `gh auth login`, and an explicitly configured application repository.
-- Allow roughly 4 GB free memory for the local stack plus Chrome/model runtime. Initial image downloads require internet.
+- Allow memory for the container stack plus native Node and Chrome processes; the Colima setup below allocates 6 GiB to its VM. Initial image downloads require internet.
+
+### Choose a container runtime
+
+**OrbStack (default)**: [Install OrbStack](https://docs.orbstack.dev/install), open it, and finish its setup. Check that its Docker engine and Compose plugin are available:
+
+```sh
+docker --context orbstack info
+docker --context orbstack compose version
+```
+
+The demo defaults to `dockerContext: "orbstack"`; no local configuration is needed.
+
+**Colima**: [Install Colima and the Docker tools](https://colima.run/docs/installation/). With Homebrew:
+
+```sh
+brew install colima docker docker-compose
+colima start --runtime docker --cpus 4 --memory 6
+docker --context colima info
+docker --context colima compose version
+```
+
+If Docker cannot find `compose`, follow the [Homebrew plugin configuration instructions](https://formulae.brew.sh/formula/docker-compose) to add Homebrew's CLI plugin directory to your existing `~/.docker/config.json`. Preserve any existing settings. Start with 4 CPUs and 6 GiB of VM memory for this demo, leaving additional host memory for Node and Chrome.
+
+From the checked-out project directory, create the ignored local configuration:
 
 ```sh
 cd perf-agent
+cp -n config/local.example.json config/local.json
+```
+
+Edit `config/local.json` and set `"dockerContext": "colima"`. For a named Colima profile, use its exact context from `docker context ls`, such as `colima-demo`. Keep the checkout under your home directory, which Colima shares by default, or configure a Colima mount for its location. The collector uses `host.docker.internal` to scrape the native Mac app; retain Colima's default mapping for that hostname.
+
+Both runtimes work through the configured Docker context without an environment override. Every Docker command uses that explicit context; changing the global Docker context does not change the demo's selection. To switch engines, run `npm run demo:stop` **before** changing `dockerContext`, then start the other engine. Images and database/telemetry volumes are separate per engine; local investigation state and evidence remain in `.local`.
+
+### Install and launch
+
+From `perf-agent/`, with either runtime running:
+
+```sh
 npm ci
+codex login
+npm run demo:preflight
 npm run demo
 ```
+
+The full workflow has been verified on OrbStack. Colima is accepted by the launcher and uses the same Compose stack, but has not yet received an end-to-end verification run. The launcher still requires macOS; Linux and Windows need platform-specific changes.
 
 The command checks prerequisites and port ownership, prepares an independent local application repository, builds the dashboard, starts the project’s Compose services and local processes, waits for readiness, and opens an authenticated dashboard URL. Leave that terminal running.
 
@@ -59,7 +99,7 @@ flowchart LR
   C --> GH[Optional draft GitHub PR]
 ```
 
-The controller and storefront run as native Node processes on the Mac. PostgreSQL and `grafana/otel-lgtm:0.36.0` run in OrbStack. No `platform: linux/amd64` override is used; Docker selects native arm64 images. Grafana provisioning, collector configuration, fixtures, scenario revisions, benchmark definitions and controller settings live outside the agent's writable application worktree.
+The controller and storefront run as native Node processes on the Mac. PostgreSQL and `grafana/otel-lgtm:0.36.0` run in the configured OrbStack or Colima Docker engine. No `platform: linux/amd64` override is used; Docker selects native arm64 images. Grafana provisioning, collector configuration, fixtures, scenario revisions, benchmark definitions and controller settings live outside the agent's writable application worktree.
 
 The bundled app is a deterministic 48-product storefront. The fixture models a warehouse round-trip with one **12ms database-side delay per stock query**, identical for every revision. The prepared regression changes query behavior in application source; it is not a telemetry override or runtime feature flag. Exact p95 values vary with hardware and contention. The agent receives the incident, telemetry tools, browser tools and current source, with no prewritten diagnosis or solution in its prompt.
 
@@ -79,7 +119,7 @@ This aggregates histogram buckets before computing p95. Request rate and sample 
 The demo defaults are 180ms threshold, 30s window, 20s sustained breach, minimum 50 requests, 12s freshness, recovery below 70% of threshold for 20s, then 60s cooldown. Only one unresolved incident is allowed. Deployment uniqueness and persisted incident/thread IDs prevent duplicate investigations.
 
 ```sh
-cp config/local.example.json config/local.json
+cp -n config/local.example.json config/local.json
 # Edit ignored config/local.json as needed.
 PERF_PROFILE=monitor npm run demo  # 5-minute window and slower sustained/cooldown settings
 ```
@@ -117,7 +157,7 @@ npm run demo:setup
 # Replace OWNER/REPO with your explicitly chosen application target.
 git -C .local/application remote add demo-target git@github.com:OWNER/REPO.git
 git -C .local/application push demo-target main demo-regression
-cp config/local.example.json config/local.json
+cp -n config/local.example.json config/local.json
 # Set targetRemote to git@github.com:OWNER/REPO.git and targetBase to demo-regression.
 gh auth status
 npm run demo

@@ -37,10 +37,6 @@ export async function preflight() {
   await run('codex', ['login', 'status']);
   await run('git', ['--version']);
   await run('docker', ['--context', c.dockerContext, 'info', '--format', '{{.OperatingSystem}}']);
-  if (c.dockerContext !== 'orbstack' && !process.env.PERF_ALLOW_ALTERNATE_ENGINE)
-    throw new Error(
-      'Use OrbStack context or explicitly set PERF_ALLOW_ALTERNATE_ENGINE=1 for an authorized test only.'
-    );
   if (!existsSync('/Applications/Google Chrome.app'))
     throw new Error('Install Google Chrome in /Applications for Chrome DevTools MCP.');
   const chromeVersion = await run('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', [
