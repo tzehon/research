@@ -1,0 +1,23 @@
+perf-agent/README.md
+  s_5085af199ce7fc::t_5dcdaac0df37fe 11,17-39,43-54,56-57,61-62,102,122,160
+  s_5085af199ce7fc::t_6d7a2eba24ad0f 15
+  s_5085af199ce7fc::t_7c625001053f99 16
+perf-agent/docs/TROUBLESHOOTING.md
+  s_5085af199ce7fc::t_5dcdaac0df37fe 3,5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b1959d85d4a32ccd86ae56c0654f7b3c7ed1d404",
+  "prompts": {},
+  "sessions": {
+    "s_5085af199ce7fc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13cef-66b1-7070-9eea-f307a44dc260",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tth <xyz@foo.com>"
+    }
+  }
+}
