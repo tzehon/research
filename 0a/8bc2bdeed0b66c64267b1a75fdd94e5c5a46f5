@@ -1,0 +1,38 @@
+perf-agent/src/codex-version.ts
+  s_9b97bd54a4054d::t_7d1ad49f137f7f 1-3,7-8,11-13
+  s_9b97bd54a4054d::t_baf72f05ced2e9 4-6,9-10
+perf-agent/docs/TROUBLESHOOTING.md
+  s_8e8250b04627e3::t_15305af259c1e6 7,9
+perf-agent/src/cli.ts
+  s_9b97bd54a4054d::t_7d1ad49f137f7f 8,34
+perf-agent/README.md
+  s_8e8250b04627e3::t_15305af259c1e6 13
+perf-agent/docs/SOURCES.md
+  s_8e8250b04627e3::t_15305af259c1e6 5
+perf-agent/tests/codex-version.test.ts
+  s_9b97bd54a4054d::t_7d1ad49f137f7f 1-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0a8bc2bdeed0b66c64267b1a75fdd94e5c5a46f5",
+  "prompts": {},
+  "sessions": {
+    "s_8e8250b04627e3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a153ab-f977-7ec2-b427-53c1892cc401",
+        "model": "unknown"
+      },
+      "human_author": "tth <xyz@foo.com>"
+    },
+    "s_9b97bd54a4054d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a153ab-f977-7ec2-b427-53c1892cc401",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tth <xyz@foo.com>"
+    }
+  }
+}
