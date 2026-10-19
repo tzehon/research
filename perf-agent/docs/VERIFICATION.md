@@ -28,7 +28,7 @@ Incident `71383141-ba64-4ee8-8643-3d3f5abc81f3` used thread `01a12dc0-45e4-7892-
 
 Successful app-server events include all four telemetry MCP tools (`metrics_query`, `logs_query`, `traces_search`, `trace_get`) and Chrome visits to the storefront and provisioned Grafana dashboard, search-field interaction, network inspection, screenshot capture and performance-trace start/stop. The recorded distributed trace showed one product query followed by 24 sequential inventory queries. Browser captures and the performance trace were saved to the incident evidence directory. Public events streamed into the Investigation tab; reasoning items were filtered out.
 
-The agent resumed the same thread between investigation and fixing. Its reported cumulative usage was 487,680 tokens, including cached input, within the configured 500,000-token soft limit. This is not a billing estimate or a promise of future usage. Earlier rehearsal failures exposed missing MCP approval metadata, an insufficient initial budget, and an incompatible log-exporter constructor; these were corrected before the passing run. The failed-run evidence was retained.
+The agent resumed the same thread between investigation and fixing. Its reported cumulative usage was 487,680 tokens, including cached input, within the 500,000-token soft limit configured at the time (the token cap has since been removed). This is not a billing estimate or a promise of future usage. Earlier rehearsal failures exposed missing MCP approval metadata, an insufficient initial budget, and an incompatible log-exporter constructor; these were corrected before the passing run. The failed-run evidence was retained.
 
 ## Lifecycle and automated checks
 
