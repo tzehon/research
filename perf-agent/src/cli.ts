@@ -5,6 +5,7 @@ import { root, local, config, initLocal, urls } from './config.ts';
 import { run, setupRepo, compose, waitReady } from './system.ts';
 import { Store } from './state.ts';
 import { Controller } from './controller.ts';
+import { requireCodexVersion } from './codex-version.ts';
 initLocal();
 const c = config();
 const runtime = path.join(local, 'runtime.json');
@@ -30,10 +31,7 @@ export async function preflight() {
   if (Number(process.versions.node.split('.')[0]) < 24)
     throw new Error('Node 24+ is required (node:sqlite).');
   const version = await run('codex', ['--version']);
-  if (!/^codex-cli 0\.155\.1(?:\s|$)/.test(version))
-    throw new Error(
-      `Protocol pin requires codex-cli 0.155.1, found ${version}. See docs/protocol and README upgrade procedure.`
-    );
+  requireCodexVersion(version);
   await run('codex', ['login', 'status']);
   await run('git', ['--version']);
   await run('docker', ['--context', c.dockerContext, 'info', '--format', '{{.OperatingSystem}}']);

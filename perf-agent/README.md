@@ -10,7 +10,7 @@ Requirements:
 
 - Apple Silicon Mac, **OrbStack or Colima** (Docker runtime); Docker CLI with the `docker compose` plugin (v2 or newer).
 - Node.js 24–26 and npm; Git; Google Chrome 149+ in `/Applications`.
-- **Codex CLI 0.155.1**, authenticated with `codex login`. The protocol is pinned to the installed version used to build this project.
+- **Codex CLI 0.155.1 or newer**, authenticated with `codex login`. The checked-in protocol schemas document the baseline version used to build this project.
 - Optional GitHub CLI `gh`, authenticated with `gh auth login`, and an explicitly configured application repository.
 - Allow memory for the container stack plus native Node and Chrome processes; the Colima setup below allocates 6 GiB to its VM. Initial image downloads require internet.
 
