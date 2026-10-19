@@ -16,7 +16,6 @@ export const schema = z.object({
   pollSeconds: z.number().min(1),
   trafficRps: z.number().min(1).max(50),
   budgetSeconds: z.number().min(30).max(3600),
-  tokenBudget: z.number().int().positive(),
   maxAttempts: z.number().int().min(1).max(3),
   warmupSeconds: z.number().min(2),
   benchmarkSeconds: z.number().min(5),

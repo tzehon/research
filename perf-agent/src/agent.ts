@@ -163,10 +163,6 @@ export class AgentSession {
       if (m.method === 'thread/tokenUsage/updated') {
         i.tokens = m.params.tokenUsage.total.totalTokens;
         this.store.save(i);
-        if (i.tokens > this.cfg.tokenBudget) {
-          void this.cancel();
-          doneReject(new Error('Token budget exhausted (checked at usage updates)'));
-        }
       }
       const item = m.params?.item;
       if (m.method === 'item/completed' && item?.type === 'agentMessage') finalText = item.text;

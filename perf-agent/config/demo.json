@@ -10,7 +10,6 @@
   "pollSeconds": 3,
   "trafficRps": 8,
   "budgetSeconds": 900,
-  "tokenBudget": 500000,
   "maxAttempts": 2,
   "warmupSeconds": 8,
   "benchmarkSeconds": 20,
