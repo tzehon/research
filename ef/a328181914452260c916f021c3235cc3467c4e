@@ -1,0 +1,25 @@
+perf-agent/tests/agent.test.ts
+  s_9b97bd54a4054d::t_15f919b0cfcb00 1-65
+perf-agent/docs/PRESENTER.md
+  s_9b97bd54a4054d::t_385b44c83c42a4 9
+perf-agent/docs/VERIFICATION.md
+  s_9b97bd54a4054d::t_40e8193f41b9ca 31
+perf-agent/README.md
+  s_9b97bd54a4054d::t_385b44c83c42a4 138
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "efa328181914452260c916f021c3235cc3467c4e",
+  "prompts": {},
+  "sessions": {
+    "s_9b97bd54a4054d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a153ab-f977-7ec2-b427-53c1892cc401",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tth <xyz@foo.com>"
+    }
+  }
+}
