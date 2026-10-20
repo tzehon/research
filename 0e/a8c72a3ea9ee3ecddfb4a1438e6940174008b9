@@ -1,0 +1,66 @@
+perf-agent/src/agent.ts
+  s_1cd4ab0c8b201b::t_f59c23f9bc0ea4 58-100
+  s_1cd4ab0c8b201b::t_1e16aa1641ed3b 13,45,249,268,275-278,281
+  s_1cd4ab0c8b201b::t_302e1be2e01424 251-254
+perf-agent/tests/publish.test.ts
+  s_1cd4ab0c8b201b::t_302e1be2e01424 42-44
+perf-agent/src/preflight.ts
+  s_1cd4ab0c8b201b::t_f59c23f9bc0ea4 6,17-23,25-27
+  s_a986af35791bb0::t_f9db3cb9b2fe32 1-5,7-16,24,28-31
+perf-agent/src/config.ts
+  s_1cd4ab0c8b201b::t_1e16aa1641ed3b 7-8,10
+perf-agent/tests/evidence.test.ts
+  s_1cd4ab0c8b201b::t_f59c23f9bc0ea4 15-20
+  s_1cd4ab0c8b201b::t_302e1be2e01424 5-14,21-25
+perf-agent/tests/preflight.test.ts
+  s_1cd4ab0c8b201b::t_302e1be2e01424 1-14,18-31,38-40,45-47,59-61
+  s_1cd4ab0c8b201b::t_f59c23f9bc0ea4 15-17,32-37,41-44,48-58
+perf-agent/src/cli.ts
+  s_a986af35791bb0::t_f9db3cb9b2fe32 8,48-49,127
+perf-agent/src/publish.ts
+  s_1cd4ab0c8b201b::t_1e16aa1641ed3b 27-28,49
+perf-agent/tests/agent.test.ts
+  s_1cd4ab0c8b201b::t_72fc593f0286bb 6,10,25,29
+  s_1cd4ab0c8b201b::t_f59c23f9bc0ea4 11-23,41-61,63-95
+  s_1cd4ab0c8b201b::t_3394f6838ea0d5 62
+perf-agent/tests/config.test.ts
+  s_1cd4ab0c8b201b::t_302e1be2e01424 1-16
+perf-agent/src/evidence.ts
+  s_1cd4ab0c8b201b::t_f59c23f9bc0ea4 15-17
+  s_1cd4ab0c8b201b::t_1e16aa1641ed3b 1,3-14,18
+perf-agent/src/controller.ts
+  s_1cd4ab0c8b201b::t_1e16aa1641ed3b 168-169,173
+perf-agent/config/demo.json
+  s_1cd4ab0c8b201b::t_1e16aa1641ed3b 2
+perf-agent/src/state.ts
+  s_1cd4ab0c8b201b::t_1e16aa1641ed3b 2,19
+perf-agent/config/local.example.json
+  s_1cd4ab0c8b201b::t_1e16aa1641ed3b 2
+perf-agent/web/App.svelte
+  s_1cd4ab0c8b201b::t_1e16aa1641ed3b 505-509,516
+  s_1cd4ab0c8b201b::t_f59c23f9bc0ea4 14-15,217-221
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0ea8c72a3ea9ee3ecddfb4a1438e6940174008b9",
+  "prompts": {},
+  "sessions": {
+    "s_1cd4ab0c8b201b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a158b1-982d-7b73-8e6b-a00c7118f6ed",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tth <xyz@foo.com>"
+    },
+    "s_a986af35791bb0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a158b1-982d-7b73-8e6b-a00c7118f6ed",
+        "model": "unknown"
+      },
+      "human_author": "tth <xyz@foo.com>"
+    }
+  }
+}
