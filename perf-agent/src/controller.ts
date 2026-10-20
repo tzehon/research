@@ -165,10 +165,12 @@ export class Controller {
       }
       if (i.phase === 'Investigating') {
         resume = 'Investigating';
+        i.investigationMode = this.cfg.investigationMode;
+        this.store.save(i);
         const diagnosis = await this.agent.run(i, 'Investigating', signal);
         const used = this.store.get<string[]>(`tools:${i.id}`, []);
         const visited = this.store.get<string[]>(`browserUrls:${i.id}`, []);
-        requireInvestigationEvidence(used, visited);
+        requireInvestigationEvidence(used, visited, this.cfg.investigationMode);
         i.diagnosis = diagnosis.diagnosis;
         i.outcome = diagnosis;
         i.phase = 'Fixing';

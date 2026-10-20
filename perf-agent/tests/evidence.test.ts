@@ -2,6 +2,27 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { requireInvestigationEvidence } from '../src/evidence.ts';
 
+test('telemetry-only needs every telemetry tool but no browser tools or visits', () => {
+  const tools = [
+    'observability/metrics_query',
+    'observability/logs_query',
+    'observability/traces_search',
+    'observability/trace_get',
+  ];
+  assert.doesNotThrow(() => requireInvestigationEvidence(tools, [], 'telemetry-only'));
+  for (const missing of tools)
+    assert.throws(
+      () =>
+        requireInvestigationEvidence(
+          tools.filter((tool) => tool !== missing),
+          [],
+          'telemetry-only'
+        ),
+      /missing/
+    );
+  assert.throws(() => requireInvestigationEvidence(tools, [], 'browser'), /missing/);
+});
+
 test('investigation requires telemetry detail, an exercised browser journey, and completed captures', () => {
   const tools = [
     'observability/metrics_query',

@@ -24,6 +24,8 @@ ${bullets(outcome?.changes)}
 
 ## Supporting evidence
 
+Investigation mode: ${i.investigationMode || 'browser'}.${i.investigationMode === 'telemetry-only' ? ' Diagnosis uses metrics, logs and distributed trace details; browser interaction, screenshots and browser performance traces were not required.' : ''}
+
 ${bullets(outcome?.evidence)}
 
 ## Independent validation
@@ -44,7 +46,7 @@ Local synthetic fixture and workload; laptop contention and short windows affect
 
 ${bullets(outcome?.uncertainties)}
 
-Screenshots, distributed spans, browser traces, event history and benchmark JSON remain local under the incident ID and are not uploaded automatically.
+Collected evidence, event history and benchmark JSON remain local under the incident ID and are not uploaded automatically.
 `;
 }
 export async function publish(i: Incident, c: Config) {

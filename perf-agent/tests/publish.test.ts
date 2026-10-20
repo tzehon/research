@@ -39,4 +39,7 @@ test('PR evidence reports measured candidate results without claiming production
     'not production recovery',
   ])
     assert.ok(body.includes(text));
+  const telemetryBody = prBody({ ...i, investigationMode: 'telemetry-only' });
+  assert.ok(telemetryBody.includes('Investigation mode: telemetry-only'));
+  assert.ok(telemetryBody.includes('browser performance traces were not required'));
 });

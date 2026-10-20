@@ -10,7 +10,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { z } from 'zod';
 import { AppServer, publicEvent } from './rpc.ts';
-import { root, local, urls, type Config } from './config.ts';
+import { root, local, urls, type Config, type InvestigationMode } from './config.ts';
 import { queries } from './metrics.ts';
 import type { Store, Incident } from './state.ts';
 export const outcomeSchema = {
@@ -42,7 +42,7 @@ export function agentEnvironment() {
     symlinkSync(auth, path.join(home, 'auth.json'));
   return { ...process.env, CODEX_HOME: home };
 }
-export function agentConfig(i: Incident) {
+export function agentConfig(i: Incident, mode: InvestigationMode = 'browser') {
   const evidence = path.join(i.worktree!, 'evidence');
   mkdirSync(evidence, { recursive: true });
   return {
@@ -55,42 +55,49 @@ export function agentConfig(i: Incident) {
         ],
         required: true,
       },
-      chrome: {
-        default_tools_approval_mode: 'approve',
-        enabled_tools: [
-          'new_page',
-          'navigate_page',
-          'list_pages',
-          'select_page',
-          'take_snapshot',
-          'take_screenshot',
-          'fill',
-          'fill_form',
-          'click',
-          'wait_for',
-          'list_network_requests',
-          'get_network_request',
-          'performance_start_trace',
-          'performance_stop_trace',
-          'performance_analyze_insight',
-          'list_console_messages',
-          'get_console_message',
-        ],
-        command: process.execPath,
-        args: [
-          path.join(root, 'node_modules/chrome-devtools-mcp/build/src/bin/chrome-devtools-mcp.js'),
-          '--headless',
-          `--user-data-dir=${path.join(local, 'chrome', i.id)}`,
-          `--workspace=${evidence}`,
-          '--no-usage-statistics',
-          '--no-performance-crux',
-          '--redact-network-headers',
-          '--allowed-url-pattern=http://127.0.0.1:4100/*',
-          '--allowed-url-pattern=http://127.0.0.1:3001/*',
-          '--allowed-url-pattern=http://127.0.0.1:4101/*',
-        ],
-        required: true,
-      },
+      ...(mode === 'browser'
+        ? {
+            chrome: {
+              default_tools_approval_mode: 'approve',
+              enabled_tools: [
+                'new_page',
+                'navigate_page',
+                'list_pages',
+                'select_page',
+                'take_snapshot',
+                'take_screenshot',
+                'fill',
+                'fill_form',
+                'click',
+                'wait_for',
+                'list_network_requests',
+                'get_network_request',
+                'performance_start_trace',
+                'performance_stop_trace',
+                'performance_analyze_insight',
+                'list_console_messages',
+                'get_console_message',
+              ],
+              command: process.execPath,
+              args: [
+                path.join(
+                  root,
+                  'node_modules/chrome-devtools-mcp/build/src/bin/chrome-devtools-mcp.js'
+                ),
+                '--headless',
+                `--user-data-dir=${path.join(local, 'chrome', i.id)}`,
+                `--workspace=${evidence}`,
+                '--no-usage-statistics',
+                '--no-performance-crux',
+                '--redact-network-headers',
+                '--allowed-url-pattern=http://127.0.0.1:4100/*',
+                '--allowed-url-pattern=http://127.0.0.1:3001/*',
+                '--allowed-url-pattern=http://127.0.0.1:4101/*',
+              ],
+              required: true,
+            },
+          }
+        : {}),
     },
     features: { apps: false, multi_agent: false },
     web_search: 'disabled',
@@ -239,9 +246,12 @@ export class AgentSession {
         approvalPolicy: 'on-request',
         sandbox: 'workspace-write',
         model: this.cfg.model,
-        config: agentConfig(i),
+        config: agentConfig(i, this.cfg.investigationMode),
         developerInstructions:
-          'You are investigating a local performance incident. Do not expose hidden reasoning. Give concise findings and evidence. Application source is the only writable scope. Never operate the controller or change benchmark/telemetry/scenario controls. Never use other repositories, history, or prewritten solutions. Use runtime evidence and current source. Only src/search.mjs may change; evidence files are allowed. No git commit, push, PR, deployment, or dependency installation.',
+          'You are investigating a local performance incident. Do not expose hidden reasoning. Give concise findings and evidence. Application source is the only writable scope. Never operate the controller or change benchmark/telemetry/scenario controls. Never use other repositories, history, or prewritten solutions. Use runtime evidence and current source. Only src/search.mjs may change; evidence files are allowed. No git commit, push, PR, deployment, or dependency installation.' +
+          (this.cfg.investigationMode === 'telemetry-only'
+            ? ' Telemetry-only mode is active. Do not launch a browser, use browser tools, or attempt to enable Chrome remote debugging. Report browser evidence as unavailable.'
+            : ''),
       };
       if (i.threadId)
         await rpc.request('thread/resume', { ...params, threadId: i.threadId }, 60000);
@@ -255,15 +265,20 @@ export class AgentSession {
       }
       const evidence = JSON.stringify({
         incident: i.id,
+        investigationMode: this.cfg.investigationMode,
         affectedRevision: i.revision,
         app: urls.app,
         grafana: urls.grafana + '/d/storefront/local-storefront',
         queries: queries(i.deployment, this.cfg.windowSeconds),
         latestMetric: this.store.get('sample', null),
       });
+      const browserTask =
+        this.cfg.investigationMode === 'telemetry-only'
+          ? 'This is telemetry-only mode: Chrome remote debugging and browser tools are unavailable. Do not launch a browser or attempt to enable remote debugging. Diagnose from metrics, structured logs, distributed trace details and current source. Include the lack of browser interaction, screenshots and browser performance traces in uncertainties.'
+          : `Use Chrome DevTools MCP to open the storefront, exercise product search, inspect network requests, capture a screenshot and a performance trace, and inspect the Grafana dashboard. Save browser evidence in ${path.join(i.worktree!, 'evidence')}.`;
       const task =
         phase === 'Investigating'
-          ? `Investigate this sustained p95 latency breach. Do not edit yet. Evidence context: ${evidence}. Use observability MCP for precise metrics, structured logs, trace search and trace detail. Use Chrome DevTools MCP to open the storefront, exercise product search, inspect network requests, capture a screenshot and a performance trace, and inspect the Grafana dashboard. Save browser evidence in ${path.join(i.worktree!, 'evidence')}. Read current application source. Return an evidence-based diagnosis with uncertainties, or insufficient_evidence. status ready means enough evidence to attempt a fix, not validated success.`
+          ? `Investigate this sustained p95 latency breach. Do not edit yet. Evidence context: ${evidence}. Use observability MCP for precise metrics, structured logs, trace search and trace detail. ${browserTask} Read current application source. Return an evidence-based diagnosis with uncertainties, or insufficient_evidence. status ready means enough evidence to attempt a fix, not validated success.`
           : `Implement a minimal application-source performance fix based on your investigation. Only edit src/search.mjs. Preserve all search/inventory semantics, do not disable work or hardcode fixtures. The controller runs independent validation. Return changes and diagnosis in the requested structure. If evidence is insufficient do not invent a fix.`;
       await rpc.request(
         'turn/start',

@@ -5,7 +5,7 @@ import { root, local, config, initLocal, urls } from './config.ts';
 import { run, setupRepo, compose, waitReady } from './system.ts';
 import { Store } from './state.ts';
 import { Controller } from './controller.ts';
-import { requireCodexVersion } from './codex-version.ts';
+import { preflight } from './preflight.ts';
 initLocal();
 const c = config();
 const runtime = path.join(local, 'runtime.json');
@@ -27,24 +27,6 @@ async function available(port: number) {
     s.listen(port, '0.0.0.0', () => s.close(() => resolve()));
   });
 }
-export async function preflight() {
-  if (Number(process.versions.node.split('.')[0]) < 24)
-    throw new Error('Node 24+ is required (node:sqlite).');
-  const version = await run('codex', ['--version']);
-  requireCodexVersion(version);
-  await run('codex', ['login', 'status']);
-  await run('git', ['--version']);
-  await run('docker', ['--context', c.dockerContext, 'info', '--format', '{{.OperatingSystem}}']);
-  if (!existsSync('/Applications/Google Chrome.app'))
-    throw new Error('Install Google Chrome in /Applications for Chrome DevTools MCP.');
-  const chromeVersion = await run('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', [
-    '--version',
-  ]);
-  if (Number(chromeVersion.match(/Chrome (\d+)/)?.[1] || 0) < 149)
-    throw new Error('Chrome 149+ is required for the local browser URL allowlist.');
-  await run('docker', ['--context', c.dockerContext, 'compose', 'version']);
-  if (c.targetRemote) await run('gh', ['auth', 'status']);
-}
 async function request(action: string) {
   if (!existsSync(runtime)) return false;
   const r = JSON.parse(readFileSync(runtime, 'utf8'));
@@ -63,8 +45,8 @@ async function request(action: string) {
 async function main() {
   const cmd = process.argv[2];
   if (cmd === 'preflight') {
-    await preflight();
-    console.log('Preflight passed.');
+    await preflight(c);
+    console.log(`Preflight passed. Investigation mode: ${c.investigationMode}.`);
     return;
   }
   if (cmd === 'setup') {
@@ -142,7 +124,7 @@ async function main() {
   process.once('SIGINT', signal);
   process.once('SIGTERM', signal);
   try {
-    await preflight();
+    await preflight(c);
     await Promise.all([4100, 4101, 4102, 4310, 54329, 3001, 9091, 4318, 3101, 3201].map(available));
     await setupRepo();
     await run('npm', ['run', 'build']);
