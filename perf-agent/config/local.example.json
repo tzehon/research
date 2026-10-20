@@ -1,4 +1,5 @@
 {
+  "investigationMode": "browser",
   "dockerContext": "orbstack",
   "targetRemote": null,
   "targetBase": "demo-regression",

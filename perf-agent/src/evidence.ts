@@ -1,6 +1,21 @@
-import { urls } from './config.ts';
+import { urls, type InvestigationMode } from './config.ts';
 
-export function requireInvestigationEvidence(used: string[], visited: string[]) {
+export function requireInvestigationEvidence(
+  used: string[],
+  visited: string[],
+  mode: InvestigationMode = 'browser'
+) {
+  const telemetry = [
+    'observability/metrics_query',
+    'observability/logs_query',
+    'observability/traces_search',
+    'observability/trace_get',
+  ];
+  if (!telemetry.every((tool) => used.includes(tool)))
+    throw new Error(
+      'Investigation missing successful metrics, logs, trace search or trace detail evidence'
+    );
+  if (mode === 'telemetry-only') return;
   const origins = visited.flatMap((url) => {
     try {
       return [new URL(url).origin];
@@ -9,10 +24,6 @@ export function requireInvestigationEvidence(used: string[], visited: string[]) 
     }
   });
   const required = [
-    'observability/metrics_query',
-    'observability/logs_query',
-    'observability/traces_search',
-    'observability/trace_get',
     'chrome/take_screenshot',
     'chrome/performance_start_trace',
     'chrome/performance_stop_trace',

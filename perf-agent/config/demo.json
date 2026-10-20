@@ -1,4 +1,5 @@
 {
+  "investigationMode": "browser",
   "thresholdMs": 180,
   "windowSeconds": 30,
   "sustainSeconds": 20,

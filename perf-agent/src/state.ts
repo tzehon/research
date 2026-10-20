@@ -1,4 +1,5 @@
 import { DatabaseSync } from 'node:sqlite';
+import type { InvestigationMode } from './config.ts';
 export const phases = ['Investigating', 'Fixing', 'Validating', 'PR Ready', 'Blocked'] as const;
 export type Phase = (typeof phases)[number];
 export type Incident = {
@@ -15,6 +16,7 @@ export type Incident = {
   tokens: number;
   deadline: number;
   diagnosis?: string;
+  investigationMode?: InvestigationMode;
   outcome?: unknown;
   validation?: any;
   diff?: string;

@@ -4,7 +4,10 @@ import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 export const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const local = path.join(root, '.local');
+export const investigationModeSchema = z.enum(['browser', 'telemetry-only']);
+export type InvestigationMode = z.infer<typeof investigationModeSchema>;
 export const schema = z.object({
+  investigationMode: investigationModeSchema.default('browser'),
   thresholdMs: z.number().positive().max(10000),
   windowSeconds: z.number().int().min(10).max(3600),
   sustainSeconds: z.number().min(0),

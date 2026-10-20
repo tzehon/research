@@ -11,6 +11,8 @@
     trace: any = null;
   const tabs = ['Overview', 'Investigation', 'Fix & Verification'];
   $: incident = state?.incidents?.[0];
+  $: telemetryOnly =
+    (incident?.investigationMode || state?.config?.investigationMode) === 'telemetry-only';
   $: sample = state?.sample;
   $: history = state?.history || [];
   $: maxY =
@@ -212,6 +214,11 @@
         <div class="eyebrow">LOCAL PERFORMANCE LAB / FORMA STOREFRONT</div>
         <h1>{tab}</h1>
         <p class="subtitle">From a slow request to a measured, reviewable fix.</p>
+        {#if state}<span class="pill"
+            >{state.config.investigationMode === 'telemetry-only'
+              ? 'Telemetry only'
+              : 'Browser + telemetry'}</span
+          >{/if}
       </div>
       <div class="status">
         <span class="live-dot" class:warn={state?.status === 'Blocked'}></span>{state?.status ||
@@ -495,14 +502,18 @@
               </div>{/if}
           </section>
           <section class="panel">
-            <h2>Browser evidence</h2>
+            <h2>{telemetryOnly ? 'Investigation evidence' : 'Browser evidence'}</h2>
+            {#if telemetryOnly}<p>
+                Telemetry-only investigation: metrics, logs and distributed traces are required.
+                Browser interaction, screenshots and browser performance traces are not collected.
+              </p>{/if}
             {#each screenshots as s}<a href={s.url} target="_blank" rel="noreferrer"
                 ><img src={s.url} alt="Browser screenshot captured by Chrome DevTools MCP" /></a
               >{/each}{#each evidence.filter((e) => /\.(png|jpg|webp)$/.test(e.name) && !screenshots.some((s) => s.url === e.url)) as e}<a
                 href={e.url}
                 target="_blank"
                 rel="noreferrer"><img src={e.url} alt={e.name} /></a
-              >{/each}{#if !screenshots.length && !evidence.length}<p>
+              >{/each}{#if !telemetryOnly && !screenshots.length && !evidence.length}<p>
                 Screenshots appear after the agent captures them.
               </p>{/if}{#each evidence as e}<a
                 class="evidence-link"
