@@ -1,0 +1,32 @@
+perf-agent/README.md
+  s_1cd4ab0c8b201b::t_09c83b4d98f399 129,131-132,135,137-139,148
+  s_a986af35791bb0::t_9be458937a4309 133-134,136
+  s_1cd4ab0c8b201b::t_49128e160483fd 12,92,104,130,140-147,149-153,159
+perf-agent/docs/TROUBLESHOOTING.md
+  s_1cd4ab0c8b201b::t_49128e160483fd 14
+  s_1cd4ab0c8b201b::t_09c83b4d98f399 13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6a6e7b7b2d90bf3794cee7b76c39df41c720d24d",
+  "prompts": {},
+  "sessions": {
+    "s_1cd4ab0c8b201b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a158b1-982d-7b73-8e6b-a00c7118f6ed",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tth <xyz@foo.com>"
+    },
+    "s_a986af35791bb0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a158b1-982d-7b73-8e6b-a00c7118f6ed",
+        "model": "unknown"
+      },
+      "human_author": "tth <xyz@foo.com>"
+    }
+  }
+}
