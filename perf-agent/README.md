@@ -9,7 +9,7 @@ Everything except Codex inference and optional GitHub operations runs on your Ma
 Requirements:
 
 - Apple Silicon Mac, **OrbStack or Colima** (Docker runtime); Docker CLI with the `docker compose` plugin (v2 or newer).
-- Node.js 24–26 and npm; Git; Google Chrome 149+ in `/Applications`.
+- Node.js 24–26 and npm; Git; Google Chrome 149+ in `/Applications` for browser-assisted investigations. Telemetry-only mode does not require Chrome or remote debugging.
 - **Codex CLI 0.155.1 or newer**, authenticated with `codex login`. The checked-in protocol schemas document the baseline version used to build this project.
 - Optional GitHub CLI `gh`, authenticated with `gh auth login`, and an explicitly configured application repository.
 - Allow memory for the container stack plus native Node and Chrome processes; the Colima setup below allocates 6 GiB to its VM. Initial image downloads require internet.
@@ -89,7 +89,7 @@ flowchart LR
   C --> O
   C --> R[Codex app-server over stdio]
   R --> M[Read-only telemetry MCP]
-  R --> B[Chrome DevTools MCP + dedicated profile]
+  R --> B[Optional Chrome DevTools MCP + dedicated profile]
   R --> W[One git worktree per incident]
   C --> V[Independent correctness + alternating benchmarks]
   V --> BASE[Affected baseline :4102]
@@ -101,7 +101,7 @@ flowchart LR
 
 The controller and storefront run as native Node processes on the Mac. PostgreSQL and `grafana/otel-lgtm:0.36.0` run in the configured OrbStack or Colima Docker engine. No `platform: linux/amd64` override is used; Docker selects native arm64 images. Grafana provisioning, collector configuration, fixtures, scenario revisions, benchmark definitions and controller settings live outside the agent's writable application worktree.
 
-The bundled app is a deterministic 48-product storefront. The fixture models a warehouse round-trip with one **12ms database-side delay per stock query**, identical for every revision. The prepared regression changes query behavior in application source; it is not a telemetry override or runtime feature flag. Exact p95 values vary with hardware and contention. The agent receives the incident, telemetry tools, browser tools and current source, with no prewritten diagnosis or solution in its prompt.
+The bundled app is a deterministic 48-product storefront. The fixture models a warehouse round-trip with one **12ms database-side delay per stock query**, identical for every revision. The prepared regression changes query behavior in application source; it is not a telemetry override or runtime feature flag. Exact p95 values vary with hardware and contention. The agent receives the incident, telemetry tools, browser tools (when enabled) and current source, with no prewritten diagnosis or solution in its prompt.
 
 ### Monitoring semantics
 
@@ -126,12 +126,37 @@ PERF_PROFILE=monitor npm run demo  # 5-minute window and slower sustained/cooldo
 
 Grafana's provisioned dashboard exposes `window` (30s/300s) and deployment selectors. Its queries use the same histogram definition; select the corresponding profile window. The main dashboard always uses the active controller window. Detailed configuration is validated by `src/config.ts`.
 
+### Investigation modes
+
+`investigationMode` accepts exactly two values:
+
+| Value                 | Behavior                                                                                                                                                                                             | Chrome requirement                           |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `"browser"` (default) | Uses telemetry **and** browser evidence. Requires successful metrics, logs, trace search/detail, browser interaction, network inspection, screenshots and browser performance traces before editing. | Chrome 149+ with remote debugging available. |
+| `"telemetry-only"`    | Uses application source and telemetry. Requires successful metrics, logs and trace search/detail before editing; does not start Chrome MCP or collect browser evidence.                              | None.                                        |
+
+Both modes run the same independent correctness checks and performance benchmarks. Omitting the setting uses `"browser"`. Other values are rejected; there is no `"auto"` mode or automatic fallback after a browser failure.
+
+If Chrome remote debugging is disabled by machine policy, set `investigationMode` in ignored `config/local.json`:
+
+```json
+{
+  "investigationMode": "telemetry-only"
+}
+```
+
+Merge this property into any existing local settings. To enable browser-assisted investigations, use `"investigationMode": "browser"` instead. Stop the running demo before changing it, then run `npm run demo:preflight` and `npm run demo`.
+
+Telemetry-only mode skips Chrome installation/version checks and does not start Chrome DevTools MCP. The agent diagnoses from application source plus successful metrics, structured logs, trace search and trace detail reads. All four telemetry tools remain required before editing. Browser interaction, screenshots, browser network inspection and browser performance traces are unavailable, and the diagnosis must acknowledge that limitation. Independent correctness and performance validation still run unchanged.
+
+The dashboard shows the active mode, and incident records and generated PR evidence identify the mode used for diagnosis. The dashboard, storefront and Grafana can still be opened manually in an ordinary browser without remote debugging.
+
 ### Codex boundary and lifecycle
 
 - `initialize` is acknowledged before `initialized`; JSONL request IDs match responses. Public notifications stream into SQLite and the dashboard.
 - One thread/worktree per incident. Investigation and editing are separate schema-constrained turns on that thread. No reasoning items or hidden chain-of-thought are displayed or persisted in dashboard events.
 - Chrome DevTools MCP is pinned, uses a separate headless profile per incident, allows only local app/candidate/Grafana URLs, and disables usage statistics and CrUX queries. It supplies browser interaction, network inspection, screenshots and performance traces. No desktop-app computer-use tools are assumed. Coordinate-based screenshot control is an optional Chrome MCP `--experimental-vision` extension, not required by this demo.
-- A separate read-only MCP provides PromQL, LogQL and Tempo search/trace reads. Browser and telemetry tool success is required before the editing phase.
+- A separate read-only MCP provides PromQL, LogQL and Tempo search/trace reads. Telemetry tool success is always required before the editing phase; browser evidence is additionally required in the default `browser` mode.
 - The app-server runs with a dedicated ignored Codex home. A local symlink reuses the existing `~/.codex/auth.json`; user-wide MCP/plugin settings are not imported. Model can be configured, or the authenticated app-server default is used.
 - The turn sandbox permits application-worktree writes only, excludes temporary write roots, and disables shell network access. MCP services are separately configured by the controller. The application agent is instructed not to inspect other repositories/history or operate orchestration.
 - The configured allowlist of local browser tools is pre-authorized; telemetry tools are annotated read-only. Requests for additional permission escalation are **declined**, recorded, and move the incident to Blocked; there is no automatic full-access approval. Unknown server requests receive an error. Cancellation uses `turn/interrupt`, then shuts down the owned app-server.
