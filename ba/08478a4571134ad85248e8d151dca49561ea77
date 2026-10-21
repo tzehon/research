@@ -1,0 +1,19 @@
+.github/CODEX_REVIEW.md
+  s_a4c7dda0b2fd84::t_46fe1a6c88f3cf 1-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ba08478a4571134ad85248e8d151dca49561ea77",
+  "prompts": {},
+  "sessions": {
+    "s_a4c7dda0b2fd84": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15c56-7f05-70e1-9a1e-2ab93befc653",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tth <xyz@foo.com>"
+    }
+  }
+}
