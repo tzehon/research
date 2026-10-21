@@ -1,5 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import type { SavedRunSummary } from '../src/state.ts';
+  let savedRun: SavedRunSummary | null = null,
+    savedRuns: SavedRunSummary[] = [],
+    runName = '',
+    savedView = new URLSearchParams(location.search).has('run');
   let state: any = null,
     events: any[] = [],
     tab = 'Overview',
@@ -95,6 +100,7 @@
   const time = (n: number) =>
     new Date(n).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   async function action(name: string, body: any = {}) {
+    if (savedView) return;
     pending = name;
     error = '';
     try {
@@ -105,7 +111,41 @@
       });
       const data = await r.json();
       if (!r.ok) throw new Error(data.error);
-      state = data;
+      updateState(data);
+    } catch (e) {
+      error = String(e);
+    } finally {
+      pending = '';
+    }
+  }
+  function updateState(data: any) {
+    if (state?.runId !== data.runId) {
+      events = [];
+      details = null;
+      trace = null;
+    }
+    state = data;
+  }
+  async function refreshRuns() {
+    const r = await fetch('/api/runs');
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error);
+    savedRuns = data;
+  }
+  async function saveRun() {
+    if (savedView) return;
+    pending = 'Save Run';
+    error = '';
+    try {
+      const r = await fetch('/api/runs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: runName }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error);
+      await refreshRuns();
+      runName = '';
     } catch (e) {
       error = String(e);
     } finally {
@@ -163,18 +203,29 @@
           });
           historyReplace();
         }
-        const r = await fetch('/api/state');
+        const runId = new URLSearchParams(location.search).get('run');
+        await refreshRuns();
+        const r = await fetch(
+          savedView ? '/api/runs/' + encodeURIComponent(runId || '') : '/api/state'
+        );
         const data = await r.json();
         if (!r.ok) throw new Error(data.error);
+        if (savedView) {
+          savedRun = data;
+          state = data.state;
+          events = data.events;
+          threshold = state.config.thresholdMs;
+          return;
+        }
         state = data;
         threshold = data.config.thresholdMs;
         es = new EventSource('/api/events');
         es.onopen = () => (connected = true);
         es.onerror = () => (connected = false);
-        es.addEventListener('state', (e) => (state = JSON.parse(e.data)));
+        es.addEventListener('state', (e) => updateState(JSON.parse(e.data)));
         es.addEventListener('activity', (e) => {
           const row = JSON.parse(e.data);
-          if (!events.some((x) => x.id === row.id)) events = [...events, row].slice(-1600);
+          if (!events.some((x) => x.id === row.id)) events = [...events, row];
         });
       } catch (e) {
         error = String(e);
@@ -184,7 +235,7 @@
     return () => es?.close();
   });
   function historyReplace() {
-    window.history.replaceState(null, '', location.pathname);
+    window.history.replaceState(null, '', location.pathname + location.search);
   }
 </script>
 
@@ -201,9 +252,11 @@
         >{/each}
     </nav>
     <div class="rail-bottom">
-      <span class="live-dot" class:offline={!connected}></span>{connected
-        ? 'Local system connected'
-        : 'Connecting to controller'}
+      <span class="live-dot" class:offline={!connected}></span>{savedView
+        ? 'Saved run · read only'
+        : connected
+          ? 'Local system connected'
+          : 'Connecting to controller'}
       <p>Codex app-server<br />Local telemetry · isolated changes</p>
       <span class="pill">DEMO ENVIRONMENT</span>
     </div>
@@ -225,6 +278,58 @@
           'Connecting'}<small>AGENT STATUS</small>
       </div>
     </header>
+    <section class="panel run-picker" aria-label="Demo runs">
+      {#if savedView}
+        <div>
+          <h2>Saved run · {savedRun?.name || 'Loading'}</h2>
+          <p>
+            {savedRun ? new Date(savedRun.savedAt).toLocaleString() : ''} · Read-only snapshot. The live
+            demo continues independently.
+          </p>
+        </div>
+        <a class="button" href="/" target="_blank" rel="noreferrer">Open live demo ↗</a>
+      {:else}
+        <div>
+          <h2>Live demo</h2>
+          <p>Save a rehearsal, then open its results alongside your live presentation.</p>
+        </div>
+        <form
+          onsubmit={(e) => {
+            e.preventDefault();
+            void saveRun();
+          }}
+        >
+          <input
+            aria-label="Run name"
+            placeholder="Rehearsal name"
+            bind:value={runName}
+            maxlength="100"
+            required
+          />
+          <button
+            disabled={savedView ||
+              !!pending ||
+              !incident ||
+              state?.busy ||
+              state?.workflowActive ||
+              !runName.trim()}>Save Run</button
+          >
+        </form>
+      {/if}
+      <details
+        class="saved-runs"
+        ontoggle={(e) => {
+          if (e.currentTarget.open) void refreshRuns().catch((e) => (error = String(e)));
+        }}
+      >
+        <summary>Saved runs ({savedRuns.length})</summary>
+        {#each savedRuns as run}
+          <a href={`/?run=${run.id}`} target="_blank" rel="noreferrer"
+            >{run.name} ↗ <small>{new Date(run.savedAt).toLocaleString()} · {run.status}</small></a
+          >
+        {:else}<p>No saved runs yet. Save after the investigation and validation finish.</p>{/each}
+      </details>
+    </section>
     {#if error}<div class="notice danger" role="alert">
         {error}<button onclick={() => (error = '')} aria-label="Dismiss error">×</button>
       </div>{/if}
@@ -267,7 +372,9 @@
               min="1"
               max="10000"
               bind:value={threshold}
-            /><button disabled={(!!incident && !incident.recovered) || !!pending}>Update</button>
+            /><button disabled={savedView || (!!incident && !incident.recovered) || !!pending}
+              >Update</button
+            >
           </form>
         </section>
         <section class="metric">
@@ -287,7 +394,9 @@
         <div class="section-heading">
           <div>
             <h2>Latency, in context</h2>
-            <p>Live deployed-app measurements · aggregated request histograms</p>
+            <p>
+              {savedView ? 'Saved' : 'Live'} deployed-app measurements · aggregated request histograms
+            </p>
           </div>
           <div class="legend">
             <span class="line-key"></span>p95 <span class="line-key dashed"></span>threshold
@@ -296,7 +405,7 @@
         <svg
           viewBox="0 0 950 275"
           role="img"
-          aria-label="Live p95 latency chart with alert threshold and deployment markers"
+          aria-label="p95 latency chart with alert threshold and deployment markers"
           >{#each [0, 0.25, 0.5, 0.75, 1] as r}<line
               x1="45"
               y1={y(maxY * r)}
@@ -345,53 +454,57 @@
           ><span>REVISION <b>{state.deployment?.revision.slice(0, 8)}</b></span>
         </div>
       </section>
-      <section class="panel">
-        <div class="section-heading">
-          <div>
-            <h2>Run the story</h2>
-            <p>Start healthy. Introduce a regression. Let evidence drive the fix.</p>
+      {#if !savedView}<section class="panel">
+          <div class="section-heading">
+            <div>
+              <h2>Run the story</h2>
+              <p>Start healthy. Introduce a regression. Let evidence drive the fix.</p>
+            </div>
+            <span class="pill">ALL DEPLOYMENTS LOCAL</span>
           </div>
-          <span class="pill">ALL DEPLOYMENTS LOCAL</span>
-        </div>
-        <div class="controls">
-          <button
-            class="primary"
-            disabled={!!pending}
-            onclick={() => action(state.traffic.active ? 'traffic-stop' : 'traffic-start')}
-            >{state.traffic.active ? 'Ⅱ Stop Traffic' : '▷ Start Traffic'}</button
-          ><button
-            disabled={!!pending || (!!incident && !incident.recovered)}
-            onclick={() => action('regression')}>↗ Deploy Regression</button
-          ><a class="button" href={state.urls.app} target="_blank" rel="noreferrer"
-            >Open Demo App ↗</a
-          ><a
-            class="button"
-            href={state.urls.grafana + '/d/storefront/local-storefront'}
-            target="_blank"
-            rel="noreferrer">Open Grafana ↗</a
-          ><button
-            disabled={!!pending || incident?.phase !== 'PR Ready' || !incident?.validation?.passed}
-            onclick={() => action('candidate', { id: incident.id })}
-            >Deploy Candidate Locally</button
-          ><button
-            class="subtle"
-            disabled={!!pending}
-            onclick={() => {
-              if (
-                confirm(
-                  'Reset to the healthy revision and clear active incident state? Existing worktrees, branches and evidence will be preserved.'
+          <div class="controls">
+            <button
+              class="primary"
+              disabled={savedView || !!pending}
+              onclick={() => action(state.traffic.active ? 'traffic-stop' : 'traffic-start')}
+              >{state.traffic.active ? 'Ⅱ Stop Traffic' : '▷ Start Traffic'}</button
+            ><button
+              disabled={savedView || !!pending || (!!incident && !incident.recovered)}
+              onclick={() => action('regression')}>↗ Deploy Regression</button
+            ><a class="button" href={state.urls.app} target="_blank" rel="noreferrer"
+              >Open Demo App ↗</a
+            ><a
+              class="button"
+              href={state.urls.grafana + '/d/storefront/local-storefront'}
+              target="_blank"
+              rel="noreferrer">Open Grafana ↗</a
+            ><button
+              disabled={savedView ||
+                !!pending ||
+                incident?.phase !== 'PR Ready' ||
+                !incident?.validation?.passed}
+              onclick={() => action('candidate', { id: incident.id })}
+              >Deploy Candidate Locally</button
+            ><button
+              class="subtle"
+              disabled={savedView || !!pending}
+              onclick={() => {
+                if (
+                  confirm(
+                    'Reset to the healthy revision and clear active incident state? Existing worktrees, branches and evidence will be preserved.'
+                  )
                 )
-              )
-                action('reset');
-            }}>↺ Reset Demo</button
-          >
-        </div>
-        {#if pending}<p class="working">{pending} is running…</p>{/if}
-        {#if state.traffic.errors || state.traffic.skipped}<p>
-            Traffic generator: {state.traffic.errors} failed requests, {state.traffic.skipped} skipped
-            slots. Failed requests can include connection interruptions during local deployment.
-          </p>{/if}
-      </section>
+                  action('reset');
+              }}>↺ Reset Demo</button
+            >
+          </div>
+          {#if pending}<p class="working">{pending} is running…</p>{/if}
+          {#if state.traffic.errors || state.traffic.skipped}<p>
+              Traffic generator: {state.traffic.errors} failed requests, {state.traffic.skipped} skipped
+              slots. Failed requests can include connection interruptions during local deployment.
+            </p>{/if}
+        </section>
+      {/if}
       <div class="note-row">
         <span>● Real HTTP traffic and local telemetry</span><span
           >Candidate validation never changes the monitored deployment.</span
@@ -405,7 +518,7 @@
               <h2>Agent activity</h2>
               <p>Actual app-server events · public findings and tool activity</p>
             </div>
-            {#if incident && ['Investigating', 'Fixing', 'Validating'].includes(incident.phase)}<button
+            {#if !savedView && incident && ['Investigating', 'Fixing', 'Validating'].includes(incident.phase)}<button
                 onclick={() => action('cancel')}>Cancel</button
               >{/if}
           </div>
@@ -419,7 +532,7 @@
               ><span>{incident.tokens.toLocaleString()} tokens</span>
             </div>
             {#if incident.error}<div class="notice danger">
-                {incident.error}{#if incident.phase === 'Blocked'}<button
+                {incident.error}{#if !savedView && incident.phase === 'Blocked'}<button
                     onclick={() => action('retry', { id: incident.id })}>Retry same incident</button
                   >{/if}
               </div>{/if}{#if liveMessage}<details class="live-message">
@@ -446,11 +559,17 @@
         <div class="right-column">
           <section class="panel">
             <h2>Evidence desk</h2>
-            <p>Query the same local sources the agent uses.</p>
+            <p>
+              {savedView
+                ? 'Recorded tool requests and responses are available under Tool details in Agent activity. Live telemetry queries are disabled in this snapshot.'
+                : 'Query the same local sources the agent uses.'}
+            </p>
             <div class="controls compact">
-              <button onclick={() => inspect('queries')}>Metric query</button><button
-                onclick={() => inspect('logs')}>Logs</button
-              ><button onclick={() => inspect('traces')}>Traces</button>
+              <button disabled={savedView} onclick={() => inspect('queries')}>Metric query</button
+              ><button disabled={savedView} onclick={() => inspect('logs')}>Logs</button><button
+                disabled={savedView}
+                onclick={() => inspect('traces')}>Traces</button
+              >
             </div>
             {#if details?.traces}<div class="trace-list">
                 {#each details.traces as t}<button onclick={() => loadTrace(t.traceID)}
@@ -613,15 +732,15 @@
               rel="noreferrer">Open draft PR ↗</a
             >{/if}{#if incident.validation?.passed}<a
               class="button"
-              href={`/evidence/${incident.id}/PR.md`}
+              href={`/evidence/${state.evidenceDirectories?.[incident.id] || incident.id}/PR.md`}
               target="_blank"
               rel="noreferrer">PR evidence</a
             ><button
               class="primary"
-              disabled={!!pending || incident.phase !== 'PR Ready'}
+              disabled={savedView || !!pending || incident.phase !== 'PR Ready'}
               onclick={() => action('candidate', { id: incident.id })}
               >Deploy Candidate Locally</button
-            >{#if state.config.targetRemote}<button
+            >{#if !savedView && state.config.targetRemote}<button
                 onclick={() => action('publish', { id: incident.id })}>Retry publishing</button
               >{/if}{/if}
         </div>

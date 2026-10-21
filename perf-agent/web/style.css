@@ -21,6 +21,37 @@ input,
 a {
   font: inherit;
 }
+.run-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.run-picker form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.run-picker input {
+  min-width: 180px;
+  border: 1px solid #d5dfd6;
+  border-radius: 8px;
+  padding: 10px;
+}
+.saved-runs {
+  flex-basis: 100%;
+}
+.saved-runs a {
+  display: block;
+  color: #25644d;
+  padding: 10px 0;
+}
+.saved-runs small {
+  display: block;
+  margin-top: 4px;
+  color: #7a8b7f;
+}
 button,
 .button {
   border: 1px solid #d5dfd6;
