@@ -19,7 +19,7 @@ jobs:
       github.event.pull_request.user.type != 'Bot' &&
       github.event.sender.type != 'Bot' &&
       github.actor != 'dependabot[bot]'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 25
     permissions:
       contents: read
@@ -54,6 +54,11 @@ jobs:
 
       - name: Install pinned Codex CLI
         run: npm install --global @openai/codex@0.163.0
+
+      - name: Verify the Linux sandbox before using the API
+        run: |
+          mkdir -p "$RUNNER_TEMP/codex-preflight"
+          CODEX_HOME="$RUNNER_TEMP/codex-preflight" codex sandbox -P :read-only -- /bin/true
 
       - name: Run static review
         env:
