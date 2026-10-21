@@ -1,5 +1,13 @@
 # Presenter script
 
+## Prepare a saved rehearsal
+
+Before presenting, complete the steps below, ideally through measured recovery. Enter a descriptive rehearsal name and click **Save Run**. Expand **Saved runs** and open the saved run in a new tab. Its Overview, Investigation (including tool details), and Fix & Verification pages are a fixed snapshot, clearly labeled with the save time.
+
+Keep that saved tab open. In the live tab, click **Reset Demo**, then begin the presentation. Show real-time activity in the live tab and switch to the saved tab whenever you want to show the completed diagnosis, tool calls, patch, and benchmark results. Reset and restart preserve saved runs and their evidence copies. The saved run URL can be bookmarked; after restarting the controller, use its launch link to authorize the browser again before opening the bookmark. Live logs/traces/Grafana are not replayed in a saved view; use the recorded tool responses and evidence files instead.
+
+## Live walkthrough
+
 1. **Establish trust.** Run `npm run demo`. Open the storefront and Grafana. Start Traffic. Point out the 30-second window, actual sample count and freshness. Wait for healthy data rather than promising a latency number.
 2. **Introduce the incident.** Click Deploy Regression. Explain that this deploys another git revision of application code. The database fixture, load and telemetry remain equivalent. Watch p95 climb, then wait for the sustained-breach gate.
 3. **Follow the investigation.** Switch to Investigation. Show actual app-server events, browser tools and the telemetry desk. Open a trace waterfall and correlated logs. The activity stream shows tool work and public findings, not hidden reasoning. Model runtime varies; use the evidence desk while it works.
