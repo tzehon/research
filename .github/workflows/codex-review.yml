@@ -1,0 +1,122 @@
+name: Codex review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codex-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    if: >-
+      !github.event.pull_request.draft &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.type != 'Bot' &&
+      github.event.sender.type != 'Bot' &&
+      github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - name: Check out review target
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: source
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check out trusted review tools
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: review-tools
+          sparse-checkout: scripts/codex-review
+          persist-credentials: false
+
+      - name: Verify review tools are deployed to the base branch
+        run: |
+          if [ ! -f review-tools/scripts/codex-review/run.py ]; then
+            echo 'Review incomplete: deploy scripts/codex-review to the base branch first.' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+
+      - name: Install pinned Codex CLI
+        run: npm install --global @openai/codex@0.163.0
+
+      - name: Run static review
+        env:
+          CODEX_API_KEY: ${{ secrets.CODEX_API_KEY }}
+          CODEX_REVIEW_MODEL: ${{ vars.CODEX_REVIEW_MODEL }}
+          REVIEW_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          REVIEW_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python3 review-tools/scripts/codex-review/run.py \
+            --repo "$GITHUB_WORKSPACE/source" \
+            --base-sha "$REVIEW_BASE_SHA" \
+            --head-sha "$REVIEW_HEAD_SHA" \
+            --output-dir "$RUNNER_TEMP/codex-review-report"
+
+      - name: Upload review report
+        if: ${{ always() && !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: codex-review-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/codex-review-report/review.json
+            ${{ runner.temp }}/codex-review-report/review.md
+          if-no-files-found: warn
+          retention-days: 7
+
+  publish:
+    needs: review
+    if: ${{ always() && !cancelled() && needs.review.result != 'skipped' && needs.review.result != 'cancelled' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Check out trusted publisher only
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: review-tools
+          sparse-checkout: scripts/codex-review
+          persist-credentials: false
+
+      - name: Download review report
+        continue-on-error: true # Missing report must still publish an incomplete review.
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: codex-review-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/codex-review-report
+
+      - name: Update summary comment
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        env:
+          REVIEW_RESULT: ${{ needs.review.result }}
+          REVIEW_REPORT_DIR: ${{ runner.temp }}/codex-review-report
+        with:
+          script: |
+            const fs = require('node:fs');
+            const file = `${process.env.GITHUB_WORKSPACE}/review-tools/scripts/codex-review/publish.cjs`;
+            if (!fs.existsSync(file)) {
+              core.setFailed('Review incomplete: deploy the reviewer to the base branch first.');
+              return;
+            }
+            const { publish } = require(file);
+            await publish({ github, context, core,
+              reportDir: process.env.REVIEW_REPORT_DIR,
+              reviewResult: process.env.REVIEW_RESULT });
