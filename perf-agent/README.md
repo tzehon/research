@@ -68,6 +68,8 @@ The command checks prerequisites and port ownership, prepares an independent loc
 4. Open **Fix & Verification** for the patch and baseline/candidate measurements.
 5. After independent validation, click **Deploy Candidate Locally**. Recovery is confirmed only after fresh deployed-app measurements cross the recovery band for the configured duration.
 
+For presentations, finish a rehearsal, enter a name beside **Save Run**, and save it. Open it from **Saved runs** in a separate tab, then reset the live demo and start a fresh run. The saved tab has its own bookmarkable URL and stays fixed while the live tab runs. Snapshots retain the displayed chart and settings, full agent/tool event history, diagnosis, patch, verification results, and copies of evidence files across resets and controller restarts. Saving is available once the workflow and controls finish, including blocked outcomes; it does not imply a successful fix. Saved views are read-only, with live telemetry queries and deployment controls disabled. The local controller must be running to reopen them; after a restart, authorize the browser with the new launch link first.
+
 The controller never switches off traffic, loosens tests, raises thresholds, or disables telemetry to validate a fix. Threshold editing is locked while an incident is unresolved.
 
 ```sh
