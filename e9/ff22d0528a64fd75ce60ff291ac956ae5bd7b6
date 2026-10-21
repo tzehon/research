@@ -1,0 +1,29 @@
+perf-agent/tests/saved-runs.test.ts
+  s_cf695aa3bb7542::t_713c447b7a4e40 1-18,20-107,109,111-112,118-119,128,132-156
+  s_cf695aa3bb7542::t_a7e5889fb69e09 19,108,110,113-117,120-127,129-131
+perf-agent/src/state.ts
+  s_cf695aa3bb7542::t_090b975dea4bb0 51-53,98-102,105-107,110-114,117-119
+  s_cf695aa3bb7542::t_2995d5e5a53ca1 2,31-32,54,97,103-104,108-109,115-116,120-121,124
+perf-agent/src/controller.ts
+  s_cf695aa3bb7542::t_090b975dea4bb0 113-118,472-475
+  s_cf695aa3bb7542::t_f2f1d5d6b372ab 87,484-485
+  s_cf695aa3bb7542::t_2995d5e5a53ca1 72,90-100,102,104-112,119-122,457-460,470-471,476-479,486,488-493
+  s_cf695aa3bb7542::t_5a7be78b7efaa9 25,101,103,554,563
+  s_cf695aa3bb7542::t_87dddc09451d1c 480-481
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e9ff22d0528a64fd75ce60ff291ac956ae5bd7b6",
+  "prompts": {},
+  "sessions": {
+    "s_cf695aa3bb7542": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15de1-a098-7561-bb1c-bea722b646a3",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tth <xyz@foo.com>"
+    }
+  }
+}
