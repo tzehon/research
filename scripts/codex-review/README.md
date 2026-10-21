@@ -85,6 +85,14 @@ config and execpolicy rules are ignored. Child commands receive a restricted
 environment with credential patterns excluded. Web search is disabled; model
 commands use a read-only sandbox and cannot ask for elevated permissions.
 
+The review job uses Ubuntu 22.04 because Ubuntu 24.04's default AppArmor gate
+blocked bubblewrap namespace startup in live validation. No host security
+settings are changed. A no-API `codex sandbox -P :read-only -- /bin/true`
+preflight verifies startup before spending tokens. For a different runner,
+install the distribution bubblewrap package and configure its AppArmor profile
+as described in the
+[Linux sandbox prerequisites](https://developers.openai.com/codex/concepts/sandboxing#prerequisites).
+
 The prompt permits static inspection, not project execution, installs, builds,
 tests, or fixes. Checkout cleanliness and HEAD are checked before and after the
 run. The runner reports unexpected changes but never tries to reset user files.
