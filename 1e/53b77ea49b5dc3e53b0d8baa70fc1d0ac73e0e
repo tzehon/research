@@ -1,0 +1,21 @@
+perf-agent/docs/PRESENTER.md
+  s_cf695aa3bb7542::t_5a7be78b7efaa9 3-10
+perf-agent/README.md
+  s_cf695aa3bb7542::t_5a7be78b7efaa9 71-72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1e53b77ea49b5dc3e53b0d8baa70fc1d0ac73e0e",
+  "prompts": {},
+  "sessions": {
+    "s_cf695aa3bb7542": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15de1-a098-7561-bb1c-bea722b646a3",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tth <xyz@foo.com>"
+    }
+  }
+}
