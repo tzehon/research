@@ -62,7 +62,8 @@ jobs:
           Perform static inspection only: do not edit files, install dependencies,
           run project code, tests, or builds, or access the network.
           Report actionable bugs introduced by this change, with severity,
-          file/line references, and a concise explanation. Omit style preferences
+          repository-relative file:line references as inline code (no local-path
+          links), and a concise explanation. Omit style preferences
           and speculative issues. Return a concise Markdown review. If there are
           no findings, say so. If you cannot finish, clearly say the review is
           incomplete and explain the coverage limitations. Do not claim tests ran.
