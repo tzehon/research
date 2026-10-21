@@ -124,6 +124,23 @@ finding and a successful advisory check; push the fix and verify the same commen
 ID updates with the new SHA and a clean result. Close the temporary PR afterward.
 Never merge deliberate bugs into the default branch.
 
+### Live validation: 2026-10-21
+
+[Temporary PR #8](https://github.com/tzehon/research/pull/8) was closed without
+merging after these checks:
+
+- [Failure-path run](https://github.com/tzehon/research/actions/runs/39537782833):
+  Ubuntu 24.04 sandbox startup failed and published an incomplete review.
+- [Bug run](https://github.com/tzehon/research/actions/runs/39538053764): Ubuntu
+  22.04 passed sandbox preflight, reported the intentional P2 empty-input
+  regression, and kept the advisory workflow successful.
+- [Fix run](https://github.com/tzehon/research/actions/runs/39538184171): no
+  findings; the same comment ID `6307169884` updated with the new head SHA.
+
+The runner's checkout-integrity checks passed. Only the two report files were
+uploaded. Workflow logs showed a masked API key; raw Codex events were not
+published. Local validation passed 14 Python tests, 13 Node tests, and actionlint.
+
 ## GitLab mapping (future adapter)
 
 The same command and outputs can run in a GitLab merge-request pipeline. Map
