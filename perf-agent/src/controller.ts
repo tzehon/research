@@ -22,6 +22,7 @@ import { publish } from './publish.ts';
 import { requireInvestigationEvidence } from './evidence.ts';
 export class Controller {
   store = new Store(path.join(local, 'state.sqlite'));
+  resultsDirectory = path.join(local, 'results');
   cfg: Config;
   apps = new Applications();
   traffic = new Traffic();
@@ -68,6 +69,7 @@ export class Controller {
   }
   state() {
     return {
+      runId: this.store.get('runId', ''),
       config: this.cfg,
       urls,
       deployment: this.store.get('deployment', null),
@@ -82,7 +84,41 @@ export class Controller {
         skipped: this.traffic.skipped,
       },
       busy: this.busy,
+      workflowActive: !!this.workflow,
     };
+  }
+  saveRun(name: unknown) {
+    if (this.workflow || this.busy || this.closing)
+      throw new Error('Wait for the current workflow or control to finish before saving');
+    if (!this.store.all().length) throw new Error('Run an investigation before saving');
+    if (typeof name !== 'string' || !name.trim() || name.trim().length > 100)
+      throw new Error('Enter a run name between 1 and 100 characters');
+    const id = randomUUID();
+    const state = this.state();
+    const evidenceDirectories: Record<string, string> = {};
+    let events = JSON.stringify(this.store.allEvents());
+    for (const incident of state.incidents) {
+      const source = path.join(this.resultsDirectory, incident.id);
+      const directory = `saved-${id}-${incident.id}`;
+      const destination = path.join(this.resultsDirectory, directory);
+      mkdirSync(destination, { recursive: true });
+      if (existsSync(source))
+        for (const file of readdirSync(source))
+          if (lstatSync(path.join(source, file)).isFile())
+            copyFileSync(path.join(source, file), path.join(destination, file));
+      evidenceDirectories[incident.id] = directory;
+      events = events.replaceAll(`/evidence/${incident.id}/`, `/evidence/${directory}/`);
+    }
+    const run = {
+      id,
+      name: name.trim(),
+      savedAt: Date.now(),
+      status: state.status,
+      state: { ...state, evidenceDirectories },
+      events: JSON.parse(events),
+    };
+    this.store.saveRun(run);
+    return { id: run.id, name: run.name, savedAt: run.savedAt, status: run.status };
   }
   async tick() {
     if (this.closing || this.tickBusy || this.busy) return;
@@ -418,6 +454,10 @@ export class Controller {
           setImmediate(() => void this.onStop());
           return;
         }
+        if (url.pathname === '/api/runs') {
+          res.end(JSON.stringify(this.saveRun(body.name)));
+          return;
+        }
         await this.action(url.pathname.replace('/api/', ''), body);
         res.end(JSON.stringify(this.state()));
         return;
@@ -427,15 +467,34 @@ export class Controller {
         res.end(JSON.stringify(this.state()));
         return;
       }
+      if (url.pathname === '/api/runs' || url.pathname.startsWith('/api/runs/')) {
+        res.setHeader('Content-Type', 'application/json');
+        const run =
+          url.pathname === '/api/runs'
+            ? this.store.savedRuns()
+            : this.store.savedRun(url.pathname.slice('/api/runs/'.length));
+        if (!run) {
+          res.writeHead(404);
+          res.end(JSON.stringify({ error: 'Saved run not found' }));
+        } else res.end(JSON.stringify(run));
+        return;
+      }
       if (url.pathname === '/api/events') {
         res.writeHead(200, { 'Content-Type': 'text/event-stream', Connection: 'keep-alive' });
-        let cursor = Number(req.headers['last-event-id'] || 0);
+        // Replay on reconnect: event IDs alone cannot identify a run across resets.
+        let cursor = 0;
+        let runId = this.store.get('runId', '');
         const send = () => {
+          const state = this.state();
+          if (state.runId !== runId) {
+            cursor = 0;
+            runId = state.runId;
+          }
+          res.write(`event: state\ndata: ${JSON.stringify(state)}\n\n`);
           for (const e of this.store.events(cursor)) {
             res.write(`id: ${e.id}\nevent: activity\ndata: ${JSON.stringify(e)}\n\n`);
             cursor = e.id;
           }
-          res.write(`event: state\ndata: ${JSON.stringify(this.state())}\n\n`);
         };
         send();
         const t = setInterval(send, 750);
@@ -492,7 +551,7 @@ export class Controller {
           parts.includes('..')
         )
           throw new Error('Invalid evidence path');
-        file = path.join(local, 'results', parts[2], parts[3]);
+        file = path.join(this.resultsDirectory, parts[2], parts[3]);
       } else
         file = path.join(
           root,
@@ -501,7 +560,7 @@ export class Controller {
         );
       if (
         !file.startsWith(path.join(root, 'dist') + path.sep) &&
-        !file.startsWith(path.join(local, 'results') + path.sep)
+        !file.startsWith(this.resultsDirectory + path.sep)
       )
         throw new Error('Path denied');
       const types: Record<string, string> = {

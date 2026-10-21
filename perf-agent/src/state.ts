@@ -1,4 +1,5 @@
 import { DatabaseSync } from 'node:sqlite';
+import { randomUUID } from 'node:crypto';
 import type { InvestigationMode } from './config.ts';
 export const phases = ['Investigating', 'Fixing', 'Validating', 'PR Ready', 'Blocked'] as const;
 export type Phase = (typeof phases)[number];
@@ -27,6 +28,8 @@ export type Incident = {
   recovered?: boolean;
   candidateRevision?: string;
 };
+export type SavedRunSummary = { id: string; name: string; savedAt: number; status: string };
+export type SavedRun = SavedRunSummary & { state: any; events: any[] };
 const edges: Record<Phase, Phase[]> = {
   Investigating: ['Fixing', 'Blocked'],
   Fixing: ['Validating', 'Blocked'],
@@ -45,6 +48,10 @@ export class Store {
     this.db.exec(
       `PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000; CREATE TABLE IF NOT EXISTS kv(key TEXT PRIMARY KEY,value TEXT NOT NULL); CREATE TABLE IF NOT EXISTS incidents(id TEXT PRIMARY KEY, deployment TEXT UNIQUE NOT NULL, json TEXT NOT NULL); CREATE TABLE IF NOT EXISTS events(id INTEGER PRIMARY KEY AUTOINCREMENT, incident TEXT, at INTEGER NOT NULL, kind TEXT NOT NULL, json TEXT NOT NULL);`
     );
+    this.db.exec(
+      'CREATE TABLE IF NOT EXISTS saved_runs(id TEXT PRIMARY KEY, name TEXT NOT NULL, saved_at INTEGER NOT NULL, status TEXT NOT NULL, json TEXT NOT NULL)'
+    );
+    if (!this.get('runId', '')) this.set('runId', randomUUID());
   }
   get<T>(key: string, fallback: T): T {
     const r = this.db.prepare('SELECT value FROM kv WHERE key=?').get(key) as any;
@@ -87,8 +94,34 @@ export class Store {
       this.db.prepare('SELECT * FROM events WHERE id>? ORDER BY id LIMIT 1000').all(after) as any[]
     ).map((r) => ({ ...r, data: JSON.parse(r.json), json: undefined }));
   }
+  allEvents() {
+    return (this.db.prepare('SELECT * FROM events ORDER BY id').all() as any[]).map((r) => ({
+      ...r,
+      data: JSON.parse(r.json),
+      json: undefined,
+    }));
+  }
+  saveRun(run: SavedRun) {
+    this.db
+      .prepare('INSERT INTO saved_runs VALUES (?,?,?,?,?)')
+      .run(run.id, run.name, run.savedAt, run.status, JSON.stringify(run));
+  }
+  savedRuns(): SavedRunSummary[] {
+    return this.db
+      .prepare(
+        'SELECT id, name, saved_at AS savedAt, status FROM saved_runs ORDER BY saved_at DESC, rowid DESC'
+      )
+      .all() as SavedRunSummary[];
+  }
+  savedRun(id: string): SavedRun | undefined {
+    const row = this.db.prepare('SELECT json FROM saved_runs WHERE id=?').get(id) as
+      | { json: string }
+      | undefined;
+    return row ? JSON.parse(row.json) : undefined;
+  }
   reset() {
     this.db.exec('DELETE FROM incidents; DELETE FROM events; DELETE FROM kv;');
+    this.set('runId', randomUUID());
   }
   close() {
     this.db.close();
