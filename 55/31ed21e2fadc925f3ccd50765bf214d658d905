@@ -1,0 +1,32 @@
+.github/workflows/codex-review.yml
+  s_a4c7dda0b2fd84::t_ab22d9916f213e 169,203,209
+  s_a4c7dda0b2fd84::t_2fcd55dfab3292 1,4-5,9,12,14-17,19-24,26-49,51,53,58,63,68-69,73-75,83-102,105,113-118,120-122,126-127,130-133,138-139,143,149-158,160,163-168,173-202,204-208,210-215,217-222,225-226,231
+  s_a4c7dda0b2fd84::t_deee68c730d98e 76,82,103,106,110-112,119,123-124,216
+.github/tests/codex-requests.test.cjs
+  s_a4c7dda0b2fd84::t_545343bd3b4484 216,223,227
+  s_12e3484462c4c6::t_d0ab158409ad4d 1-215,217-222,224-226,228-254
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5531ed21e2fadc925f3ccd50765bf214d658d905",
+  "prompts": {},
+  "sessions": {
+    "s_12e3484462c4c6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a15c56-7f05-70e1-9a1e-2ab93befc653",
+        "model": "unknown"
+      },
+      "human_author": "tth <xyz@foo.com>"
+    },
+    "s_a4c7dda0b2fd84": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15c56-7f05-70e1-9a1e-2ab93befc653",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tth <xyz@foo.com>"
+    }
+  }
+}
