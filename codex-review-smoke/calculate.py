@@ -1,4 +1,4 @@
-"""Disposable fixture for the Codex review workflow smoke test."""
+"""Disposable fixture for the direct CLI review workflow smoke test."""
 
 
 def mean(values):
