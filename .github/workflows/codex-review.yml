@@ -100,8 +100,6 @@ jobs:
           script: |
             const fs = require('node:fs');
             const pr = context.payload.pull_request;
-            const current = (await github.rest.pulls.get({ ...context.repo, pull_number: pr.number })).data;
-            if (current.state !== 'open' || current.draft || current.head.sha !== pr.head.sha) return;
             const marker = '<!-- codex-review:v1 -->';
             const file = `${process.env.RUNNER_TEMP}/codex-review/review.md`;
             let review = 'Review incomplete: Codex failed or produced no output. See the workflow run.';
@@ -113,6 +111,8 @@ jobs:
             const body = `${marker}\n## Codex review\n\nCommit: \`${pr.head.sha}\`\n\n${review}\n\n[Workflow run](${runUrl}) · Advisory only`;
             const comments = await github.paginate(github.rest.issues.listComments, { ...context.repo, issue_number: pr.number, per_page: 100 });
             const previous = comments.find(c => c.user?.login === 'github-actions[bot]' && c.body?.startsWith(marker));
+            const current = (await github.rest.pulls.get({ ...context.repo, pull_number: pr.number })).data;
+            if (current.state !== 'open' || current.draft || current.head.sha !== pr.head.sha || current.base.sha !== pr.base.sha) return;
             if (previous) {
               await github.rest.issues.updateComment({ ...context.repo, comment_id: previous.id, body });
             } else {
