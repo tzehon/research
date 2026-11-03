@@ -38,6 +38,10 @@ App version: `26.1027.61615`; bundled CLI: `0.166.0-alpha.5.1` (the standalone H
 
 This verifies that the installed app's backend accepts both Authorization configuration forms; the lab uses omitted `delivery` to match the supplied example. The public gateway guide still described Authorization as reserved when checked on 2026-11-03, so that restriction was not treated as authoritative for this installed build. This read-only check does not observe an outgoing authenticated request or verify a completed Auth0 grant or the desktop UI interaction.
 
+## Public dashboard check
+
+On 2026-11-03, after the user deployed the lab, Railway reported successful deployments for all three services. At the user's request, a generated HTTPS domain was added to LiteLLM on port 4000. An unauthenticated GET to `/ui` returned its HTML page with HTTP 200; an unauthenticated GET to `/v1/models` returned HTTP 401. No credentials were submitted to the UI, and no Codex/Auth0 settings were changed by this networking action. This check does not qualify native desktop SSO.
+
 ## Live qualification still to perform
 
 After the account setup/deployment steps:

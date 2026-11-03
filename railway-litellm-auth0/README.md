@@ -62,7 +62,7 @@ LiteLLM's built-in JWT authentication is an [Enterprise feature](https://docs.li
 | Auth0, manual test data | Two users in the lab connection | Retained with the connection |
 | Mac | Ignored `.env`, `.local/config.json`, project ID, optional Codex backup | Local only |
 
-Only `gateway` receives a public Railway domain. LiteLLM and Postgres have no public domains or TCP proxies in this definition. PostgreSQL uses the official image with a 500 MB volume by default; it is a lab database, without a managed HA/backup policy. The region defaults to Singapore. The LiteLLM listener uses IPv4, supported by [new Railway environments](https://docs.railway.com/networking/private-networking/how-it-works).
+The main deployment creates a public domain for `gateway`. The optional dashboard step below also publishes a LiteLLM HTTPS domain; requests from the gateway to LiteLLM still use the private network. Postgres has no public domain or TCP proxy. PostgreSQL uses the official image with a 500 MB volume by default; it is a lab database, without a managed HA/backup policy. The region defaults to Singapore. The LiteLLM listener uses IPv4, supported by [new Railway environments](https://docs.railway.com/networking/private-networking/how-it-works).
 
 ## 1. Prepare locally
 
@@ -237,37 +237,25 @@ The Railway IaC engine manages infrastructure state remotely; `.local/railway-st
 
 Railway and API usage are billed to your accounts. The gateway provisions each user's key with a default $5/30-day budget and 30 requests/minute. These are LiteLLM controls, not a guaranteed hard cap on your overall provider or Railway bill. Usage accounting can lag requests. Adjust the defaults before first login; changing them later does not rewrite already-issued users/keys.
 
-### Optional: explore the LiteLLM dashboard before Codex sign-in
+### Optional: open the public LiteLLM dashboard before Codex sign-in
 
-Once deployment is ready, use [Railway SSH port forwarding](https://docs.railway.com/cli/ssh#forward-a-port-with-ssh--l) to reach the private LiteLLM service from your Mac. No public LiteLLM domain is needed.
+After deployment is ready, give LiteLLM its own Railway HTTPS domain on port 4000:
 
-1. Register your existing Mac SSH public key with Railway once. The key below was present during setup; this registers only its public half:
+```sh
+npm run railway -- domain --service litellm --environment production --port 4000
+```
 
-   ```sh
-   npm run railway -- ssh keys add --key ~/.ssh/id_ed25519.pub --name "Mac lab access"
-   ```
+Open the returned URL with **`/ui`** appended. Creating the domain does not require reinstalling dependencies, rerunning `up`, reapplying Auth0, or changing Codex configuration. You can list an existing domain with:
 
-   Skip this step if that key is already registered. If this is another Mac without that key, create a dedicated SSH key first or use the path of an existing key you control.
+```sh
+npm run railway -- domain list --service litellm --environment production
+```
 
-2. Generate an SSH connection file in the lab's ignored `.local` directory:
+With this lab's default settings, sign in as **`admin`**, using the value of **`LITELLM_MASTER_KEY`** from the project's `.env` as the password. Copy the value privately from your editor; do not paste it into chat or Codex's TOML. This is the separate administrator dashboard login. [LiteLLM dashboard login](https://docs.litellm.ai/docs/proxy/ui#4-sign-in-for-the-first-time)
 
-   ```sh
-   npm run railway -- ssh config --service litellm --environment production --alias railway-litellm-lab --identity-file ~/.ssh/id_ed25519 --path .local/litellm-ssh.conf
-   ```
+The domain makes both LiteLLM's dashboard and API reachable publicly; the dashboard uses its admin login, and model API requests still require valid LiteLLM credentials. Codex continues to use **the gateway URL** as its `base_url`: browser sign-in through Auth0, then an Auth0 token in `Authorization` to the validating gateway, then the private service-to-service connection to LiteLLM. The public LiteLLM hostname is not a replacement for Codex's gateway URL.
 
-3. Start the tunnel and leave this terminal running:
-
-   ```sh
-   ssh -F .local/litellm-ssh.conf -N -o ExitOnForwardFailure=yes -L 127.0.0.1:4400:127.0.0.1:4000 railway-litellm-lab
-   ```
-
-   SSH may prompt for your key's passphrase or first-connection host confirmation. No output after connecting is normal. If port 4400 is occupied, choose another local port and use it in the browser URL too.
-
-4. Open **[http://127.0.0.1:4400/ui](http://127.0.0.1:4400/ui)**. With this lab's default settings, sign in as **`admin`**, using the value of **`LITELLM_MASTER_KEY`** from the project's `.env` as the password. Copy the value privately from your editor; do not paste it into chat or Codex's TOML. This is the separate administrator dashboard login. Codex still uses only the Auth0 token obtained through browser SSO. [LiteLLM dashboard login](https://docs.litellm.ai/docs/proxy/ui#4-sign-in-for-the-first-time)
-
-5. Explore models, users, and usage. Usage and Auth0-derived users appear after model requests; changing models, budgets, or users can affect the subsequent lab tests. Press **Ctrl-C** in the tunnel terminal when finished.
-
-After tearing down and recreating Railway, repeat step 2 to refresh the service target, then start the tunnel again. The account SSH key registration can be reused.
+Explore models, users, and usage. Auth0-derived users and usage appear after model requests; changing models, budgets, or users can affect subsequent lab tests. After tearing down and recreating Railway, repeat the domain command to get the new dashboard URL. [Railway public networking](https://docs.railway.com/networking/public-networking)
 
 ## 5. Test the actual Codex desktop OAuth flow
 
