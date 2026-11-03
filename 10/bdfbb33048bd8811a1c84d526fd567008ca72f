@@ -1,0 +1,28 @@
+railway-litellm-auth0/scripts/lab.ts
+  s_91ab80cb1a0b27::t_1cbc605cfe3e3e 6,15-17,22
+railway-litellm-auth0/scripts/railway-cli.ts
+  s_91ab80cb1a0b27::t_1cbc605cfe3e3e 1-10
+railway-litellm-auth0/VALIDATION.md
+  s_91ab80cb1a0b27::t_1cbc605cfe3e3e 3,8,11-12
+railway-litellm-auth0/tests/iac.test.ts
+  s_91ab80cb1a0b27::t_1cbc605cfe3e3e 2,9,37-58
+  s_91ab80cb1a0b27::t_3f01bfdefc6d08 59
+railway-litellm-auth0/README.md
+  s_91ab80cb1a0b27::t_1cbc605cfe3e3e 402
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "10bdfbb33048bd8811a1c84d526fd567008ca72f",
+  "prompts": {},
+  "sessions": {
+    "s_91ab80cb1a0b27": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a1a039-013b-7a21-934c-bc33e445ec9d",
+        "model": "unknown"
+      },
+      "human_author": "tth <xyz@foo.com>"
+    }
+  }
+}
