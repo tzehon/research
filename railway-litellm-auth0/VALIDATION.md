@@ -12,7 +12,8 @@ Prepared on 2026-11-03. No Railway/Auth0 resources were created, no real API key
 - Gateway deployment Docker image built successfully using Node `22.22.2-bookworm-slim` and production dependencies.
 - LiteLLM deployment image built from `ghcr.io/berriai/litellm:v1.106.6` and started with its actual database migration entrypoint.
 - Real local LiteLLM + PostgreSQL test: concurrent first login, separate identities/keys, persisted user budgets/rate limits, repeat lookup after restart, rejection after seed changes, and no key re-creation after revocation. Test containers/volumes were removed.
-- npm dependency audit reported zero vulnerabilities after pinning the Railway CLI's transitive `tar` dependency to `7.5.22`.
+- Clean `npm ci` completed on Node `26.13.0` / npm `11.20.0`, including Railway's postinstall binary download; `npm run railway -- --version` reported `5.71.0`, and `config plan --help` worked. This was verified after removing the incompatible `tar` 7 override that broke fresh installs. The earlier zero-audit result with that override did not establish installer compatibility.
+- `npm audit --omit=dev` reported zero vulnerabilities. The full development dependency audit reports one high and one critical finding through the pinned Railway npm installer's `tar` 6 dependency; these upstream findings remain unresolved and are excluded from the gateway image by `npm ci --omit=dev`.
 
 The container test caught and fixed an IPv6-only LiteLLM listener that passed an internal health check but was not reachable through IPv4. New Railway environments have internal IPv4, and the corrected listener is tested on IPv4.
 

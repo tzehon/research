@@ -82,8 +82,11 @@ Each command should print a version, with Node, Python, and Terraform meeting th
 ```sh
 cd /Users/tth/projects/research/railway-litellm-auth0
 npm ci
+npm run railway -- --version
 npm run lab -- init
 ```
+
+`npm ci` must finish successfully, and the version check should print `railway 5.71.0`. The pinned Railway npm installer currently brings `tar` 6, which produces deprecation/audit warnings. Those warnings are separate from an install failure; see the dependency note below.
 
 Edit `.local/config.json` and `.env` in your editor. Both are ignored by Git. `init` generates stable internal secrets and preserves existing files on subsequent runs.
 
@@ -370,12 +373,15 @@ terraform -chdir=infra/auth0 validate
 npm run test:integration
 ```
 
-The integration suite creates randomly named local Docker containers with fake credentials, checks real LiteLLM/Postgres user/key behavior, and deletes those containers/data in `finally`. It makes no paid inference calls. The Railway CLI's archive dependency is overridden to a patched version; keep the lockfile and verify CLI startup when changing it.
+The integration suite creates randomly named local Docker containers with fake credentials, checks real LiteLLM/Postgres user/key behavior, and deletes those containers/data in `finally`. It makes no paid inference calls. Keep the lockfile and verify a fresh `npm ci` plus `npm run railway -- --version` whenever installer dependencies change.
+
+The pinned `@railway/cli` installer imports the default export from its declared `tar` 6 dependency. Overriding it to `tar` 7 breaks a fresh install with `does not provide an export named 'default'`; this project does not apply that incompatible override. The upstream installer dependency currently has npm audit advisories (one high and one critical in the full development tree on 2026-11-03). These remain unresolved upstream; `npm audit --omit=dev` reports zero vulnerabilities, and the gateway Docker image installs with `--omit=dev`. Do not use `npm audit fix --force` for this warning: its proposed CLI downgrade does not preserve the IaC commands required by this lab.
 
 Preparation on 2026-11-03 verified the installed app version `26.1027.61615` and its bundled CLI `0.166.0-alpha.5.1`. A temporary command-line provider override returned `required: true`, `status: notReady`, `error: null` from `account/gatewayOAuth/read`. That establishes configuration recognition, **not completed browser login**. See [VALIDATION.md](VALIDATION.md) for the exact checks and remaining live qualification.
 
 | Problem | Check |
 |---|---|
+| `npm ci` fails with `tar` missing a default export | Update to the latest repository revision and rerun `npm ci`; the incompatible `tar` 7 override was removed. No Node downgrade is needed. |
 | Auth0 callback mismatch | Exact `http://127.0.0.1:43127/callback`; `localhost` is different |
 | Login succeeds, gateway returns 401 | Auth0 API audience, RS256, standard Auth0 access-token profile, issuer trailing slash |
 | Gateway returns 403 | `llm:invoke` scope, native client's `azp`, model allowlist, or revoked internal key |

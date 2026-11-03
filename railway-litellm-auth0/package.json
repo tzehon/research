@@ -17,7 +17,6 @@
     "pg": "8.23.1",
     "tsx": "4.23.15"
   },
-  "overrides": { "tar": "7.5.22" },
   "devDependencies": {
     "@railway/cli": "5.71.0",
     "@types/node": "^22.0.0",
