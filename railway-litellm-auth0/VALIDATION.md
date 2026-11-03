@@ -69,6 +69,14 @@ Two added temporary-home regressions exercise repeated fresh installs/restores, 
 
 A probe using the installed Codex backend and process-only generated provider settings returned `required: true`, `status: notReady`, `error: null`. Its native login handoff retained `prompt=login` and the fresh marker, used PKCE S256, and supplied the exact registered loopback callback. The attempt was canceled before authentication. Fetching that authorization URL with a temporary cookie jar reached Auth0 `/u/login` with HTTP 200 and username/password fields. The initial HTTP probe without cookies returned 400 after the redirect; adding the required transient cookie handling resolved it. No user credentials were submitted, no token exchange or model request was made, and checksums of the active TOML, ChatGPT auth file, and encrypted gateway grant file stayed unchanged. A complete desktop sign-in using the new default remains a user-run check.
 
+## Gateway model picker (2026-11-04)
+
+The installer and preview now build an ignored local catalog from the selected Codex home's `models_cache.json`, filtering to the lab allowlist while preserving model metadata. The configured allowlist is `gpt-6.1-sol` only. Restore reinstates the prior catalog setting, or removes the override when the original configuration had none.
+
+Validation: `npm run check`, all 20 Node tests (including 22 Python configuration cases), and `git diff --check` passed. Six added Python cases cover metadata preservation and filtering, original catalog restoration with later config edits, missing/invalid cache rejection before mutation, preview isolation, allowlist/default validation, and `CODEX_HOME` selection. Existing tests continue covering credential preservation, legacy journals, and restore conflicts. The initial sandboxed full suite could not bind localhost; it passed with localhost access.
+
+A temporary-home probe ran the installed desktop's bundled CLI `0.166.0-alpha.5.1` through `initialize` and `model/list`. Normal mode returned the bundled full model list; the generated catalog returned only `gpt-6.1-sol`, visible and default, even with `includeHidden: true`; restore returned the exact original config and the same full list. Native gateway mode correctly required sign-in before `model/list`, so catalog parsing/list behavior was verified using an offline test-provider override. This is not a signed-in desktop UI or existing-chat selection check. No inference, browser login, deployment, or real credential/config change was performed. A real local catalog and TOML preview were generated; the next normal install/restore cycle uses the new behavior.
+
 ## Live qualification still to perform
 
 Auth0 resources, test users, the Railway services, native login, and authenticated desktop routing are already present. Remaining checks:
