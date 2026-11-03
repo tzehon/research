@@ -26,6 +26,15 @@ class ConfigTests(unittest.TestCase):
         self.config = {**json.loads((ROOT / "config.example.json").read_text()),
                        "gatewayUrl": "https://gateway.example", "auth0Domain": "tenant.auth0.com",
                        "oauthClientId": "public-client"}
+        self.cache = {"client_version": "0.166.0", "identity": "private-cache-identity", "models": [
+            {"slug": slug, "display_name": slug, "supported_in_api": True, "visibility": "list",
+             "priority": 3, "upgrade": {"model": "not-allowed"},
+             "model_messages": {"instructions_template": "preserve instructions"},
+             "supported_reasoning_levels": [{"effort": "high", "description": "Think hard"}],
+             "context_window": 272000, "future_capability": {"keep": True}}
+            for slug in ("gpt-6.1-sol", "gpt-6-astra")]}
+        self.cache_path = self.target.parent / "models_cache.json"
+        self.cache_path.write_text(json.dumps(self.cache))
         self.original = (b'# keep this comment\nmodel = "original"\nweb_search = "live"\n\n'
                          b'[features]\nexample = true\n\n'
                          b'[plugins."computer-history@openai-bundled"]\nenabled = true\n\n'
@@ -43,6 +52,86 @@ class ConfigTests(unittest.TestCase):
 
     def archives(self):
         return list((self.local / "recovery").iterdir())
+
+    def test_gateway_picker_filters_catalog_and_preserves_metadata(self):
+        before = self.cache_path.read_bytes()
+        installed = m.parsed(self.install())
+        catalog_path = Path(installed['model_catalog_json'])
+        self.assertTrue(catalog_path.is_absolute())
+        catalog = json.loads(catalog_path.read_text())
+        expected = {**self.cache['models'][0], 'visibility': 'list', 'priority': 0, 'upgrade': None}
+        self.assertEqual(catalog, {'models': [expected]})
+        self.assertEqual(self.cache_path.read_bytes(), before)
+        self.assertEqual(catalog_path.stat().st_mode & 0o777, 0o600)
+        m.restore()
+        self.assertNotIn('model_catalog_json', m.parsed(self.target.read_bytes()))
+        self.assertEqual(self.target.read_bytes(), self.original)
+
+    def test_existing_catalog_and_later_edits_survive_restore_without_cache(self):
+        original_catalog = self.home / 'normal-models.json'
+        original_catalog.write_text('{"models": []}')
+        original = f'model_catalog_json = {json.dumps(str(original_catalog))}\n'.encode() + self.original
+        self.target.write_bytes(original)
+        installed = self.install()
+        self.assertNotEqual(m.parsed(installed)['model_catalog_json'], str(original_catalog))
+        self.target.write_bytes(installed + b'\n# keep later edit\n')
+        self.cache_path.unlink()
+        m.restore()
+        self.assertEqual(m.parsed(self.target.read_bytes()), m.parsed(original))
+        self.assertIn(b'# keep later edit', self.target.read_bytes())
+        self.assertEqual(original_catalog.read_text(), '{"models": []}')
+
+    def test_unusable_catalog_refuses_before_config_or_backup_changes(self):
+        for cache in (None, {}, {'client_version': 'test', 'models': []},
+                      {**self.cache, 'models': [{**self.cache['models'][0], 'supported_in_api': False}]},
+                      {**self.cache, 'models': [self.cache['models'][0], self.cache['models'][0]]}):
+            with self.subTest(cache=cache):
+                if cache is None:
+                    self.cache_path.unlink(missing_ok=True)
+                else:
+                    self.cache_path.write_text(json.dumps(cache))
+                with self.assertRaises(ValueError):
+                    self.install()
+                self.assertEqual(self.target.read_bytes(), self.original)
+                self.assertFalse((self.local / 'codex-backup.json').exists())
+
+    def test_preview_is_complete_and_does_not_change_active_catalog(self):
+        active = m.parsed(self.install())
+        active_path = Path(active['model_catalog_json'])
+        before = active_path.read_bytes()
+        self.cache['models'][0]['context_window'] = 400000
+        self.cache_path.write_text(json.dumps(self.cache))
+        installed = self.target.read_bytes()
+        with patch.object(m.sys, 'argv', ['cfg', 'render']):
+            m.main()
+        preview = m.parsed((self.local / 'codex.config.toml').read_bytes())
+        self.assertNotEqual(preview['model_catalog_json'], str(active_path))
+        self.assertTrue(Path(preview['model_catalog_json']).is_file())
+        self.assertEqual(active_path.read_bytes(), before)
+        self.assertEqual(self.target.read_bytes(), installed)
+
+    def test_catalog_follows_configured_allowlist_and_default(self):
+        self.config.update(models=['gpt-6.1-sol', 'gpt-6-astra'], defaultModel='gpt-6-astra')
+        _, content = m.prepare_catalog(self.config)
+        self.assertEqual([m['slug'] for m in json.loads(content)['models']], ['gpt-6-astra', 'gpt-6.1-sol'])
+        for models, default in (([], 'gpt-6.1-sol'), (['gpt-6.1-sol'] * 2, 'gpt-6.1-sol'),
+                                (['gpt-6.1-sol'], 'gpt-6-astra')):
+            with self.subTest(models=models, default=default):
+                self.config.update(models=models, defaultModel=default)
+                with self.assertRaises(ValueError):
+                    m.prepare_catalog(self.config)
+
+    def test_catalog_reads_selected_codex_home(self):
+        other = self.home / 'other-home'
+        other.mkdir()
+        (other / 'models_cache.json').write_text(json.dumps(self.cache))
+        self.cache_path.unlink()
+        with patch.dict(os.environ, {'CODEX_HOME': str(other)}):
+            m.install(self.config)
+            self.assertEqual(m.parsed((other / 'config.toml').read_bytes())['model'], 'gpt-6.1-sol')
+            m.restore()
+        self.assertFalse((other / 'config.toml').exists())
+        self.assertEqual(self.target.read_bytes(), self.original)
 
     def test_render_uses_native_oauth_defaults_and_keeps_settings(self):
         output = m.render(self.config, self.original.decode())

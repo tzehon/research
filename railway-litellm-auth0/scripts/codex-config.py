@@ -36,7 +36,48 @@ def split_managed(text):
     return owned, remaining
 
 
-def render(config, original="", *, legacy=False, fresh_login=False):
+def codex_home():
+    return Path(os.environ.get("CODEX_HOME", str(Path.home() / ".codex")))
+
+
+def prepare_catalog(config):
+    """Keep full cached metadata, exposing only the configured gateway allowlist."""
+    allowed = config.get("models")
+    if (not isinstance(allowed, list) or not allowed
+            or any(not isinstance(slug, str) or not slug for slug in allowed)
+            or len(set(allowed)) != len(allowed) or config.get("defaultModel") not in allowed):
+        raise ValueError("models must be unique model IDs and include defaultModel")
+    source = codex_home() / "models_cache.json"
+    try:
+        cache = json.loads(source.read_text())
+        models = cache["models"]
+        if not isinstance(models, list) or not isinstance(cache.get("client_version"), str):
+            raise ValueError()
+        entries = {}
+        for model in models:
+            slug = model["slug"]
+            if not isinstance(slug, str) or slug in entries:
+                raise ValueError()
+            entries[slug] = model
+    except (OSError, ValueError, KeyError, TypeError):
+        raise ValueError(f"Cannot read a valid Codex model cache at {source}. "
+                         "Open Codex with your normal login to refresh its models, quit, and retry.") from None
+    selected = []
+    for slug in [config["defaultModel"], *(s for s in allowed if s != config["defaultModel"])]:
+        if slug not in entries or entries[slug].get("supported_in_api") is not True:
+            raise ValueError(f"No API-supported catalog entry for {slug}. Refresh models with your normal "
+                             "Codex login before switching; active config is unchanged.")
+        model = deepcopy(entries[slug])
+        model.update(visibility="list", priority=len(selected), upgrade=None)
+        selected.append(model)
+    # Strip cache identity/ETag fields, but preserve every model capability/instruction.
+    content = (json.dumps({"models": selected}, indent=2) + "\n").encode()
+    # A preview or later install must not overwrite a catalog used by a running client.
+    path = LOCAL.resolve() / f"gateway-models-{digest(content)}.json"
+    return path, content
+
+
+def render(config, original="", *, legacy=False, fresh_login=False, catalog_path=None):
     parsed = tomllib.loads(original)
     if parsed.get("profile"):
         raise ValueError("An active Codex profile may override the lab settings; merge the generated config into that profile manually")
@@ -59,7 +100,7 @@ def render(config, original="", *, legacy=False, fresh_login=False):
     text = f'''model = {quote(config["defaultModel"])}
 model_provider = "{PROVIDER}"
 web_search = "disabled"
-''' + "".join(remaining) + f'''
+''' + (f"model_catalog_json = {quote(str(catalog_path))}\n" if catalog_path else "") + "".join(remaining) + f'''
 
 [model_providers.{PROVIDER}]
 name = "Railway Auth0 Lab"
@@ -245,10 +286,12 @@ def install(config, *, fresh_login=True):
     journal = LOCAL / "codex-backup.json"
     if journal.exists():
         raise ValueError("A lab config backup already exists; run codex-restore first")
-    target = Path(os.environ.get("CODEX_HOME", str(Path.home() / ".codex"))) / "config.toml"
+    target = codex_home() / "config.toml"
     existed = target.exists()
     original = read_target(target)
-    merged = render(config, original.decode(), fresh_login=fresh_login)
+    catalog_path, catalog = prepare_catalog(config)
+    merged = render(config, original.decode(), fresh_login=fresh_login, catalog_path=catalog_path)
+    private_write(catalog_path, catalog)
     target.parent.mkdir(parents=True, exist_ok=True)
     private_write(LOCAL / "codex-config.before.toml", original)
     private_write(LOCAL / "codex-config.installed.toml", merged)
@@ -258,6 +301,7 @@ def install(config, *, fresh_login=True):
         raise ValueError("Codex config changed during install; quit Codex and run codex-restore before retrying")
     private_write(target, merged)
     print(f"Installed lab provider in {target}. Fully quit and reopen Codex, then follow gateway sign-in.")
+    print("Gateway picker models: " + ", ".join(config["models"]))
     if fresh_login:
         print("Fresh demo sign-in: an unused gateway grant and Auth0 prompt=login; existing credentials are retained.")
     else:
@@ -284,7 +328,10 @@ def main():
         else:
             config = json.loads((LOCAL / "config.json").read_text())
             if args.action == "render":
-                private_write(LOCAL / "codex.config.toml", render(config, fresh_login=not args.reuse_login))
+                catalog_path, catalog = prepare_catalog(config)
+                preview = render(config, fresh_login=not args.reuse_login, catalog_path=catalog_path)
+                private_write(catalog_path, catalog)
+                private_write(LOCAL / "codex.config.toml", preview)
                 print("Generated .local/codex.config.toml; your active Codex config is unchanged.")
             else:
                 install(config, fresh_login=not args.reuse_login)
