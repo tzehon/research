@@ -1,0 +1,19 @@
+railway-litellm-auth0/README.md
+  s_46cffbd5e2f749::t_9cb40cacd91669 240-271
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d5460bfcdd80a9f22bf96e3858daa4263ec7b374",
+  "prompts": {},
+  "sessions": {
+    "s_46cffbd5e2f749": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1a039-013b-7a21-934c-bc33e445ec9d",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tth <xyz@foo.com>"
+    }
+  }
+}
