@@ -137,21 +137,38 @@ Use your editor for those values. Keep the domain without `https://` or a traili
 
 ### Match the local settings to your tenant
 
-In the existing `.local/config.json`, edit these fields, **keeping all other fields**:
+**For this first setup, change only `auth0Domain` in `.local/config.json`. Leave all other fields as they are.**
 
-```json
-{
-  "auth0Domain": "your-tenant.us.auth0.com",
-  "projectName": "codex-gateway-lab",
-  "audience": "https://codex-gateway-lab",
-  "scope": "llm:invoke",
-  "redirectPort": 43127
-}
+1. Open the project `.env` in your editor and find the `AUTH0_DOMAIN` value you entered in the previous step. You can also find it in **Auth0 → Applications → Applications → codex-lab-terraform → Settings → Domain**.
+2. Open `.local/config.json`, find the existing `auth0Domain` field, and replace only its value with that exact domain. Keep the quotation marks and comma. Do not replace the whole file.
+3. Save `.local/config.json`.
+
+For example, **if** your `.env` contains:
+
+```dotenv
+AUTH0_DOMAIN=dev-example123.us.auth0.com
 ```
 
-These are fields in the existing file; preserve its other fields. Leave `oauthClientId` alone for now. The audience is an API identifier, so it need not resolve in DNS. Keeping it independent of Railway's generated URL lets you recreate Railway without changing Auth0. Choose a unique audience/project name if you later create another independent lab in this tenant.
+then the existing line in `.local/config.json` should become:
 
-**Checkpoint:** `.env` contains your management application's domain, client ID, and secret; `auth0Domain` in `.local/config.json` matches the domain exactly. Do not put the management application's client ID in `oauthClientId`.
+```text
+  "auth0Domain": "dev-example123.us.auth0.com",
+```
+
+Use your actual domain, not `dev-example123.us.auth0.com`. Copy its region suffix exactly; do not add `https://` or a trailing slash.
+
+The other fields mentioned here already have the correct defaults:
+
+| Field | What to do now | Why |
+|---|---|---|
+| `projectName` | Leave `codex-gateway-lab` | Names the resources created for this experiment. |
+| `audience` | Leave `https://codex-gateway-lab` | An API identifier Terraform will register in Auth0. It is not a website you need to create or your tenant domain. |
+| `scope` | Leave `llm:invoke` | The API permission Terraform will create. |
+| `redirectPort` | Leave `43127` | The local port Codex will use for the browser callback. |
+| `oauthClientId` | Leave `SET-BY-AUTH0-OUTPUT` | `auth0-apply` will fill in the native application's public client ID. Your management application's ID belongs only in `.env`. |
+| `gatewayUrl` | Leave the empty string | Railway deployment will fill this in later. |
+
+**Checkpoint:** the `auth0Domain` value in `.local/config.json` exactly matches `AUTH0_DOMAIN` in `.env`. The management client ID and secret remain in `.env`. You can now continue to step 3; there are no other tenant-specific values to edit in `.local/config.json` at this stage.
 
 ## 3. Create OAuth resources and test users
 
