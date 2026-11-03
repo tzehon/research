@@ -71,7 +71,11 @@ for date, folder in projects:
     print(get_summary(folder))
     print()
 ]]]-->
-## 10 projects
+## 11 projects
+
+### [railway-litellm-auth0](https://github.com/tzehon/research/tree/main/railway-litellm-auth0) (2026-11-03)
+
+An ephemeral [Railway](https://railway.com/) lab exercises Codex desktop's native gateway OAuth against [Auth0](https://auth0.com/). A small token-validating proxy fronts private LiteLLM and PostgreSQL, provisioning a separate internal virtual key for each authenticated subject to track model usage and spend. Native Railway TypeScript IaC and Auth0 Terraform definitions provide repeatable setup/teardown, with a new-account Auth0 guide, a reversible Codex configuration switch, and local authentication, streaming, and database integration tests.
 
 ### [perf-agent](https://github.com/tzehon/research/tree/main/perf-agent) (2026-10-15)
 
