@@ -1,6 +1,6 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { once } from 'node:events';
-import { HttpError, type Identity } from './auth.ts';
+import { HttpError, providerUserId, type Identity } from './auth.ts';
 import type { UserKeys } from './identity-store.ts';
 
 interface Settings { baseUrl: string; models: string[]; maxBodyBytes?: number }
@@ -59,9 +59,9 @@ export function createGateway(settings: Settings, deps: Dependencies) {
       if (req.method === 'POST') {
         if (!req.headers['content-type']?.startsWith('application/json')) throw new HttpError(415, 'Expected application/json');
         body = await readBody(req, settings.maxBodyBytes ?? 8 * 1024 * 1024);
-        if (typeof body.model !== 'string' || !settings.models.includes(body.model)) throw new HttpError(403, 'Model is not enabled for this lab');
+        if (typeof body.model !== 'string' || !settings.models.includes(body.model)) throw new HttpError(403, 'Model is not enabled for this lab. Allowed models: ' + settings.models.join(', '));
         for (const field of Object.keys(body)) if (!responseFields.has(field)) delete body[field];
-        body.user = identity.id;
+        body.user = providerUserId(identity);
         // Lab uses replayed conversation input; server-side response storage is disabled.
         body.store = false;
       }

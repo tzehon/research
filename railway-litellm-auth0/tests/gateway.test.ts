@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { createServer, request as httpRequest, type Server } from 'node:http';
 import { generateKeyPair, exportJWK, createLocalJWKSet, SignJWT, type JWTVerifyGetKey } from 'jose';
-import { verifier, HttpError } from '../gateway/auth.ts';
+import { verifier, providerUserId, HttpError } from '../gateway/auth.ts';
 import { userKey } from '../gateway/identity-store.ts';
 import { createGateway } from '../gateway/app.ts';
 
@@ -34,6 +34,10 @@ test('same authenticated subject has stable identity across token refresh; users
   assert.equal(alice.id, refreshed.id); assert.notEqual(alice.id, bob.id);
   assert.equal(userKey('a'.repeat(32), alice.id), userKey('a'.repeat(32), refreshed.id));
   assert.notEqual(userKey('a'.repeat(32), alice.id), userKey('a'.repeat(32), bob.id));
+  assert.equal(alice.id.length, 69, 'existing database/key identity must not change');
+  assert.equal(providerUserId(alice), providerUserId(refreshed));
+  assert.notEqual(providerUserId(alice), providerUserId(bob));
+  assert.match(providerUserId(alice), /^[a-f0-9]{64}$/);
 });
 
 for (const [name, overrides, status] of [
@@ -81,7 +85,7 @@ test('forward SSE incrementally and strip client credentials/attribution', async
     assert.equal(forwarded.headers.authorization, 'Bearer sk-private-user-key');
     for (const h of ['x-gateway-token', 'cookie', 'chatgpt-account-id']) assert.equal(forwarded.headers[h], undefined);
     for (const field of ['api_key', 'api_base', 'metadata']) assert.equal(forwarded.body[field], undefined);
-    assert.match(forwarded.body.user, /^oidc-/); assert.equal(forwarded.body.store, false);
+    assert.match(forwarded.body.user, /^[a-f0-9]{64}$/); assert.equal(forwarded.body.store, false);
     finish(); let rest = ''; while (true) { const c = await reader.read(); if (c.done) break; rest += new TextDecoder().decode(c.value); }
     assert.match(rest, /response.completed/);
   } finally { finish(); await close(gateway); await close(upstream); }
@@ -97,7 +101,9 @@ test('block admin routes, model overrides, missing tokens, and oversized request
     const headers = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + await token() };
     assert.equal((await fetch(url + '/key/generate', { method: 'POST', headers, body: '{}' })).status, 404);
     assert.equal((await fetch(url + '/v1/models')).status, 401);
-    assert.equal((await fetch(url + '/v1/responses', { method: 'POST', headers, body: '{"model":"other"}' })).status, 403);
+    const blocked = await fetch(url + '/v1/responses', { method: 'POST', headers, body: '{"model":"other"}' });
+    assert.equal(blocked.status, 403);
+    assert.match((await blocked.json() as any).error.message, /Allowed models: lab-model/);
     assert.equal((await fetch(url + '/v1/responses', { method: 'POST', headers, body: JSON.stringify({ model: 'lab-model', input: 'x'.repeat(200) }) })).status, 413);
     assert.equal(count, 0);
   } finally { await close(gateway); }
@@ -155,5 +161,35 @@ test('preserve rate-limit status and Retry-After through gateway', async () => {
   try {
     const response = await fetch(url + '/v1/models', { headers: { Authorization: 'Bearer ' + await token() } });
     assert.equal(response.status, 429); assert.equal(response.headers.get('retry-after'), '20');
+  } finally { await close(gateway); }
+});
+
+test('verified JWT identity fits the upstream user limit without changing LiteLLM key ownership', async () => {
+  const verify = verifier(settings, keys);
+  const bearer = 'Bearer ' + await token();
+  const identity = await verify(bearer);
+  let provisionedId: string | undefined;
+  const gateway = createGateway({ baseUrl: 'http://unused', models: ['lab-model'] }, {
+    authenticate: verify,
+    keys: { get: async id => { provisionedId = id.id; return 'sk-existing-server-key'; } },
+    ready: async () => {},
+    request: async (_url, options) => {
+      const body = JSON.parse(String(options?.body));
+      assert.equal(new Headers(options?.headers).get('Authorization'), 'Bearer sk-existing-server-key');
+      assert.equal(body.user, providerUserId(identity));
+      if (body.user.length > 64) return new Response('{"error":{"code":"string_above_max_length"}}', { status: 400 });
+      return new Response('{"status":"completed"}', { headers: { 'Content-Type': 'application/json' } });
+    },
+  });
+  const url = await listen(gateway);
+  try {
+    const response = await fetch(url + '/v1/responses', { method: 'POST',
+      headers: { Authorization: bearer, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'lab-model', input: 'test', user: 'spoofed-user' }),
+    });
+    assert.equal(response.status, 200);
+    await response.body?.cancel();
+    assert.equal(provisionedId, identity.id, 'retain the existing LiteLLM user/key owner');
+    assert.equal(provisionedId?.length, 69);
   } finally { await close(gateway); }
 });

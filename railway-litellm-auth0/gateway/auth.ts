@@ -8,6 +8,12 @@ export class HttpError extends Error {
 export interface Identity { id: string; issuer: string; subject: string }
 export interface AuthSettings { issuer: string; audience: string; clientId: string; scope: string }
 
+// OpenAI's legacy `user` field accepts at most 64 characters. Keep the existing
+// 69-character identity/key owner unchanged; use a separate opaque upstream ID.
+export function providerUserId(identity: Identity): string {
+  return createHash('sha256').update(identity.id).digest('hex');
+}
+
 export function verifier(settings: AuthSettings, keys?: JWTVerifyGetKey) {
   const issuer = new URL(settings.issuer);
   if (issuer.protocol !== 'https:' || issuer.username || issuer.password || issuer.search || issuer.hash) {

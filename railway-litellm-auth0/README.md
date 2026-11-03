@@ -275,18 +275,28 @@ Keep this guide open in an editor or browser and use **Terminal.app** for the fo
 2. Run `npm run lab -- codex-install`.
 3. Open your normal installed Codex desktop app.
 4. Follow **Codex's gateway sign-in prompt** to open a fresh browser login. Sign in as a lab Auth0 user. If Auth0 says `codex-gateway-lab-codex is requesting access`, review the requested permissions and click **Accept**. **Keep Codex open until the browser returns to `127.0.0.1` and Codex finishes signing in.** Codex obtains the token automatically; do not copy a token or API key into TOML. A prior browser session may make sign-in shorter. If you cancel, quit, or restart Codex during this step, close that login tab and start a fresh sign-in from Codex; an old consent/callback tab cannot resume the canceled attempt.
-5. Create a new chat in a harmless test directory. Ask: `Reply with exactly: gateway-ok`.
+5. Create a new chat in a harmless test directory. In the model picker, explicitly select **6.1 Sol** (`gpt-6.1-sol`, or your configured allowed model). Codex can retain a previous model choice such as **6 Astra**; the visible picker is not filtered to this lab's allowlist. Ask: `Reply with exactly: gateway-ok`.
 6. Ask it to read a small file in that directory and summarize it, then ask a follow-up about the contents. This checks streaming, a real tool call, and continuation through the gateway.
 7. Wait beyond the five-minute access-token lifetime and make another request. Confirm that Codex refreshes the grant and the same user is attributed. If the session can no longer refresh, Codex should request sign-in again.
 8. Continue to step 6 to check the matching usage records. A reply by itself does not prove which provider handled it.
 
 `codex-install` changes the effective top-level model/provider, disables web search for this initial qualification, adds the native OAuth provider, and retains unrelated TOML settings/comments. It saves the original bytes and the exact installed version in private ignored backups. Keep an external Terminal window open with `python3 scripts/codex-config.py restore` ready; recovery does not require the Codex app, npm, `.env`, or the deployed services. Active CLI profiles, managed workspace requirements, or trusted project configuration can override user configuration; the installer refuses an explicit default profile, and you must verify the active provider in the client. WebSockets, voice, and non-Responses routes are outside this first version.
 
+**Your existing chats remain visible.** This installs a provider into your existing Codex configuration; it does not create a separate app profile or clear local chat history. Use a new chat for a clean conversation, and verify the route/usage as described in step 6. Old chat titles and the presence of ChatGPT history do not identify which provider handles a new request.
+
 There is no browserless/device-code fallback for this native flow. The browser must reach `http://127.0.0.1:43127/callback`. A port conflict or callback mismatch prevents login.
 
 **Checkpoint:** the browser visited your Auth0 tenant, returned to Codex, and a new chat successfully completed the reply, file/tool task, follow-up, and post-expiry request. Confirm the matching usage records in step 6. If this fails or you need your usual setup immediately, follow step 7 to restore it before troubleshooting.
 
 ## 6. Check per-user tracking and diagnostics
+
+There are three separate checkpoints:
+
+1. **Auth0 sign-in:** Codex completes the browser callback. This proves identity-provider login, not successful inference.
+2. **Gateway and LiteLLM authentication:** an Auth0-derived user and server-side virtual key appear in LiteLLM. The gateway only provisions them after verifying the Auth0 token. A gateway `Model is not enabled for this lab` error also occurs after token validation; a LiteLLM/OpenAI request-validation error shows the request reached those later stages. Neither means a model reply succeeded.
+3. **Completed inference:** the new chat replies, and a corresponding successful request with the expected model, user ID, tokens, and spend appears in LiteLLM's usage records. Match the request time as well as the user/model; older successful requests are not proof of a new attempt.
+
+In the LiteLLM admin dashboard, inspect **Internal Users** / **Virtual Keys** for the `oidc-…` user/key alias, then inspect request logs after a successful chat. The precise mapping to the Auth0 `sub` is available with this SQL query; no API key or access token needs to be copied into Codex.
 
 In the Railway PostgreSQL service's SQL/data interface, run:
 
@@ -313,7 +323,7 @@ Inside the remote service shell, start the database client:
 psql -U litellm -d litellm
 ```
 
-Paste the SQL above. When finished, enter `\q` to leave `psql`, then `exit` to return to your Mac. This stays inside the Railway network. Allow time for LiteLLM's spend-log batch to flush. Identity uses **issuer + `sub`**, not mutable email. Refreshing a token retains the same identity. Two Auth0 subjects produce two LiteLLM users/keys.
+Paste the SQL above. When finished, enter `\q` to leave `psql`, then `exit` to return to your Mac. This stays inside the Railway network. Allow time for LiteLLM's spend-log batch to flush. The internal LiteLLM user ID/key owner uses **issuer + `sub`**, not mutable email. The request's upstream `user` field is a separate 64-character hash of that internal ID so it fits OpenAI's limit; LiteLLM attributes spend to the server-side key owner (`"user"` in the query), while `end_user` can contain the shorter upstream identifier. Refreshing a token retains the same identity. Two Auth0 subjects produce two LiteLLM users/keys.
 
 The gateway never forwards a user request to LiteLLM with its master key. Its admin credential is used only during first-request provisioning. A database transaction/advisory lock serializes concurrent first logins. Deleting/revoking a previously issued LiteLLM key does not silently regenerate it. Existing keys retain their own allowlists/budgets, so adding a model to the global list may also require updating existing keys through LiteLLM administration.
 
@@ -428,7 +438,7 @@ The integration suite creates randomly named local Docker containers with fake c
 
 The pinned `@railway/cli` installer imports the default export from its declared `tar` 6 dependency. Overriding it to `tar` 7 breaks a fresh install with `does not provide an export named 'default'`; this project does not apply that incompatible override. The upstream installer dependency currently has npm audit advisories (one high and one critical in the full development tree on 2026-11-03). These remain unresolved upstream; `npm audit --omit=dev` reports zero vulnerabilities, and the gateway Docker image installs with `--omit=dev`. Do not use `npm audit fix --force` for this warning: its proposed CLI downgrade does not preserve the IaC commands required by this lab.
 
-Checks on 2026-11-03 verified the installed app version `26.1027.61615` and its bundled CLI `0.166.0-alpha.5.1`. Temporary command-line provider overrides, with both omitted `delivery` and explicit `Authorization` delivery, returned `required: true`, `status: notReady`, `error: null` from `account/gatewayOAuth/read`. That establishes configuration recognition. A later test completed browser login and token exchange using the installed Codex backend in a separate process while leaving the normal desktop config unchanged. A fresh backend process subsequently reported `notReady`, so saved-grant reuse after restart, the desktop UI flow, and inference remain unqualified. See [VALIDATION.md](VALIDATION.md) for exact evidence and remaining checks.
+Checks on 2026-11-03 verified the installed app version `26.1027.61615` and its bundled CLI `0.166.0-alpha.5.1`. Temporary command-line provider overrides, with both omitted `delivery` and explicit `Authorization` delivery, returned `required: true`, `status: notReady`, `error: null` from `account/gatewayOAuth/read`. That establishes configuration recognition. A later test completed browser login and token exchange using the installed Codex backend in a separate process while leaving the normal desktop config unchanged. A fresh backend process subsequently reported `notReady`, so saved-grant reuse after restart remains unqualified. Subsequent desktop requests passed gateway authentication and reached LiteLLM/OpenAI; completed inference remains unqualified pending the upstream user-length fix and a successful retry. See [VALIDATION.md](VALIDATION.md) for exact evidence and remaining checks.
 
 | Problem | Check |
 |---|---|
@@ -438,7 +448,9 @@ Checks on 2026-11-03 verified the installed app version `26.1027.61615` and its 
 | Apply reports a maximum-volume-size error | Use the latest code: the volume now defaults to 500 MB. If you explicitly set `volumeSizeMB`, keep it within your plan limit. Preserve the project/state and rerun `plan`, then `up`; no Auth0 setup or new project is needed. |
 | Auth0 callback mismatch | Exact `http://127.0.0.1:43127/callback`; `localhost` is different |
 | Login succeeds, gateway returns 401 | The Auth0 token must arrive in `Authorization: Bearer …`; regenerate an older custom-header config with `npm run lab -- codex-config`. Also check API audience, RS256, standard Auth0 access-token profile, and issuer trailing slash. If the older lab config is already installed, fully quit Codex, run `codex-restore`, then `codex-install` using the `npm run lab --` prefix, and reopen. |
-| Gateway returns 403 | `llm:invoke` scope, native client's `azp`, model allowlist, or revoked internal key |
+| `Model is not enabled for this lab` | Select **6.1 Sol** (`gpt-6.1-sol`) in the new chat, or the model listed in your configured allowlist. The picker may still show other models. This specific error is returned after JWT validation. |
+| `Invalid 'user': string too long` (69 vs 64) | Update the repository and redeploy the gateway using the command below. The fix keeps existing LiteLLM users/keys and bounds the upstream user field. No Auth0, database, or Codex config reset is needed for this fix. |
+| Other gateway 403 | `llm:invoke` scope, native client's `azp`, or revoked internal key |
 | Gateway returns 503 | PostgreSQL/LiteLLM readiness, internal secrets, provisioning failure or changed seed |
 | Old restore says `Codex config changed after installation` | Update the repository and run `npm run lab -- codex-restore`. Routine unrelated changes are merged; for a conflict, use the explicit `restore --original` recovery command in step 7. |
 | `OAuth callback state did not match`, browser cannot reach `127.0.0.1`, or an old consent tab is still open | Keep Codex running during sign-in. Each attempt has its own state value. After a cancellation or restart, close the old login tabs and start a fresh sign-in from Codex; use only the newly opened tab. A successful Auth0 login alone does not prove Codex exchanged and saved the token. |
@@ -449,6 +461,15 @@ Checks on 2026-11-03 verified the installed app version `26.1027.61615` and its 
 | Model is unavailable | OpenAI API project access and exact model ID; ChatGPT access is separate |
 | Missing usage rows | Confirm route/model, successful request, and spend-log flush; health checks are not inference |
 | Railway upload/build fails | `npm run railway -- logs --service gateway --build`; likewise `litellm` |
+
+To deploy a **gateway code fix only**, from the project directory use the already linked lab project:
+
+```sh
+npm run railway -- status
+npm run railway -- up . --path-as-root --service gateway --environment production --ci
+```
+
+Check that `status` names your `codex-gateway-lab` project before running the upload. Wait until Railway shows the gateway deployment as **Success** before retrying. This updates the gateway service; it does not rerun Auth0 or rebuild the database/LiteLLM service. If you previously restored your normal Codex configuration, repeat step 5 to switch back to the lab. If the lab is still active, select the allowed model and retry without reinstalling its TOML.
 
 The backend maps the configured model IDs to `openai/<id>`. To add a different provider later, extend `litellm/render_config.py`, add its server-side secret to IaC, and supply accurate Codex model metadata for custom aliases. Re-run streaming and tool-loop tests for every new model/provider combination.
 

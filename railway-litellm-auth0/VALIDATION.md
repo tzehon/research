@@ -5,7 +5,7 @@ Initial preparation on 2026-11-03 created no Railway/Auth0 resources, read or st
 ## Local checks
 
 - TypeScript type-check of gateway, Railway definitions, scripts, and tests.
-- 19 passing unit/config/IaC/diagnostic tests: RS256 token validation; invalid signature/issuer/audience/client/scope/expiry; user identity stability across refresh; distinct users; credential/metadata stripping; model/route/request-size restrictions; incremental SSE; upstream status preservation.
+- 20 passing unit/config/IaC/diagnostic tests: RS256 token validation; invalid signature/issuer/audience/client/scope/expiry; user identity stability across refresh; distinct users; credential/metadata stripping; model/route/request-size restrictions; incremental SSE; upstream status preservation.
 - Authorization transport regression: accept a valid signed token in `Authorization`, reject missing/malformed/legacy-only credentials and actual repeated Authorization fields before key provisioning, and replace the client token with the server-only per-user key on the LiteLLM hop.
 - Codex configuration recovery: 14 Python regression cases run through the Node test suite, using temporary homes only. They cover native OAuth defaults, plugin removal, added projects/comments, exact restoration, conflicted edits and explicit recovery, invalid current TOML, checksum/symlink protection, old journals, missing local settings, repeat restore, and manually restored configuration.
 - Railway definition test: evaluate the SDK resource definitions with fake secrets, one database volume, and provider key present only in LiteLLM. This is not a live Railway plan.
@@ -55,17 +55,22 @@ A fresh backend process subsequently returned `status: notReady`, `error: null`.
 
 On 2026-11-03, after the user deployed the lab, Railway reported successful deployments for all three services. At the user's request, a generated HTTPS domain was added to LiteLLM on port 4000. An unauthenticated GET to `/ui` returned its HTML page with HTTP 200; an unauthenticated GET to `/v1/models` returned HTTP 401. No credentials were submitted to the UI, and no Codex/Auth0 settings were changed by this networking action. This check does not qualify native desktop SSO.
 
+## Desktop request reached the deployed gateway and LiteLLM
+
+On 2026-11-03, the user's desktop screenshots showed two downstream request failures after authentication: `gpt-6.1-sol` reached LiteLLM/OpenAI but its `user` value was 69 characters against a 64-character limit; selecting `gpt-6-astra` then returned the gateway's model-allowlist 403. Gateway code verifies the JWT before the allowlist check and key provisioning. A read-only LiteLLM user lookup confirmed the matching Auth0-derived user and server-only key were created at 10:28:53 UTC, with `gpt-6.1-sol` allowed and zero spend. This proves authenticated routing, not a completed model reply.
+
+The gateway now hashes the existing internal ID into a separate 64-character upstream `user` value. Internal IDs, deterministic keys, budgets, revocation behavior, and the spend-log ownership join remain unchanged. Regression tests use an actual JWT verifier with a local signing key, enforce the upstream 64-character constraint, and verify that the existing key owner is preserved. The model-allowlist error now names the allowed models. Type-check and all 20 tests passed. The corrected gateway has not been deployed by this change; live inference remains to be retried after deployment.
+
 ## Live qualification still to perform
 
-After the account setup/deployment steps:
+Auth0 resources, test users, the Railway services, native login, and authenticated desktop routing are already present. Remaining checks:
 
-1. Apply Auth0 resources and create test users.
-2. Run a Railway plan/apply and verify health and private services.
-3. Use the installed desktop app's native gateway sign-in prompt and Auth0 browser callback. The separate native-backend login succeeded, but the desktop UI path and saved-grant readiness after restart still need qualification.
-4. Check actual OpenAI model availability, completed SSE, tool calls, and replayed follow-up turns.
-5. Wait for expiry and verify automatic refresh in Codex, with stable user attribution.
-6. Confirm two users' usage/spend in Postgres. The optional smoke script can exercise both accounts independently.
-7. Verify revocation/expired-grant behavior against Auth0 and the deployed gateway.
-8. Restore normal ChatGPT-provider configuration, destroy the Railway lab, recreate it, and repeat the native login test.
+1. Deploy the gateway user-length fix and verify readiness.
+2. Select `gpt-6.1-sol` in a new desktop chat; verify a completed reply, SSE, tool calls, and follow-up turns.
+3. Wait for expiry and verify automatic refresh in Codex, with stable user attribution.
+4. Restart Codex and verify reuse or recovery of the saved gateway grant.
+5. Confirm two users' usage/spend in Postgres. The optional smoke script can exercise both accounts independently.
+6. Verify revocation/expired-grant behavior against Auth0 and the deployed gateway.
+7. Restore normal ChatGPT-provider configuration, destroy the Railway lab, recreate it, and repeat the native login test.
 
 Only completing those checks establishes end-to-end desktop compatibility. The separately implemented browser smoke command does not substitute for the desktop test.
