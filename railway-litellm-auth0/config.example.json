@@ -1,0 +1,14 @@
+{
+  "projectName": "codex-gateway-lab",
+  "region": "asia-southeast1-eqsg3a",
+  "models": ["gpt-6.1-sol"],
+  "defaultModel": "gpt-6.1-sol",
+  "auth0Domain": "YOUR-TENANT.us.auth0.com",
+  "oauthClientId": "SET-BY-AUTH0-OUTPUT",
+  "audience": "https://codex-gateway-lab",
+  "scope": "llm:invoke",
+  "redirectPort": 43127,
+  "gatewayUrl": "",
+  "userBudgetUsd": 5,
+  "userRpmLimit": 30
+}

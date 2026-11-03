@@ -1,0 +1,28 @@
+{
+  "name": "railway-litellm-auth0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.18.0" },
+  "scripts": {
+    "lab": "node --env-file-if-exists=.env --import tsx scripts/lab.ts",
+    "start": "node --import tsx gateway/server.ts",
+    "check": "tsc --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "test:integration": "node --import tsx scripts/integration.ts",
+    "railway": "railway",
+    "iac:render": "node --env-file-if-exists=.env --import tsx scripts/render-iac.ts"
+  },
+  "dependencies": {
+    "jose": "6.2.15",
+    "pg": "8.23.1",
+    "tsx": "4.23.15"
+  },
+  "overrides": { "tar": "7.5.22" },
+  "devDependencies": {
+    "@railway/cli": "5.71.0",
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.0.0",
+    "railway": "3.16.0",
+    "typescript": "7.0.2"
+  }
+}

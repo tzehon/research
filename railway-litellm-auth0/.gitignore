@@ -1,0 +1,15 @@
+node_modules/
+.env
+.env.*
+!.env.example
+.local/
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+*.auto.tfvars.json
+crash.log
+.DS_Store
+__pycache__/
+*.pyc
