@@ -399,6 +399,7 @@ Preparation on 2026-11-03 verified the installed app version `26.1027.61615` and
 | Problem | Check |
 |---|---|
 | `npm ci` fails with `tar` missing a default export | Update to the latest repository revision and rerun `npm ci`; the incompatible `tar` 7 override was removed. No Node downgrade is needed. |
+| Plan says Railway CLI 5.42.1+ is required, but `npm run railway -- --version` shows 5.71.0 | Update the repository and rerun `npm run lab -- plan`. The wrapper sets the SDK version-probe executable to the pinned Railway CLI; older revisions let it probe Node by mistake. |
 | Auth0 callback mismatch | Exact `http://127.0.0.1:43127/callback`; `localhost` is different |
 | Login succeeds, gateway returns 401 | Auth0 API audience, RS256, standard Auth0 access-token profile, issuer trailing slash |
 | Gateway returns 403 | `llm:invoke` scope, native client's `azp`, model allowlist, or revoked internal key |

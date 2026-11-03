@@ -1,13 +1,15 @@
 # Validation record
 
-Prepared on 2026-11-03. No Railway/Auth0 resources were created, no real API key was read or stored, and the active Codex TOML was not changed.
+Initial preparation on 2026-11-03 created no Railway/Auth0 resources, read or stored no real API key, and left the active Codex TOML unchanged. Subsequent checks against the user-created Auth0 setup and empty Railway project are noted below; no deployment has been applied by the assistant.
 
 ## Local checks
 
 - TypeScript type-check of gateway, Railway definitions, scripts, and tests.
-- 15 passing unit/config/IaC tests: RS256 token validation; invalid signature/issuer/audience/client/scope/expiry; user identity stability across refresh; distinct users; credential/metadata stripping; model/route/request-size restrictions; incremental SSE; upstream status preservation.
+- 16 passing unit/config/IaC tests: RS256 token validation; invalid signature/issuer/audience/client/scope/expiry; user identity stability across refresh; distinct users; credential/metadata stripping; model/route/request-size restrictions; incremental SSE; upstream status preservation.
 - Codex config test: render native `gateway_oauth`, preserve unrelated settings, install into a temporary home, reject restoration after intervening edits, and restore the original bytes.
 - Railway definition test: evaluate the SDK resource definitions with fake secrets, one database volume, and provider key present only in LiteLLM. This is not a live Railway plan.
+- Native IaC evaluation regression: reproduces the misleading minimum-CLI error when the SDK probes the inherited Node executable, then passes with the wrapper's Railway executable environment. The real SDK version check remains enabled.
+- A read-only live Railway plan against the user-created project succeeded: 4 resources to add, 0 to change, 0 to destroy. No apply/deploy was performed.
 - Auth0 provider `1.60.0`: initialization, formatting, and `terraform validate`.
 - Gateway deployment Docker image built successfully using Node `22.22.2-bookworm-slim` and production dependencies.
 - LiteLLM deployment image built from `ghcr.io/berriai/litellm:v1.106.6` and started with its actual database migration entrypoint.

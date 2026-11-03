@@ -3,23 +3,23 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync, unlinkSync, chmodSy
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { root, local, readConfig, validateIdentity, type LabConfig } from './settings.ts';
+import { railwayBin, railwayEnvironment } from './railway-cli.ts';
 
 process.chdir(root);
 mkdirSync(local, { recursive: true, mode: 0o700 });
 const command = process.argv[2] ?? 'help';
-const railwayBin = path.join(root, 'node_modules/.bin/railway');
 const statePath = path.join(local, 'railway-state.json');
 const save = (file: string, value: unknown) => {
   writeFileSync(file, JSON.stringify(value, null, 2) + '\n', { mode: 0o600 }); chmodSync(file, 0o600);
 };
-function run(exe: string, args: string[], capture = false): string {
-  if (capture) return execFileSync(exe, args, { cwd: root, env: process.env, encoding: 'utf8', stdio: ['inherit', 'pipe', 'inherit'] }).trim();
-  const r = spawnSync(exe, args, { cwd: root, env: process.env, stdio: 'inherit' });
+function run(exe: string, args: string[], capture = false, env: NodeJS.ProcessEnv = process.env): string {
+  if (capture) return execFileSync(exe, args, { cwd: root, env, encoding: 'utf8', stdio: ['inherit', 'pipe', 'inherit'] }).trim();
+  const r = spawnSync(exe, args, { cwd: root, env, stdio: 'inherit' });
   if (r.error) throw r.error;
   if (r.status !== 0) throw new Error(`${path.basename(exe)} failed (exit ${r.status})`);
   return '';
 }
-function rw(args: string[], capture = false) { return run(railwayBin, args, capture); }
+function rw(args: string[], capture = false) { return run(railwayBin, args, capture, railwayEnvironment()); }
 function state() {
   if (!existsSync(statePath)) throw new Error('No owned project state. Run railway-create first.');
   return JSON.parse(readFileSync(statePath, 'utf8')) as { projectId: string; projectName: string; environmentId: string };
