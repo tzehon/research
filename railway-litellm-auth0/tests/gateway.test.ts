@@ -1,7 +1,7 @@
 import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
-import { createServer, type Server } from 'node:http';
+import { createServer, request as httpRequest, type Server } from 'node:http';
 import { generateKeyPair, exportJWK, createLocalJWKSet, SignJWT, type JWTVerifyGetKey } from 'jose';
 import { verifier, HttpError } from '../gateway/auth.ts';
 import { userKey } from '../gateway/identity-store.ts';
@@ -70,8 +70,8 @@ test('forward SSE incrementally and strip client credentials/attribution', async
   const url = await listen(gateway);
   try {
     const response = await fetch(url + '/v1/responses', { method: 'POST', headers: {
-      'Content-Type': 'application/json', 'X-Gateway-Token': 'Bearer ' + await token(),
-      Authorization: 'Bearer private-chatgpt-token', Cookie: 'session=private', 'ChatGPT-Account-ID': 'private-account',
+      'Content-Type': 'application/json', Authorization: 'Bearer ' + await token(),
+      'X-Gateway-Token': 'Bearer ignored-legacy-header', Cookie: 'session=private', 'ChatGPT-Account-ID': 'private-account',
     }, body: JSON.stringify({ model: 'lab-model', input: 'hello', stream: true, api_key: 'attacker-key',
       api_base: 'https://attacker.invalid', user: 'someone-else', metadata: { user_api_key_user_id: 'someone-else' }, store: true }) });
     const reader = response.body!.getReader();
@@ -94,12 +94,55 @@ test('block admin routes, model overrides, missing tokens, and oversized request
   });
   const url = await listen(gateway);
   try {
-    const headers = { 'Content-Type': 'application/json', 'X-Gateway-Token': 'Bearer ' + await token() };
+    const headers = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + await token() };
     assert.equal((await fetch(url + '/key/generate', { method: 'POST', headers, body: '{}' })).status, 404);
     assert.equal((await fetch(url + '/v1/models')).status, 401);
     assert.equal((await fetch(url + '/v1/responses', { method: 'POST', headers, body: '{"model":"other"}' })).status, 403);
     assert.equal((await fetch(url + '/v1/responses', { method: 'POST', headers, body: JSON.stringify({ model: 'lab-model', input: 'x'.repeat(200) }) })).status, 413);
     assert.equal(count, 0);
+  } finally { await close(gateway); }
+});
+
+test('require one valid Authorization header; reject legacy-only, malformed, and duplicate credentials', async () => {
+  let provisions = 0;
+  let requests = 0;
+  const gateway = createGateway({ baseUrl: 'http://unused', models: ['lab-model'] }, {
+    authenticate: verifier(settings, keys),
+    keys: { get: async () => { provisions++; return 'sk-private-user-key'; } },
+    ready: async () => {},
+    request: async () => { requests++; return new Response('{"data":[]}'); },
+  });
+  const url = await listen(gateway);
+  try {
+    const bearer = 'Bearer ' + await token();
+    const rejected: Record<string, string>[] = [
+      {},
+      { 'X-Gateway-Token': bearer },
+      { Authorization: 'Basic wrong-scheme' },
+      { Authorization: bearer + ', ' + bearer },
+      { Authorization: 'Bearer private-chatgpt-token', 'X-Gateway-Token': bearer },
+    ];
+    for (const headers of rejected) {
+      const response = await fetch(url + '/v1/models', { headers });
+      assert.equal(response.status, 401);
+      await response.body?.cancel();
+    }
+    // Use raw repeated fields: fetch joins duplicates, while Node normally
+    // discards all but the first Authorization field when reading req.headers.
+    for (const values of [[bearer, 'Bearer invalid'], ['Bearer invalid', bearer], [bearer, bearer]]) {
+      const status = await new Promise<number | undefined>((resolve, reject) => {
+        const request = httpRequest(url + '/v1/models', {
+          headers: ['Host', new URL(url).host, 'Authorization', values[0]!, 'aUtHoRiZaTiOn', values[1]!],
+        }, response => { response.resume(); resolve(response.statusCode); });
+        request.on('error', reject); request.end();
+      });
+      assert.equal(status, 401);
+    }
+    assert.equal(provisions, 0); assert.equal(requests, 0);
+    const accepted = await fetch(url + '/v1/models', { headers: { authorization: bearer } });
+    assert.equal(accepted.status, 200);
+    await accepted.body?.cancel();
+    assert.equal(provisions, 1); assert.equal(requests, 1);
   } finally { await close(gateway); }
 });
 
@@ -110,7 +153,7 @@ test('preserve rate-limit status and Retry-After through gateway', async () => {
   });
   const url = await listen(gateway);
   try {
-    const response = await fetch(url + '/v1/models', { headers: { 'X-Gateway-Token': 'Bearer ' + await token() } });
+    const response = await fetch(url + '/v1/models', { headers: { Authorization: 'Bearer ' + await token() } });
     assert.equal(response.status, 429); assert.equal(response.headers.get('retry-after'), '20');
   } finally { await close(gateway); }
 });

@@ -5,8 +5,9 @@ Initial preparation on 2026-11-03 created no Railway/Auth0 resources, read or st
 ## Local checks
 
 - TypeScript type-check of gateway, Railway definitions, scripts, and tests.
-- 16 passing unit/config/IaC tests: RS256 token validation; invalid signature/issuer/audience/client/scope/expiry; user identity stability across refresh; distinct users; credential/metadata stripping; model/route/request-size restrictions; incremental SSE; upstream status preservation.
-- Codex config test: render native `gateway_oauth`, preserve unrelated settings, install into a temporary home, reject restoration after intervening edits, and restore the original bytes.
+- 17 passing unit/config/IaC tests: RS256 token validation; invalid signature/issuer/audience/client/scope/expiry; user identity stability across refresh; distinct users; credential/metadata stripping; model/route/request-size restrictions; incremental SSE; upstream status preservation.
+- Authorization transport regression: accept a valid signed token in `Authorization`, reject missing/malformed/legacy-only credentials and actual repeated Authorization fields before key provisioning, and replace the client token with the server-only per-user key on the LiteLLM hop.
+- Codex config test: render native `gateway_oauth` with omitted `delivery` (default Authorization), preserve unrelated settings, install into a temporary home, reject restoration after intervening edits, and restore the original bytes.
 - Railway definition test: evaluate the SDK resource definitions with fake secrets, one database volume, and provider key present only in LiteLLM. This is not a live Railway plan.
 - Native IaC evaluation regression: reproduces the misleading minimum-CLI error when the SDK probes the inherited Node executable, then passes with the wrapper's Railway executable environment. The real SDK version check remains enabled.
 - A read-only live Railway plan against the user-created project succeeded: 4 resources to add, 0 to change, 0 to destroy. No apply/deploy was performed.
@@ -21,19 +22,19 @@ The container test caught and fixed an IPv6-only LiteLLM listener that passed an
 
 ## Installed Codex recognition check
 
-App version: `26.1027.61615`; bundled CLI: `0.166.0-alpha.5.1` (the standalone Homebrew CLI was `0.163.0`). A read-only app-server probe used temporary command-line overrides and fake public endpoint/client settings, not a modified TOML. Its `account/gatewayOAuth/read` response was:
+App version: `26.1027.61615`; bundled CLI: `0.166.0-alpha.5.1` (the standalone Homebrew CLI was `0.163.0`). A read-only app-server probe used temporary command-line overrides and fake public endpoint/client settings, not a modified TOML. Both forms—omitting `delivery` as in the supplied example, and explicitly selecting the `Authorization` header—returned the following `account/gatewayOAuth/read` result:
 
 ```json
 {
-  "providerId": "railway-lab-probe",
-  "providerName": "Railway lab validation",
+  "providerId": "railway-authorization-probe",
+  "providerName": "Authorization delivery check",
   "required": true,
   "status": "notReady",
   "error": null
 }
 ```
 
-This verifies that the installed app's backend recognizes the documented native OAuth configuration. It does not verify a completed Auth0 grant or the desktop UI interaction.
+This verifies that the installed app's backend accepts both Authorization configuration forms; the lab uses omitted `delivery` to match the supplied example. The public gateway guide still described Authorization as reserved when checked on 2026-11-03, so that restriction was not treated as authoritative for this installed build. This read-only check does not observe an outgoing authenticated request or verify a completed Auth0 grant or the desktop UI interaction.
 
 ## Live qualification still to perform
 

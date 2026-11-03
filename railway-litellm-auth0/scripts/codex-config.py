@@ -57,7 +57,7 @@ token_url = {quote(f'https://{config["auth0Domain"]}/oauth/token')}
 client_id = {quote(config["oauthClientId"])}
 scopes = ["openid", "profile", "offline_access", {quote(config["scope"])}]
 redirect_port = {int(config["redirectPort"])}
-delivery = {{ kind = "header", name = "X-Gateway-Token", scheme = "Bearer" }}
+# Omit delivery to send the OAuth access token as Authorization: Bearer <token>.
 '''
     result = tomllib.loads(text)
     if result.get("model_provider") != PROVIDER:

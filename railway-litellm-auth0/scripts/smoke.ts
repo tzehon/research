@@ -49,7 +49,7 @@ export async function smoke(c: LabConfig) {
   const refreshed = await exchange({ grant_type: 'refresh_token', refresh_token: tokens.refresh_token });
   console.log('PASS browser PKCE login and refresh grant');
   const send = (body: unknown, token = refreshed.access_token) => fetch(c.gatewayUrl + '/v1/responses', {
-    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Gateway-Token': `Bearer ${token}` },
+    method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify(body), signal: AbortSignal.timeout(180000),
   });
   const denied = await send({ model: c.defaultModel, input: 'test' }, 'invalid');

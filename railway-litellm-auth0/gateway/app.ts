@@ -51,9 +51,10 @@ export function createGateway(settings: Settings, deps: Dependencies) {
       }
       const route = `${req.method} ${req.url}`;
       if (!['POST /v1/responses', 'GET /v1/models'].includes(route)) throw new HttpError(404, 'Route not available');
-      const raw = req.headers['x-gateway-token'];
-      // Duplicate token headers are rejected by the strict Bearer parser.
-      const identity = await deps.authenticate(Array.isArray(raw) ? undefined : raw);
+      // Node's normalized headers discard duplicate Authorization fields. Inspect
+      // the distinct values so ambiguous credentials fail before provisioning.
+      const tokens = req.headersDistinct.authorization;
+      const identity = await deps.authenticate(tokens?.length === 1 ? tokens[0] : undefined);
       let body: Record<string, unknown> | undefined;
       if (req.method === 'POST') {
         if (!req.headers['content-type']?.startsWith('application/json')) throw new HttpError(415, 'Expected application/json');

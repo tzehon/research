@@ -21,7 +21,7 @@ Run terminal commands from `/Users/tth/projects/research/railway-litellm-auth0`.
 
 **SSO in Codex; API keys only on the server during model requests.**
 
-- **Desktop sign-in:** Codex opens Auth0 in your browser, receives an Auth0 access token, and manages token storage and refresh. You authenticate with your Auth0 account; you are never issued a LiteLLM or OpenAI API key for Codex.
+- **Desktop sign-in:** Codex opens Auth0 in your browser, receives an Auth0 access token, and sends it to the gateway as `Authorization: Bearer <access-token>`. Codex manages token storage and refresh. You authenticate with your Auth0 account; you are never issued a LiteLLM or OpenAI API key for Codex.
 - **Desktop configuration:** the lab's TOML contains the gateway URL, selected model, public OAuth client ID, authorization/token URLs, scopes, callback port, and token-delivery settings. It contains **no OpenAI API key, LiteLLM API key, OAuth client secret, or pasted access/refresh token**. The public client ID is an identifier, not a secret.
 - **Server authentication:** the Railway gateway validates your Auth0 token and uses an internal per-user LiteLLM key. LiteLLM tracks that user's usage and applies model access, budget, and rate limits. LiteLLM alone uses the OpenAI API key for upstream inference; these API keys are never returned to Codex or the browser.
 - **Model catalog discovery is deferred:** use the explicitly configured `models` and `defaultModel` for this experiment. There is no setup step for automatic discovery, a custom catalog file, or a dynamically populated model picker after SSO. The `/v1/models` endpoint is available for API diagnostics, not automatic Codex picker integration.
@@ -40,7 +40,7 @@ sequenceDiagram
     A-->>C: Code via 127.0.0.1:43127/callback
     C->>A: Exchange code / refresh token
     A-->>C: Access token
-    C->>G: POST /v1/responses + Auth0 token in X-Gateway-Token
+    C->>G: POST /v1/responses + Authorization: Bearer Auth0-access-token
     G->>G: Verify signature, issuer, audience, client, expiry, scope
     G->>D: Look up stable issuer + subject identity
     G->>L: Provision server-internal user/key on first request
@@ -243,7 +243,7 @@ Generate the exact proposed configuration first:
 npm run lab -- codex-config
 ```
 
-Inspect `.local/codex.config.toml`. [codex/config.example.toml](codex/config.example.toml) shows its shape. The important block is `model_providers.railway-auth0-lab.gateway_oauth`: Auth0 authorization/token URLs, public client ID, scopes, fixed loopback port, and custom token header. Auth0's `audience` and dedicated `connection` are included in the authorization URL. There are no API keys, OAuth client secrets, or saved tokens in this generated TOML. The lab provider authenticates through `gateway_oauth`; do not add a static key or credential helper for it.
+Inspect `.local/codex.config.toml`. [codex/config.example.toml](codex/config.example.toml) shows its shape. The important block is `model_providers.railway-auth0-lab.gateway_oauth`: Auth0 authorization/token URLs, public client ID, scopes, and fixed loopback port. The `delivery` setting is intentionally omitted: Codex uses `Authorization: Bearer <access-token>` by default in the installed build checked below. Auth0's `audience` and dedicated `connection` are included in the authorization URL. There are no API keys, OAuth client secrets, or saved tokens in this generated TOML. The lab provider authenticates through `gateway_oauth`; do not add a static key or credential helper for it.
 
 **Checkpoint:** the generated TOML contains your Railway HTTPS URL, configured model, and Auth0 public native client ID. It contains no unresolved placeholders, API keys, client secrets, or access/refresh tokens. Generating it has not yet changed your active Codex configuration.
 
@@ -318,7 +318,7 @@ Only `GET /v1/models` and `POST /v1/responses` are exposed, plus health endpoint
 | Your usual configuration | Whatever was selected before the lab | Your usual ChatGPT sign-in | Your existing ChatGPT arrangement |
 | Lab configuration | `railway-auth0-lab` | Codex sends an Auth0 access token; the server handles internal LiteLLM keys | Your OpenAI API project |
 
-The lab selects `requires_openai_auth = false`: inference uses the gateway's provider key. Gateway OAuth is independent of ChatGPT sign-in. The configuration switch does not edit `auth.json`, delete your ChatGPT credentials, or sign you out. The gateway strips any incoming ChatGPT authorization/account headers before contacting LiteLLM. Account-dependent plugins or other workspace features may behave differently while using a standalone provider.
+The lab selects `requires_openai_auth = false`: inference uses the gateway's provider key. Gateway OAuth is independent of ChatGPT sign-in. The configuration switch does not edit `auth.json`, delete your ChatGPT credentials, or sign you out. In lab mode, the inference request's `Authorization` header carries the Auth0 access token. The gateway validates it and creates a separate server-to-server request using its internal LiteLLM credential; client tokens, cookies, and account headers are not forwarded. Account-dependent plugins or other workspace features may behave differently while using a standalone provider.
 
 Fully quit Codex with **Cmd-Q**. From **Terminal.app**, restore your original configuration:
 
@@ -394,14 +394,14 @@ The integration suite creates randomly named local Docker containers with fake c
 
 The pinned `@railway/cli` installer imports the default export from its declared `tar` 6 dependency. Overriding it to `tar` 7 breaks a fresh install with `does not provide an export named 'default'`; this project does not apply that incompatible override. The upstream installer dependency currently has npm audit advisories (one high and one critical in the full development tree on 2026-11-03). These remain unresolved upstream; `npm audit --omit=dev` reports zero vulnerabilities, and the gateway Docker image installs with `--omit=dev`. Do not use `npm audit fix --force` for this warning: its proposed CLI downgrade does not preserve the IaC commands required by this lab.
 
-Preparation on 2026-11-03 verified the installed app version `26.1027.61615` and its bundled CLI `0.166.0-alpha.5.1`. A temporary command-line provider override returned `required: true`, `status: notReady`, `error: null` from `account/gatewayOAuth/read`. That establishes configuration recognition, **not completed browser login**. See [VALIDATION.md](VALIDATION.md) for the exact checks and remaining live qualification.
+Preparation on 2026-11-03 verified the installed app version `26.1027.61615` and its bundled CLI `0.166.0-alpha.5.1`. Temporary command-line provider overrides, with both omitted `delivery` and explicit `Authorization` delivery, returned `required: true`, `status: notReady`, `error: null` from `account/gatewayOAuth/read`. That establishes configuration recognition, **not completed browser login**. See [VALIDATION.md](VALIDATION.md) for the exact checks and remaining live qualification.
 
 | Problem | Check |
 |---|---|
 | `npm ci` fails with `tar` missing a default export | Update to the latest repository revision and rerun `npm ci`; the incompatible `tar` 7 override was removed. No Node downgrade is needed. |
 | Plan says Railway CLI 5.42.1+ is required, but `npm run railway -- --version` shows 5.71.0 | Update the repository and rerun `npm run lab -- plan`. The wrapper sets the SDK version-probe executable to the pinned Railway CLI; older revisions let it probe Node by mistake. |
 | Auth0 callback mismatch | Exact `http://127.0.0.1:43127/callback`; `localhost` is different |
-| Login succeeds, gateway returns 401 | Auth0 API audience, RS256, standard Auth0 access-token profile, issuer trailing slash |
+| Login succeeds, gateway returns 401 | The Auth0 token must arrive in `Authorization: Bearer …`; regenerate an older custom-header config with `npm run lab -- codex-config`. Also check API audience, RS256, standard Auth0 access-token profile, and issuer trailing slash. If the older lab config is already installed, fully quit Codex, run `codex-restore`, then `codex-install` using the `npm run lab --` prefix, and reopen. |
 | Gateway returns 403 | `llm:invoke` scope, native client's `azp`, model allowlist, or revoked internal key |
 | Gateway returns 503 | PostgreSQL/LiteLLM readiness, internal secrets, provisioning failure or changed seed |
 | Browser login is denied | Auth0 **Monitoring → Logs**; match callback, native client, and enabled connection; never copy tokens into diagnostics |
