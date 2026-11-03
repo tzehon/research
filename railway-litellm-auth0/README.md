@@ -1,6 +1,6 @@
 # Codex native OAuth gateway lab
 
-This lab exercises **Codex's native `gateway_oauth` browser login** from the [OpenAI gateway guide](https://learn.chatgpt.com/docs/enterprise/connect-to-a-gateway#use-native-gateway-oauth). It creates a disposable Railway project with an OAuth-validating gateway, LiteLLM, and PostgreSQL. Auth0 hosts the sign-in page. The first version routes multiple OpenAI model IDs using your existing OpenAI API key.
+This lab exercises **Codex's native `gateway_oauth` browser login** from the [OpenAI gateway guide](https://learn.chatgpt.com/docs/enterprise/connect-to-a-gateway#use-native-gateway-oauth). It creates a disposable Railway project with an OAuth-validating gateway, LiteLLM, and PostgreSQL. Auth0 hosts the sign-in page. The first version routes configured OpenAI model IDs using an OpenAI API key held by the LiteLLM service.
 
 **This is the single start-to-finish setup guide.** Follow steps 1–8 in order, starting with your existing Auth0 account. Every required Auth0 dashboard action and terminal command is included here; no other project document is required.
 
@@ -17,6 +17,17 @@ Run terminal commands from `/Users/tth/projects/research/railway-litellm-auth0`.
 
 **Current status:** local code, configuration, and container checks have passed. Nothing has been deployed to your accounts, and live Auth0/Railway/desktop login remains to be verified by following this guide. Steps 3 and 4 create account resources; model requests use your OpenAI API credit.
 
+## Authentication and scope
+
+**SSO in Codex; API keys only on the server during model requests.**
+
+- **Desktop sign-in:** Codex opens Auth0 in your browser, receives an Auth0 access token, and manages token storage and refresh. You authenticate with your Auth0 account; you are never issued a LiteLLM or OpenAI API key for Codex.
+- **Desktop configuration:** the lab's TOML contains the gateway URL, selected model, public OAuth client ID, authorization/token URLs, scopes, callback port, and token-delivery settings. It contains **no OpenAI API key, LiteLLM API key, OAuth client secret, or pasted access/refresh token**. The public client ID is an identifier, not a secret.
+- **Server authentication:** the Railway gateway validates your Auth0 token and uses an internal per-user LiteLLM key. LiteLLM tracks that user's usage and applies model access, budget, and rate limits. LiteLLM alone uses the OpenAI API key for upstream inference; these API keys are never returned to Codex or the browser.
+- **Model catalog discovery is deferred:** use the explicitly configured `models` and `defaultModel` for this experiment. There is no setup step for automatic discovery, a custom catalog file, or a dynamically populated model picker after SSO. The `/v1/models` endpoint is available for API diagnostics, not automatic Codex picker integration.
+
+The ignored project `.env` used below is **administrator deployment input** on your Mac. It supplies server secrets to Railway and management credentials to Terraform; it is not a desktop authentication file and is not distributed to Codex users.
+
 ```mermaid
 sequenceDiagram
     participant C as Codex desktop on Mac
@@ -29,17 +40,17 @@ sequenceDiagram
     A-->>C: Code via 127.0.0.1:43127/callback
     C->>A: Exchange code / refresh token
     A-->>C: Access token
-    C->>G: POST /v1/responses + X-Gateway-Token
+    C->>G: POST /v1/responses + Auth0 token in X-Gateway-Token
     G->>G: Verify signature, issuer, audience, client, expiry, scope
     G->>D: Look up stable issuer + subject identity
-    G->>L: Provision user/key on first request
+    G->>L: Provision server-internal user/key on first request
     G->>L: Responses request with that user's internal virtual key
     L->>O: Inference using server-side OpenAI API key
     O-->>C: Responses events streamed through LiteLLM and gateway
     L->>D: Per-user usage, tokens, and spend
 ```
 
-LiteLLM's native JWT authentication is an [Enterprise feature](https://docs.litellm.ai/docs/proxy/client_setup/overview). This lab uses a small independent OAuth resource server in front of its standard [virtual-key authentication](https://docs.litellm.ai/docs/proxy/virtual_keys). Codex still performs the native OAuth flow. The internal LiteLLM key never reaches Codex or the browser.
+LiteLLM's built-in JWT authentication is an [Enterprise feature](https://docs.litellm.ai/docs/proxy/token_auth). This lab keeps the same user-facing SSO flow by validating the Auth0 token in the Railway gateway, then authenticating the server-to-server hop with LiteLLM's standard [virtual-key authentication](https://docs.litellm.ai/docs/proxy/virtual_keys). Codex authenticates only with its Auth0 token; the internal LiteLLM key never reaches the client. This tests Codex's native browser OAuth flow and per-user tracking through LiteLLM. It does not test LiteLLM's built-in Enterprise JWT implementation.
 
 ## What is created
 
@@ -76,9 +87,9 @@ npm run lab -- init
 
 Edit `.local/config.json` and `.env` in your editor. Both are ignored by Git. `init` generates stable internal secrets and preserves existing files on subsequent runs.
 
-Set `OPENAI_API_KEY` to your existing key in `.env`. Leave the generated database password, LiteLLM master/salt, and gateway seed intact. Do not put keys in TOML or commit `.env`. Do not rotate those generated values while keeping the existing database; the gateway detects a changed key seed and fails closed.
+Set `OPENAI_API_KEY` to your existing key in the project `.env` as deployment input. The IaC passes that key only to the LiteLLM service, never into Codex configuration. Leave the generated database password, LiteLLM master/salt, and gateway seed intact. Do not put keys in TOML or commit `.env`. Do not rotate those generated values while keeping the existing database; the gateway detects a changed key seed and fails closed.
 
-In `.local/config.json`, choose your model IDs in `models` and `defaultModel`; `defaultModel` must be one of the entries in `models`. The example uses `gpt-6.1-sol`, which was present in the installed desktop client's model catalog during preparation. Your OpenAI API project must independently have access to whichever models you select. ChatGPT subscription access does not establish API access. Matching known Codex model IDs avoids requiring a custom model catalog.
+In `.local/config.json`, choose your model IDs in `models` and `defaultModel`; `defaultModel` must be one of the entries in `models`. The example uses `gpt-6.1-sol`, which was present in the installed desktop client's model catalog during preparation. Your OpenAI API project must independently have access to whichever models you select. ChatGPT subscription access does not establish API access. Use known Codex model IDs for this test. Automatic model-catalog discovery and custom catalog setup are out of scope; no catalog setup is required to continue.
 
 **Checkpoint:** `.env` and `.local/config.json` exist, your OpenAI key is set in `.env`, and the generated internal secrets remain intact. `oauthClientId` and `gatewayUrl` are filled automatically in later steps; leave them alone for now.
 
@@ -212,16 +223,16 @@ Generate the exact proposed configuration first:
 npm run lab -- codex-config
 ```
 
-Inspect `.local/codex.config.toml`. [codex/config.example.toml](codex/config.example.toml) shows its shape. The important block is `model_providers.railway-auth0-lab.gateway_oauth`: Auth0 authorization/token URLs, public client ID, scopes, fixed loopback port, and custom token header. Auth0's `audience` and dedicated `connection` are included in the authorization URL. There is no OAuth client secret in the desktop configuration.
+Inspect `.local/codex.config.toml`. [codex/config.example.toml](codex/config.example.toml) shows its shape. The important block is `model_providers.railway-auth0-lab.gateway_oauth`: Auth0 authorization/token URLs, public client ID, scopes, fixed loopback port, and custom token header. Auth0's `audience` and dedicated `connection` are included in the authorization URL. There are no API keys, OAuth client secrets, or saved tokens in this generated TOML. The lab provider authenticates through `gateway_oauth`; do not add a static key or credential helper for it.
 
-**Checkpoint:** the generated TOML contains your Railway HTTPS URL and your Auth0 native client ID, with no placeholders or client secret. Generating it has not yet changed your active Codex configuration.
+**Checkpoint:** the generated TOML contains your Railway HTTPS URL, configured model, and Auth0 public native client ID. It contains no unresolved placeholders, API keys, client secrets, or access/refresh tokens. Generating it has not yet changed your active Codex configuration.
 
 Keep this guide open in an editor or browser and use **Terminal.app** for the following steps; the Codex app will be fully closed:
 
 1. Finish/save active Codex work, then **fully quit Codex with Cmd-Q**.
 2. Run `npm run lab -- codex-install`.
 3. Open your normal installed Codex desktop app.
-4. Follow **Codex's gateway sign-in prompt** to open the browser. Sign in as a lab Auth0 user, then return to Codex. A prior browser session may make sign-in shorter.
+4. Follow **Codex's gateway sign-in prompt** to open the browser. Sign in as a lab Auth0 user, then return to Codex. Codex obtains the token automatically; do not copy a token or API key into TOML. A prior browser session may make sign-in shorter.
 5. Create a new chat in a harmless test directory. Ask: `Reply with exactly: gateway-ok`.
 6. Ask it to read a small file in that directory and summarize it, then ask a follow-up about the contents. This checks streaming, a real tool call, and continuation through the gateway.
 7. Wait beyond the five-minute access-token lifetime and make another request. Confirm that Codex refreshes the grant and the same user is attributed. If the session can no longer refresh, Codex should request sign-in again.
@@ -285,7 +296,7 @@ Only `GET /v1/models` and `POST /v1/responses` are exposed, plus health endpoint
 | Mode | Selected model provider | Credential used for model requests | Inference billing |
 |---|---|---|---|
 | Your usual configuration | Whatever was selected before the lab | Your usual ChatGPT sign-in | Your existing ChatGPT arrangement |
-| Lab configuration | `railway-auth0-lab` | Auth0 access token to gateway; internal virtual key to LiteLLM | Your OpenAI API project |
+| Lab configuration | `railway-auth0-lab` | Codex sends an Auth0 access token; the server handles internal LiteLLM keys | Your OpenAI API project |
 
 The lab selects `requires_openai_auth = false`: inference uses the gateway's provider key. Gateway OAuth is independent of ChatGPT sign-in. The configuration switch does not edit `auth.json`, delete your ChatGPT credentials, or sign you out. The gateway strips any incoming ChatGPT authorization/account headers before contacting LiteLLM. Account-dependent plugins or other workspace features may behave differently while using a standalone provider.
 
