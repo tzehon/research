@@ -59,7 +59,8 @@ try {
   up                   Apply infrastructure, upload both services, create gateway domain
   down --confirm ID    Delete this lab's recorded Railway project and all its data
   codex-config         Generate a standalone Codex TOML for review
-  codex-install        Back up and switch your actual Codex TOML to this lab
+  codex-install        Back up and switch to this lab with fresh demo sign-in
+  codex-install --reuse-login  Switch using reusable gateway/SSO sessions
   codex-restore        Undo lab settings while preserving unrelated edits
   codex-restore --original  Save current TOML, then restore the original backup
   smoke                Browser OAuth + streaming, refresh, and tool-loop checks (uses API credit)

@@ -15,7 +15,7 @@ This lab exercises **Codex's native `gateway_oauth` browser login** from the [Op
 
 Run terminal commands from `/Users/tth/projects/research/railway-litellm-auth0`. Replace uppercase placeholder values with your own values; do not paste passwords or API keys into this chat. Stop at a failed checkpoint and use the troubleshooting table at the bottom before continuing.
 
-**Current status:** local code, configuration, and container checks have passed. Nothing has been deployed to your accounts, and live Auth0/Railway/desktop login remains to be verified by following this guide. Steps 3 and 4 create account resources; model requests use your OpenAI API credit.
+**Validation status:** local code, configuration, and container checks have passed. This lab has also completed native Codex/Auth0 login and authenticated routing in the author's deployment; the latest gateway correction and full desktop inference checks still need live qualification. See [VALIDATION.md](VALIDATION.md) for tested paths and remaining checks. Steps 3 and 4 create resources in your accounts; model requests use your OpenAI API credit.
 
 ## Authentication and scope
 
@@ -259,28 +259,46 @@ Explore models, users, and usage. Auth0-derived users and usage appear after mod
 
 ## 5. Test the actual Codex desktop OAuth flow
 
-Generate the exact proposed configuration first:
+Generate a preview of the proposed configuration first:
 
 ```sh
 npm run lab -- codex-config
 ```
 
-Inspect `.local/codex.config.toml`. [codex/config.example.toml](codex/config.example.toml) shows its shape. The important block is `model_providers.railway-auth0-lab.gateway_oauth`: Auth0 authorization/token URLs, public client ID, scopes, and fixed loopback port. The `delivery` setting is intentionally omitted: Codex uses `Authorization: Bearer <access-token>` by default in the installed build checked below. Auth0's `audience` and dedicated `connection` are included in the authorization URL. There are no API keys, OAuth client secrets, or saved tokens in this generated TOML. The lab provider authenticates through `gateway_oauth`; do not add a static key or credential helper for it.
+Inspect `.local/codex.config.toml`. [codex/config.example.toml](codex/config.example.toml) shows its shape. The important block is `model_providers.railway-auth0-lab.gateway_oauth`: Auth0 authorization/token URLs, public client ID, scopes, and fixed loopback port. The `delivery` setting is intentionally omitted: Codex uses `Authorization: Bearer <access-token>` by default in the installed build checked below. Auth0's `audience` and dedicated `connection` are included in the authorization URL. By default it also includes `prompt=login` and a public `codex_demo_run` marker for fresh demo sign-in. Each generation/installation makes a new marker, so that value in the preview will differ from the installed value. There are no API keys, OAuth client secrets, or saved tokens in this generated TOML. The lab provider authenticates through `gateway_oauth`; do not add a static key or credential helper for it.
 
 **Checkpoint:** the generated TOML contains your Railway HTTPS URL, configured model, and Auth0 public native client ID. It contains no unresolved placeholders, API keys, client secrets, or access/refresh tokens. Generating it has not yet changed your active Codex configuration.
 
 Keep this guide open in an editor or browser and use **Terminal.app** for the following steps; the Codex app will be fully closed:
 
 1. Finish/save active Codex work, then **fully quit Codex with Cmd-Q**.
-2. Run `npm run lab -- codex-install`.
+2. Run `npm run lab -- codex-install`. Fresh demo sign-in is the default. If a previous lab installation is still active, run `npm run lab -- codex-restore` first.
 3. Open your normal installed Codex desktop app.
-4. Follow **Codex's gateway sign-in prompt** to open a fresh browser login. Sign in as a lab Auth0 user. If Auth0 says `codex-gateway-lab-codex is requesting access`, review the requested permissions and click **Accept**. **Keep Codex open until the browser returns to `127.0.0.1` and Codex finishes signing in.** Codex obtains the token automatically; do not copy a token or API key into TOML. A prior browser session may make sign-in shorter. If you cancel, quit, or restart Codex during this step, close that login tab and start a fresh sign-in from Codex; an old consent/callback tab cannot resume the canceled attempt.
+4. Follow **Codex's gateway sign-in prompt** to open a fresh browser login. Sign in as a lab Auth0 user. If Auth0 says `codex-gateway-lab-codex is requesting access`, review the requested permissions and click **Accept**. **Keep Codex open until the browser returns to `127.0.0.1` and Codex finishes signing in.** Codex obtains the token automatically; do not copy a token or API key into TOML. The default demo setup requests fresh authentication even if Auth0 has a browser session. Your password manager can still offer autofill; consent may already be remembered and is separate from authentication. If you cancel, quit, or restart Codex during this step, close that login tab and start a fresh sign-in from Codex; an old consent/callback tab cannot resume the canceled attempt.
 5. Create a new chat in a harmless test directory. In the model picker, explicitly select **6.1 Sol** (`gpt-6.1-sol`, or your configured allowed model). Codex can retain a previous model choice such as **6 Astra**; the visible picker is not filtered to this lab's allowlist. Ask: `Reply with exactly: gateway-ok`.
 6. Ask it to read a small file in that directory and summarize it, then ask a follow-up about the contents. This checks streaming, a real tool call, and continuation through the gateway.
 7. Wait beyond the five-minute access-token lifetime and make another request. Confirm that Codex refreshes the grant and the same user is attributed. If the session can no longer refresh, Codex should request sign-in again.
 8. Continue to step 6 to check the matching usage records. A reply by itself does not prove which provider handled it.
 
 `codex-install` changes the effective top-level model/provider, disables web search for this initial qualification, adds the native OAuth provider, and retains unrelated TOML settings/comments. It saves the original bytes and the exact installed version in private ignored backups. Keep an external Terminal window open with `python3 scripts/codex-config.py restore` ready; recovery does not require the Codex app, npm, `.env`, or the deployed services. Active CLI profiles, managed workspace requirements, or trusted project configuration can override user configuration; the installer refuses an explicit default profile, and you must verify the active provider in the client. WebSockets, voice, and non-Responses routes are outside this first version.
+
+### Repeat the sign-in demo
+
+Each **switch into the lab** should start a new browser sign-in. From an external Terminal, after **Cmd-Q** to fully quit Codex, run:
+
+```sh
+cd /Users/tth/projects/research/railway-litellm-auth0  # or your checkout location
+npm run lab -- codex-restore
+npm run lab -- codex-install
+```
+
+Restore is a no-op if there is no active lab installation. Open Codex again, follow **Connect to your gateway / Sign in**, and use only the newly opened Auth0 tab. Complete its callback while Codex remains open, then select **6.1 Sol** in a new chat. No Railway deployment or Auth0 Terraform apply is needed for this switch.
+
+There are two caches to account for. Codex stores a gateway access/refresh grant, and Auth0 stores a browser SSO session. Previously the installer reused a stable OAuth configuration, so either could skip visible login. The demo default now adds `prompt=login` to ask Auth0 to reauthenticate and a fresh public `codex_demo_run` query parameter to select an unused Codex credential entry. Codex's checked implementation includes the complete authorization URL in its credential identity. This is a lab configuration technique, not a built-in Codex "always prompt" setting. It leaves existing gateway grants and your ChatGPT credentials intact; it does not revoke old grants or delete chats. [Codex credential identity](https://github.com/openai/codex/blob/a8051434868233a8ba2d916440c20e92900d41a7/codex-rs/login/src/oauth_session.rs#L402-L421), [Auth0 login prompt behavior](https://support.auth0.com/center/s/article/Clarification-about-what-happens-when-the-prompt-parameter-is-not-sent-to-authorize).
+
+**Freshness applies when you run `codex-install`.** Reopening the app again with that same installed configuration can reuse its newly saved grant; refresh during that run still works normally. To repeat the visible demo, quit and run the restore/install pair again. `codex-config` alone only writes a preview; it does not switch the running app or reset its login.
+
+To test normal session reuse across switches instead, use `npm run lab -- codex-install --reuse-login` after restore. This selects the stable OAuth configuration without the login prompt/marker; a usable saved grant or browser session may skip login. `codex-config --reuse-login` previews that mode. Do not use general `codex logout` as a demo reset: it targets your primary account and is not a gateway-only logout command.
 
 **Your existing chats remain visible.** This installs a provider into your existing Codex configuration; it does not create a separate app profile or clear local chat history. Use a new chat for a clean conversation, and verify the route/usage as described in step 6. Old chat titles and the presence of ChatGPT history do not identify which provider handles a new request.
 
@@ -457,7 +475,7 @@ Checks on 2026-11-03 verified the installed app version `26.1027.61615` and its 
 | Browser login is denied | Auth0 **Monitoring → Logs**; match callback, native client, and enabled connection; never copy tokens into diagnostics |
 | Auth0 management returns 403 | Missing Management API scopes on the Terraform application; use the scope named in the error |
 | App still uses usual provider | Full restart; managed/project/profile overrides; active model/provider |
-| Switching users in browser does nothing | Codex may still hold a valid gateway grant; browser logout alone does not clear it |
+| No gateway prompt, or switching browser users does nothing | Fully quit Codex, then use the restore/install pair in **Repeat the sign-in demo**. The default installer now requests a fresh grant and Auth0 login. Merely reopening Codex, generating a preview, or logging out in the browser does not reset the installed gateway grant. |
 | Model is unavailable | OpenAI API project access and exact model ID; ChatGPT access is separate |
 | Missing usage rows | Confirm route/model, successful request, and spend-log flush; health checks are not inference |
 | Railway upload/build fails | `npm run railway -- logs --service gateway --build`; likewise `litellm` |

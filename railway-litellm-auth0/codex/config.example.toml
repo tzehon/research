@@ -9,7 +9,9 @@ wire_api = "responses"
 supports_websockets = false
 
 [model_providers.railway-auth0-lab.gateway_oauth]
-authorization_url = "https://YOUR-TENANT.us.auth0.com/authorize?audience=https%3A%2F%2Fcodex-gateway-lab&connection=codex-gateway-lab-users"
+# The installer generates a new public demo marker on each switch.
+# --reuse-login omits prompt and codex_demo_run for normal session reuse.
+authorization_url = "https://YOUR-TENANT.us.auth0.com/authorize?audience=https%3A%2F%2Fcodex-gateway-lab&connection=codex-gateway-lab-users&prompt=login&codex_demo_run=GENERATED_PER_INSTALL"
 token_url = "https://YOUR-TENANT.us.auth0.com/oauth/token"
 client_id = "PUBLIC_NATIVE_CLIENT_ID"
 scopes = ["openid", "profile", "offline_access", "llm:invoke"]

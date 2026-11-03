@@ -13,6 +13,7 @@ import sys
 import tempfile
 import tomllib
 from urllib.parse import urlencode, urlparse
+from uuid import uuid4
 
 ROOT = Path(__file__).resolve().parents[1]
 LOCAL = ROOT / ".local"
@@ -35,7 +36,7 @@ def split_managed(text):
     return owned, remaining
 
 
-def render(config, original="", *, legacy=False):
+def render(config, original="", *, legacy=False, fresh_login=False):
     parsed = tomllib.loads(original)
     if parsed.get("profile"):
         raise ValueError("An active Codex profile may override the lab settings; merge the generated config into that profile manually")
@@ -48,8 +49,13 @@ def render(config, original="", *, legacy=False):
     # unsupported TOML layouts before anything is installed.
     _, remaining = split_managed(original)
     quote = json.dumps  # JSON basic strings are valid for these TOML string values.
-    auth_url = f'https://{config["auth0Domain"]}/authorize?' + urlencode({
-        "audience": config["audience"], "connection": config["projectName"] + "-users"})
+    auth_params = {"audience": config["audience"], "connection": config["projectName"] + "-users"}
+    if fresh_login:
+        # Codex keys saved grants by the full authorization URL. A public per-install
+        # marker selects an unused grant without deleting any existing credentials.
+        # prompt=login separately prevents Auth0 from silently reusing its session.
+        auth_params.update(prompt="login", codex_demo_run=uuid4().hex)
+    auth_url = f'https://{config["auth0Domain"]}/authorize?' + urlencode(auth_params)
     text = f'''model = {quote(config["defaultModel"])}
 model_provider = "{PROVIDER}"
 web_search = "disabled"
@@ -235,14 +241,14 @@ def restore(use_original=False):
     print("Fully quit and reopen Codex if it was running with the lab provider.")
 
 
-def install(config):
+def install(config, *, fresh_login=True):
     journal = LOCAL / "codex-backup.json"
     if journal.exists():
         raise ValueError("A lab config backup already exists; run codex-restore first")
     target = Path(os.environ.get("CODEX_HOME", str(Path.home() / ".codex"))) / "config.toml"
     existed = target.exists()
     original = read_target(target)
-    merged = render(config, original.decode())
+    merged = render(config, original.decode(), fresh_login=fresh_login)
     target.parent.mkdir(parents=True, exist_ok=True)
     private_write(LOCAL / "codex-config.before.toml", original)
     private_write(LOCAL / "codex-config.installed.toml", merged)
@@ -252,6 +258,10 @@ def install(config):
         raise ValueError("Codex config changed during install; quit Codex and run codex-restore before retrying")
     private_write(target, merged)
     print(f"Installed lab provider in {target}. Fully quit and reopen Codex, then follow gateway sign-in.")
+    if fresh_login:
+        print("Fresh demo sign-in: an unused gateway grant and Auth0 prompt=login; existing credentials are retained.")
+    else:
+        print("Session reuse enabled: Codex/Auth0 may skip browser login when an existing grant/session is usable.")
     print("Recovery from Terminal: python3 scripts/codex-config.py restore")
 
 
@@ -259,9 +269,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("action", choices=("render", "install", "restore"))
     parser.add_argument("--original", action="store_true", help="Save the current file and restore the exact original backup")
+    parser.add_argument("--reuse-login", action="store_true",
+                        help="Reuse the stable OAuth configuration instead of requesting fresh demo sign-in")
     args = parser.parse_args()
     if args.original and args.action != "restore":
         parser.error("--original is only supported with restore")
+    if args.reuse_login and args.action == "restore":
+        parser.error("--reuse-login is only supported with render or install")
     LOCAL.mkdir(parents=True, exist_ok=True, mode=0o700)
     with (LOCAL / "codex-config.lock").open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
@@ -270,10 +284,10 @@ def main():
         else:
             config = json.loads((LOCAL / "config.json").read_text())
             if args.action == "render":
-                private_write(LOCAL / "codex.config.toml", render(config))
+                private_write(LOCAL / "codex.config.toml", render(config, fresh_login=not args.reuse_login))
                 print("Generated .local/codex.config.toml; your active Codex config is unchanged.")
             else:
-                install(config)
+                install(config, fresh_login=not args.reuse_login)
 
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import tempfile
 import unittest
+from urllib.parse import parse_qs, urlparse
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -53,6 +54,44 @@ class ConfigTests(unittest.TestCase):
         self.assertNotIn('delivery', provider['gateway_oauth'])
         self.assertNotIn('env_key', provider)
         self.assertIn('audience=https%3A%2F%2Fcodex-gateway-lab', provider['gateway_oauth']['authorization_url'])
+
+    def test_demo_switches_get_distinct_grants_and_restore_without_touching_credentials(self):
+        secrets = self.target.parent / "secrets"
+        secrets.mkdir()
+        gateway_store = secrets / "gateway_oauth.age"
+        gateway_store.write_bytes(b"opaque encrypted gateway credentials")
+        chatgpt_store = self.target.parent / "auth.json"
+        chatgpt_store.write_bytes(b"opaque existing ChatGPT credentials")
+        first = m.parsed(self.install())['model_providers'][m.PROVIDER]['gateway_oauth']
+        m.restore()
+        self.assertEqual(self.target.read_bytes(), self.original)
+        second = m.parsed(self.install())['model_providers'][m.PROVIDER]['gateway_oauth']
+        m.restore()
+        for oauth in (first, second):
+            query = parse_qs(urlparse(oauth['authorization_url']).query)
+            self.assertEqual(query['prompt'], ['login'])
+            self.assertRegex(query['codex_demo_run'][0], r'^[0-9a-f]{32}$')
+            self.assertEqual(query['audience'], [self.config['audience']])
+            self.assertEqual(query['connection'], [self.config['projectName'] + '-users'])
+            self.assertIn('offline_access', oauth['scopes'])
+        self.assertNotEqual(first['authorization_url'], second['authorization_url'])
+        self.assertEqual({k: v for k, v in first.items() if k != 'authorization_url'},
+                         {k: v for k, v in second.items() if k != 'authorization_url'})
+        self.assertEqual(gateway_store.read_bytes(), b"opaque encrypted gateway credentials")
+        self.assertEqual(chatgpt_store.read_bytes(), b"opaque existing ChatGPT credentials")
+        self.assertEqual(self.target.read_bytes(), self.original)
+
+    def test_reuse_mode_keeps_stable_authorization_url(self):
+        m.install(self.config, fresh_login=False)
+        first = m.parsed(self.target.read_bytes())['model_providers'][m.PROVIDER]['gateway_oauth']
+        m.restore()
+        m.install(self.config, fresh_login=False)
+        second = m.parsed(self.target.read_bytes())['model_providers'][m.PROVIDER]['gateway_oauth']
+        self.assertEqual(first, second)
+        query = parse_qs(urlparse(first['authorization_url']).query)
+        self.assertNotIn('prompt', query)
+        self.assertNotIn('codex_demo_run', query)
+        m.restore()
 
     def test_exact_restore_retains_all_recovery_copies(self):
         installed = self.install()
