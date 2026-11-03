@@ -1,0 +1,40 @@
+railway-litellm-auth0/gateway/auth.ts
+  s_91ab80cb1a0b27::t_b2ff23e29a4178 11-16
+railway-litellm-auth0/tests/gateway.test.ts
+  s_91ab80cb1a0b27::t_b2ff23e29a4178 6,37-40,88,104-106,166,168-193
+  s_91ab80cb1a0b27::t_c8ab1620e4dc28 167
+  s_91ab80cb1a0b27::t_344bec61162e9d 194-195
+railway-litellm-auth0/gateway/app.ts
+  s_91ab80cb1a0b27::t_b2ff23e29a4178 3,62,64
+railway-litellm-auth0/README.md
+  s_46cffbd5e2f749::t_049aee03e3c95e 278,285-286,293-300,326,451-453,465-472
+  s_91ab80cb1a0b27::t_c8ab1620e4dc28 441
+  s_91ab80cb1a0b27::t_b66f5357b03e0a 473
+railway-litellm-auth0/VALIDATION.md
+  s_46cffbd5e2f749::t_049aee03e3c95e 8,58-63
+  s_91ab80cb1a0b27::t_c8ab1620e4dc28 66,68-74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6008061d1525dab47b0978a10b0a13323fe7f872",
+  "prompts": {},
+  "sessions": {
+    "s_46cffbd5e2f749": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1a039-013b-7a21-934c-bc33e445ec9d",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tth <xyz@foo.com>"
+    },
+    "s_91ab80cb1a0b27": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a1a039-013b-7a21-934c-bc33e445ec9d",
+        "model": "unknown"
+      },
+      "human_author": "tth <xyz@foo.com>"
+    }
+  }
+}
