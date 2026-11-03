@@ -1,0 +1,21 @@
+railway-litellm-auth0/scripts/codex-config.py
+  s_26629719aaf0bb::t_6681d0edb0f71c 39-80,103,289,292-294,304,331-334
+railway-litellm-auth0/tests/codex_config_test.py
+  s_26629719aaf0bb::t_28589fa2a104e5 29-37,56-135
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0858441f3ef980089fe9117650dffde2370818a7",
+  "prompts": {},
+  "sessions": {
+    "s_26629719aaf0bb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a1a3c3-0473-7831-b04b-6464ac8df3ae",
+        "model": "unknown"
+      },
+      "human_author": "tth <xyz@foo.com>"
+    }
+  }
+}
