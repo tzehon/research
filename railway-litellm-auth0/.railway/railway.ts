@@ -4,7 +4,7 @@ import { readConfig, secret, validateIdentity } from '../scripts/settings.ts';
 export default defineRailway(() => {
   const c = readConfig();
   validateIdentity(c);
-  const data = volume('postgres-data', { region: c.region, sizeMB: 1024 });
+  const data = volume('postgres-data', { region: c.region, sizeMB: c.volumeSizeMB ?? 500 });
   const db = service('postgres', {
     source: image('postgres:17.6-alpine'), replicas: { [c.region]: 1 },
     volumeMounts: { '/var/lib/postgresql/data': data },

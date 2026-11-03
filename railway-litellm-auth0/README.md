@@ -62,7 +62,7 @@ LiteLLM's built-in JWT authentication is an [Enterprise feature](https://docs.li
 | Auth0, manual test data | Two users in the lab connection | Retained with the connection |
 | Mac | Ignored `.env`, `.local/config.json`, project ID, optional Codex backup | Local only |
 
-Only `gateway` receives a public Railway domain. LiteLLM and Postgres have no public domains or TCP proxies in this definition. PostgreSQL uses the official image with a volume; it is a lab database, without a managed HA/backup policy. The region defaults to Singapore. The LiteLLM listener uses IPv4, supported by [new Railway environments](https://docs.railway.com/networking/private-networking/how-it-works).
+Only `gateway` receives a public Railway domain. LiteLLM and Postgres have no public domains or TCP proxies in this definition. PostgreSQL uses the official image with a 500 MB volume by default; it is a lab database, without a managed HA/backup policy. The region defaults to Singapore. The LiteLLM listener uses IPv4, supported by [new Railway environments](https://docs.railway.com/networking/private-networking/how-it-works).
 
 ## 1. Prepare locally
 
@@ -219,6 +219,8 @@ npm run railway -- login
 npm run lab -- railway-create
 npm run lab -- plan
 ```
+
+The database volume defaults to **500 MB**, including for existing `.local/config.json` files without a `volumeSizeMB` field. This fits the storage limit observed on the Free/Trial plan. To request a larger volume on a plan that supports it, add `"volumeSizeMB": 1024` to that existing JSON file, preserving its other fields. Check [Railway's current plan limits](https://railway.com/pricing) before increasing it. A 500 MB volume resolves the storage constraint; it does not establish that the entire stack fits every Free/Trial resource limit.
 
 Complete Railway's browser login and select your workspace when prompted. Review the plan: it should contain this lab's `gateway`, `litellm`, `postgres`, and database volume. Then deploy:
 
@@ -400,6 +402,7 @@ Preparation on 2026-11-03 verified the installed app version `26.1027.61615` and
 |---|---|
 | `npm ci` fails with `tar` missing a default export | Update to the latest repository revision and rerun `npm ci`; the incompatible `tar` 7 override was removed. No Node downgrade is needed. |
 | Plan says Railway CLI 5.42.1+ is required, but `npm run railway -- --version` shows 5.71.0 | Update the repository and rerun `npm run lab -- plan`. The wrapper sets the SDK version-probe executable to the pinned Railway CLI; older revisions let it probe Node by mistake. |
+| Apply fails with repeated `change` entries or a maximum-volume-size error | Use the latest code: the volume now defaults to 500 MB. If you explicitly set `volumeSizeMB`, keep it within your plan limit. Preserve the project/state and rerun `plan`, then `up`; no Auth0 setup or new project is needed. |
 | Auth0 callback mismatch | Exact `http://127.0.0.1:43127/callback`; `localhost` is different |
 | Login succeeds, gateway returns 401 | The Auth0 token must arrive in `Authorization: Bearer …`; regenerate an older custom-header config with `npm run lab -- codex-config`. Also check API audience, RS256, standard Auth0 access-token profile, and issuer trailing slash. If the older lab config is already installed, fully quit Codex, run `codex-restore`, then `codex-install` using the `npm run lab --` prefix, and reopen. |
 | Gateway returns 403 | `llm:invoke` scope, native client's `azp`, model allowlist, or revoked internal key |

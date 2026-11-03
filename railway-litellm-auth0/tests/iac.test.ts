@@ -21,6 +21,7 @@ test('IaC declares one private database volume and sends provider credentials on
     const resources = definition.resources as any[];
     assert.equal(resources.length, 4);
     assert.equal(resources.filter(r => r.type === 'volume').length, 1);
+    assert.equal(resources.find(r => r.type === 'volume').config.sizeMB, 500);
     const serialized = JSON.stringify(definition);
     assert.equal(serialized.split('sk-test-only').length - 1, 1);
     const gateway = resources.find(r => r.name === 'gateway');
@@ -29,6 +30,15 @@ test('IaC declares one private database volume and sends provider credentials on
     assert.ok(!JSON.stringify(gateway).includes('sk-test-only'));
     assert.ok(!JSON.stringify(postgres).includes('tcpProxies'));
     assert.ok(serialized.includes('RAILWAY_PRIVATE_DOMAIN'));
+    // Existing local files predate volumeSizeMB; they must receive the safe default too.
+    delete config.volumeSizeMB; writeFileSync(file, JSON.stringify(config));
+    const legacy = await program(createRailwayContext(), project);
+    assert.equal((legacy.resources as any[]).find(r => r.type === 'volume').config.sizeMB, 500);
+    config.volumeSizeMB = 1024; writeFileSync(file, JSON.stringify(config));
+    const larger = await program(createRailwayContext(), project);
+    assert.equal((larger.resources as any[]).find(r => r.type === 'volume').config.sizeMB, 1024);
+    config.volumeSizeMB = 0; writeFileSync(file, JSON.stringify(config));
+    await assert.rejects(async () => program(createRailwayContext(), project), /volumeSizeMB/);
   } finally {
     for (const key of Object.keys(process.env)) if (!(key in saved)) delete process.env[key];
     Object.assign(process.env, saved); rmSync(dir, { recursive: true, force: true });

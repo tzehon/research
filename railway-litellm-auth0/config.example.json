@@ -10,5 +10,6 @@
   "redirectPort": 43127,
   "gatewayUrl": "",
   "userBudgetUsd": 5,
-  "userRpmLimit": 30
+  "userRpmLimit": 30,
+  "volumeSizeMB": 500
 }

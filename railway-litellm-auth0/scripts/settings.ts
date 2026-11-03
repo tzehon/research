@@ -5,7 +5,7 @@ import path from 'node:path';
 export const root = fileURLToPath(new URL('..', import.meta.url));
 export const local = path.join(root, '.local');
 export interface LabConfig {
-  projectName: string; region: string; models: string[]; defaultModel: string;
+  projectName: string; region: string; volumeSizeMB?: number; models: string[]; defaultModel: string;
   auth0Domain: string; oauthClientId: string; audience: string; scope: string;
   redirectPort: number; gatewayUrl: string; userBudgetUsd: number; userRpmLimit: number;
 }
@@ -18,6 +18,7 @@ export function readConfig(): LabConfig {
   if (!Number.isInteger(c.redirectPort) || c.redirectPort < 1024 || c.redirectPort > 65535) throw new Error('Invalid callback port');
   if (!(c.userBudgetUsd > 0) || !Number.isInteger(c.userRpmLimit) || c.userRpmLimit <= 0) throw new Error('Budgets and rate limits must be positive');
   if (!c.audience || !c.scope || /\s/.test(c.scope)) throw new Error('Set audience and one scope');
+  if (c.volumeSizeMB !== undefined && (!Number.isInteger(c.volumeSizeMB) || c.volumeSizeMB < 500)) throw new Error('volumeSizeMB must be an integer of at least 500, within your Railway plan limit');
   return c;
 }
 export function validateIdentity(c: LabConfig) {
