@@ -229,7 +229,7 @@ npm run lab -- up
 npm run lab -- status
 ```
 
-**Checkpoint:** `up` prints `Gateway is ready: https://…up.railway.app`. `status` shows a `projectId` and the same `gatewayUrl`. In the Railway dashboard, all three services should be running and only `gateway` should have a public domain. If deployment fails, inspect its logs using the troubleshooting commands below; keep the recorded state and retry `up` after fixing the problem.
+**Checkpoint:** `up` prints `Gateway is ready: https://…up.railway.app`. `status` shows a `projectId` and the same `gatewayUrl`. In the Railway dashboard, all three services should be running and only `gateway` should have a public domain. If the infrastructure apply fails, `up` reads Railway history and prints the underlying failure message; `npm run lab -- diagnose` retrieves recent failures without applying changes. For build or startup failures, inspect service logs using the troubleshooting commands below; keep the recorded state and retry `up` after fixing the problem.
 
 `railway-create` always creates a fresh project and records its ID. `plan` and `up` check that the currently linked project matches that recorded ID/name. `up` applies `.railway/railway.ts`, uploads the two local Docker build contexts, creates/reuses the gateway domain, and waits for readiness. No GitHub push is needed. Re-running `up` updates the same project.
 
@@ -402,7 +402,8 @@ Preparation on 2026-11-03 verified the installed app version `26.1027.61615` and
 |---|---|
 | `npm ci` fails with `tar` missing a default export | Update to the latest repository revision and rerun `npm ci`; the incompatible `tar` 7 override was removed. No Node downgrade is needed. |
 | Plan says Railway CLI 5.42.1+ is required, but `npm run railway -- --version` shows 5.71.0 | Update the repository and rerun `npm run lab -- plan`. The wrapper sets the SDK version-probe executable to the pinned Railway CLI; older revisions let it probe Node by mistake. |
-| Apply fails with repeated `change` entries or a maximum-volume-size error | Use the latest code: the volume now defaults to 500 MB. If you explicitly set `volumeSizeMB`, keep it within your plan limit. Preserve the project/state and rerun `plan`, then `up`; no Auth0 setup or new project is needed. |
+| Apply fails with repeated `change` entries | Run `npm run lab -- diagnose` for Railway's underlying IaC error. It is read-only and redacts local secret values. |
+| Apply reports a maximum-volume-size error | Use the latest code: the volume now defaults to 500 MB. If you explicitly set `volumeSizeMB`, keep it within your plan limit. Preserve the project/state and rerun `plan`, then `up`; no Auth0 setup or new project is needed. |
 | Auth0 callback mismatch | Exact `http://127.0.0.1:43127/callback`; `localhost` is different |
 | Login succeeds, gateway returns 401 | The Auth0 token must arrive in `Authorization: Bearer …`; regenerate an older custom-header config with `npm run lab -- codex-config`. Also check API audience, RS256, standard Auth0 access-token profile, and issuer trailing slash. If the older lab config is already installed, fully quit Codex, run `codex-restore`, then `codex-install` using the `npm run lab --` prefix, and reopen. |
 | Gateway returns 403 | `llm:invoke` scope, native client's `azp`, model allowlist, or revoked internal key |

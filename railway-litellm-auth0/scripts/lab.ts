@@ -4,6 +4,7 @@ import path from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { root, local, readConfig, validateIdentity, type LabConfig } from './settings.ts';
 import { railwayBin, railwayEnvironment } from './railway-cli.ts';
+import { reportApplyFailures } from './railway-diagnostics.ts';
 
 process.chdir(root);
 mkdirSync(local, { recursive: true, mode: 0o700 });
@@ -61,6 +62,7 @@ try {
   codex-install        Back up and switch your actual Codex TOML to this lab
   codex-restore        Restore original TOML, refusing to overwrite subsequent edits
   smoke                Browser OAuth + streaming, refresh, and tool-loop checks (uses API credit)
+  diagnose             Read recent failed IaC operation messages (no changes)
   status               Show recorded Railway project and public gateway URL
 See README.md for first-time setup and validation.`);
   } else if (command === 'init') {
@@ -95,8 +97,14 @@ See README.md for first-time setup and validation.`);
     } else if (command === 'plan' || command === 'up') {
       validateIdentity(c);
       const s = assertTarget(c);
-      rw(['config', command === 'plan' ? 'plan' : 'apply', '--file', path.join(root, '.railway/railway.ts'),
-        '--environment', s.environmentId, ...(command === 'up' ? ['--yes'] : [])]);
+      const startedAt = Date.now();
+      try {
+        rw(['config', command === 'plan' ? 'plan' : 'apply', '--file', path.join(root, '.railway/railway.ts'),
+          '--environment', s.environmentId, ...(command === 'up' ? ['--yes'] : [])]);
+      } catch (error) {
+        if (command === 'up') reportApplyFailures(s.environmentId, startedAt);
+        throw error;
+      }
       if (command === 'up') {
         rw(['up', 'litellm', '--path-as-root', '--service', 'litellm', '--project', s.projectId, '--environment', s.environmentId, '--ci']);
         rw(['up', '.', '--path-as-root', '--service', 'gateway', '--project', s.projectId, '--environment', s.environmentId, '--ci']);
@@ -123,6 +131,8 @@ See README.md for first-time setup and validation.`);
       console.log('Railway project deleted. Auth0 and your local Codex config remain; use codex-restore as needed.');
     } else if (command === 'smoke') {
       const { smoke } = await import('./smoke.ts'); await smoke(c);
+    } else if (command === 'diagnose') {
+      reportApplyFailures(assertTarget(c).environmentId);
     } else if (command === 'status') {
       console.log(JSON.stringify({ ...state(), gatewayUrl: c.gatewayUrl }, null, 2));
     } else throw new Error('Unknown command. Run npm run lab -- help');

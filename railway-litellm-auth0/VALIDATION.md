@@ -5,11 +5,12 @@ Initial preparation on 2026-11-03 created no Railway/Auth0 resources, read or st
 ## Local checks
 
 - TypeScript type-check of gateway, Railway definitions, scripts, and tests.
-- 17 passing unit/config/IaC tests: RS256 token validation; invalid signature/issuer/audience/client/scope/expiry; user identity stability across refresh; distinct users; credential/metadata stripping; model/route/request-size restrictions; incremental SSE; upstream status preservation.
+- 19 passing unit/config/IaC/diagnostic tests: RS256 token validation; invalid signature/issuer/audience/client/scope/expiry; user identity stability across refresh; distinct users; credential/metadata stripping; model/route/request-size restrictions; incremental SSE; upstream status preservation.
 - Authorization transport regression: accept a valid signed token in `Authorization`, reject missing/malformed/legacy-only credentials and actual repeated Authorization fields before key provisioning, and replace the client token with the server-only per-user key on the LiteLLM hop.
 - Codex config test: render native `gateway_oauth` with omitted `delivery` (default Authorization), preserve unrelated settings, install into a temporary home, reject restoration after intervening edits, and restore the original bytes.
 - Railway definition test: evaluate the SDK resource definitions with fake secrets, one database volume, and provider key present only in LiteLLM. This is not a live Railway plan.
 - Volume sizing: 500 MB for fresh and pre-existing local configs, explicit larger-size override, and rejection of invalid sizes. The user-run apply failed on the old 1,024 MB volume; a read-only history query returned `Max size of 500 MB on current plan. Please select a valid size or upgrade`. No database volume or running service instance was present after that failure. The corrected apply has not yet been run by the assistant.
+- Apply diagnostics: filter failed IaC operations by environment and attempt time, ignore unrelated history, and redact raw/URL-encoded local secrets. The read-only `diagnose` command retrieved the actual 500 MB limit error, and a live plan with the corrected default succeeded. No corrected apply/deployment was attempted.
 - Native IaC evaluation regression: reproduces the misleading minimum-CLI error when the SDK probes the inherited Node executable, then passes with the wrapper's Railway executable environment. The real SDK version check remains enabled.
 - A read-only live Railway plan against the user-created project succeeded: 4 resources to add, 0 to change, 0 to destroy. No apply/deploy was performed.
 - Auth0 provider `1.60.0`: initialization, formatting, and `terraform validate`.
