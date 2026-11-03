@@ -1,23 +1,41 @@
-"""Generate, temporarily install, and exactly restore Codex config. No auth.json edits."""
+"""Temporarily install Codex gateway config with recoverable, three-way restoration."""
+import argparse
+from copy import deepcopy
+from datetime import datetime, timezone
+import fcntl
 import hashlib
 import json
 import os
 from pathlib import Path
 import re
+import subprocess
 import sys
+import tempfile
 import tomllib
 from urllib.parse import urlencode, urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 LOCAL = ROOT / ".local"
 PROVIDER = "railway-auth0-lab"
+MANAGED = ("model", "model_provider", "model_catalog_json", "web_search")
 
 
 def digest(data):
     return hashlib.sha256(data).hexdigest()
 
 
-def render(config, original=""):
+def split_managed(text):
+    owned, remaining = [], []
+    top = True
+    for line in text.splitlines(keepends=True):
+        if line.lstrip().startswith("["):
+            top = False
+        destination = owned if top and re.match(r"\s*(model|model_provider|model_catalog_json|web_search)\s*=", line) else remaining
+        destination.append(line)
+    return owned, remaining
+
+
+def render(config, original="", *, legacy=False):
     parsed = tomllib.loads(original)
     if parsed.get("profile"):
         raise ValueError("An active Codex profile may override the lab settings; merge the generated config into that profile manually")
@@ -26,16 +44,9 @@ def render(config, original=""):
     gateway = urlparse(config["gatewayUrl"])
     if gateway.scheme != "https" or not gateway.netloc or gateway.username or gateway.password or gateway.query or gateway.fragment or gateway.path not in ("", "/"):
         raise ValueError("gatewayUrl must be an HTTPS origin")
-    # Preserve the original content/comments except the four effective top-level settings.
-    lines = original.splitlines(keepends=True)
-    top = True
-    remaining = []
-    for line in lines:
-        if line.lstrip().startswith("["):
-            top = False
-        if top and re.match(r"\s*(model|model_provider|model_catalog_json|web_search)\s*=", line):
-            continue
-        remaining.append(line)
+    # Only rewrite simple top-level assignments; semantic checks below catch
+    # unsupported TOML layouts before anything is installed.
+    _, remaining = split_managed(original)
     quote = json.dumps  # JSON basic strings are valid for these TOML string values.
     auth_url = f'https://{config["auth0Domain"]}/authorize?' + urlencode({
         "audience": config["audience"], "connection": config["projectName"] + "-users"})
@@ -48,8 +59,7 @@ web_search = "disabled"
 name = "Railway Auth0 Lab"
 base_url = {quote(config["gatewayUrl"].rstrip("/") + "/v1")}
 wire_api = "responses"
-requires_openai_auth = false
-supports_websockets = false
+{"requires_openai_auth = false" + chr(10) if legacy else ""}supports_websockets = false
 
 [model_providers.{PROVIDER}.gateway_oauth]
 authorization_url = {quote(auth_url)}
@@ -62,58 +72,208 @@ redirect_port = {int(config["redirectPort"])}
     result = tomllib.loads(text)
     if result.get("model_provider") != PROVIDER:
         raise ValueError("Unable to safely merge top-level settings")
+    expected = deepcopy(parsed)
+    for key in MANAGED:
+        expected.pop(key, None)
+    actual = deepcopy(result)
+    for key in MANAGED:
+        actual.pop(key, None)
+    providers = actual.get("model_providers", {})
+    providers.pop(PROVIDER, None)
+    if not providers and "model_providers" not in expected:
+        actual.pop("model_providers", None)
+    if actual != expected:
+        raise ValueError("Unable to preserve unrelated settings; active config is unchanged")
     return text.encode()
 
 
 def private_write(path, data):
-    temp = path.with_name(path.name + ".tmp")
-    fd = os.open(temp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-    with os.fdopen(fd, "wb") as stream:
-        stream.write(data)
-    os.replace(temp, path)
+    fd, name = tempfile.mkstemp(prefix=path.name + ".", suffix=".tmp", dir=path.parent)
+    temp = Path(name)
+    try:
+        with os.fdopen(fd, "wb") as stream:
+            stream.write(data)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temp, path)
+    finally:
+        temp.unlink(missing_ok=True)
+
+
+def read_target(target):
+    if target.is_symlink():
+        raise ValueError("Codex config is a symlink; refusing to replace it")
+    return target.read_bytes() if target.exists() else b""
+
+
+def parsed(data):
+    return tomllib.loads(data.decode())
+
+
+def restore_merge(current, installed, original):
+    """Reverse our patch, then verify that only the settings we own changed."""
+    now, base, before = map(parsed, (current, installed, original))
+    expected = deepcopy(now)
+    for key in MANAGED:
+        if now.get(key) != base.get(key) and now.get(key) != before.get(key):
+            raise ValueError(f"The lab-managed {key} setting was edited")
+        if key in before:
+            expected[key] = before[key]
+        else:
+            expected.pop(key, None)
+    providers = expected.get("model_providers", {})
+    if providers.get(PROVIDER) != base.get("model_providers", {}).get(PROVIDER):
+        raise ValueError("The lab provider block was edited")
+    providers.pop(PROVIDER, None)
+    if not providers and "model_providers" not in before:
+        expected.pop("model_providers", None)
+    # Handle our exact generated block separately so later appended projects or
+    # comments do not become Git deletion conflicts. Verify the entire result.
+    marker = f"[model_providers.{PROVIDER}]".encode()
+    start = installed.find(marker)
+    block = installed[start:] if start >= 0 else b""
+    if block and current.count(block) == 1:
+        without_provider = current.replace(block, b"", 1).decode()
+        original_owned, _ = split_managed(original.decode())
+        _, current_rest = split_managed(without_provider)
+        candidate = ("".join(original_owned) + "".join(current_rest)).encode()
+        try:
+            if parsed(candidate) == expected:
+                return candidate
+        except ValueError:
+            pass
+    # For reformatted blocks, attempt a conventional three-way reverse merge.
+    with tempfile.TemporaryDirectory(prefix="codex-restore-") as directory:
+        paths = [Path(directory) / name for name in ("current", "installed", "original")]
+        for path, content in zip(paths, (current, installed, original)):
+            private_write(path, content)
+        result = subprocess.run(["git", "merge-file", "-p", *map(str, paths)], capture_output=True)
+    if result.returncode != 0:
+        raise ValueError("Later edits overlap the lab settings")
+    if parsed(result.stdout) != expected:
+        raise ValueError("Cannot verify that all unrelated settings are preserved")
+    return result.stdout
+
+
+def archive_recovery(data, original, installed, current, target_exists):
+    directory = LOCAL / "recovery"
+    directory.mkdir(mode=0o700, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ-")
+    archive = Path(tempfile.mkdtemp(prefix=stamp, dir=directory))
+    for name, content in (("before.toml", original), ("current.toml", current),
+                          ("journal.json", json.dumps(data, indent=2).encode())):
+        private_write(archive / name, content)
+    if installed is not None:
+        private_write(archive / "installed.toml", installed)
+    private_write(archive / "current-state.json", json.dumps({"existed": target_exists}).encode())
+    return archive
+
+
+def installed_snapshot(data, original):
+    snapshot = LOCAL / "codex-config.installed.toml"
+    if snapshot.exists():
+        content = snapshot.read_bytes()
+    else:
+        # Upgrade old journals only if a reconstruction matches their recorded hash.
+        config = json.loads((LOCAL / "config.json").read_text())
+        content = render(config, original.decode(), legacy=True)
+    if digest(content) != data["installed_sha256"]:
+        raise ValueError("Installed snapshot does not match the recorded installation")
+    return content
+
+
+def restore(use_original=False):
+    journal = LOCAL / "codex-backup.json"
+    if not journal.exists():
+        print("No active lab installation backup; Codex config was left unchanged.")
+        return
+    data = json.loads(journal.read_text())
+    backup = LOCAL / "codex-config.before.toml"
+    original = backup.read_bytes()
+    if digest(original) != data["original_sha256"]:
+        raise ValueError("Backup changed; refusing to restore it. Recovery copies remain in .local/recovery.")
+    parsed(original)  # Never install an invalid backup, including with --original.
+    target = Path(data["target"])
+    existed = target.exists()
+    current = read_target(target)
+    installed = None
+    conflict = None
+    if current == original or digest(current) == data["installed_sha256"] or use_original:
+        restored = original
+    else:
+        try:
+            installed = installed_snapshot(data, original)
+            restored = restore_merge(current, installed, original)
+        except (ValueError, OSError, UnicodeError) as error:
+            # Do not print TOML parser errors: they may contain private config values.
+            conflict = type(error).__name__
+    # Preserve every version before changing the active config or closing the journal.
+    snapshot = LOCAL / "codex-config.installed.toml"
+    if installed is None and snapshot.exists():
+        installed = snapshot.read_bytes()
+    archive = archive_recovery(data, original, installed, current, existed)
+    if conflict:
+        raise ValueError(f"Automatic restore could not safely merge later edits. Current config is unchanged. "
+                         f"Recovery copies: {archive}. To return to the original setup, run "
+                         "python3 scripts/codex-config.py restore --original. This saves the current file "
+                         "before restoring the original; later edits remain in that recovery copy.")
+    if read_target(target) != current or target.exists() != existed:
+        raise ValueError("Codex config changed during restore; quit Codex and retry. Recovery copies are preserved.")
+    # If a new config gained unrelated settings during the lab, retain those settings.
+    remove = not data["existed"] and not restored
+    if remove and existed:
+        target.unlink()
+    elif not remove and (not existed or current != restored):
+        target.parent.mkdir(parents=True, exist_ok=True)
+        private_write(target, restored)
+    journal.unlink()
+    backup.unlink()
+    (LOCAL / "codex-config.installed.toml").unlink(missing_ok=True)
+    print(f"Restored normal Codex settings. Recovery copies: {archive}")
+    if use_original and current != original:
+        print("Restored the original file; later edits are preserved in current.toml in that recovery directory.")
+    print("Fully quit and reopen Codex if it was running with the lab provider.")
+
+
+def install(config):
+    journal = LOCAL / "codex-backup.json"
+    if journal.exists():
+        raise ValueError("A lab config backup already exists; run codex-restore first")
+    target = Path(os.environ.get("CODEX_HOME", str(Path.home() / ".codex"))) / "config.toml"
+    existed = target.exists()
+    original = read_target(target)
+    merged = render(config, original.decode())
+    target.parent.mkdir(parents=True, exist_ok=True)
+    private_write(LOCAL / "codex-config.before.toml", original)
+    private_write(LOCAL / "codex-config.installed.toml", merged)
+    private_write(journal, json.dumps({"version": 2, "target": str(target), "existed": existed,
+        "original_sha256": digest(original), "installed_sha256": digest(merged)}).encode())
+    if read_target(target) != original or target.exists() != existed:
+        raise ValueError("Codex config changed during install; quit Codex and run codex-restore before retrying")
+    private_write(target, merged)
+    print(f"Installed lab provider in {target}. Fully quit and reopen Codex, then follow gateway sign-in.")
+    print("Recovery from Terminal: python3 scripts/codex-config.py restore")
 
 
 def main():
-    action = sys.argv[1]
-    config = json.loads((LOCAL / "config.json").read_text())
-    target = Path(os.environ.get("CODEX_HOME", str(Path.home() / ".codex"))) / "config.toml"
-    journal = LOCAL / "codex-backup.json"
-    backup = LOCAL / "codex-config.before.toml"
-    if action == "render":
-        private_write(LOCAL / "codex.config.toml", render(config))
-        print("Generated .local/codex.config.toml; your active Codex config is unchanged.")
-    elif action == "install":
-        if journal.exists():
-            raise ValueError("A lab config backup already exists; restore it first")
-        if target.is_symlink():
-            raise ValueError("Config is a symlink; merge the generated provider manually")
-        existed = target.exists()
-        original = target.read_bytes() if existed else b""
-        merged = render(config, original.decode())
-        target.parent.mkdir(parents=True, exist_ok=True)
-        private_write(backup, original)
-        private_write(journal, json.dumps({"target": str(target), "existed": existed,
-            "original_sha256": digest(original), "installed_sha256": digest(merged)}).encode())
-        private_write(target, merged)
-        print(f"Installed lab provider in {target}. Fully quit and reopen Codex, then follow gateway sign-in.")
-    elif action == "restore":
-        data = json.loads(journal.read_text())
-        target = Path(data["target"])
-        current = target.read_bytes() if target.exists() else b""
-        original = backup.read_bytes()
-        if digest(original) != data["original_sha256"]:
-            raise ValueError("Backup changed; refusing to restore it")
-        if digest(current) not in (data["installed_sha256"], data["original_sha256"]):
-            raise ValueError("Codex config changed after installation; merge the backup manually to preserve your edits")
-        if data["existed"]:
-            private_write(target, original)
-        elif target.exists():
-            target.unlink()
-        journal.unlink()
-        backup.unlink()
-        print("Restored the exact original Codex config. Fully quit and reopen Codex.")
-    else:
-        raise ValueError("Expected render, install, or restore")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("action", choices=("render", "install", "restore"))
+    parser.add_argument("--original", action="store_true", help="Save the current file and restore the exact original backup")
+    args = parser.parse_args()
+    if args.original and args.action != "restore":
+        parser.error("--original is only supported with restore")
+    LOCAL.mkdir(parents=True, exist_ok=True, mode=0o700)
+    with (LOCAL / "codex-config.lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if args.action == "restore":
+            restore(args.original)  # Independent of config.json, npm, .env, Auth0, and Railway.
+        else:
+            config = json.loads((LOCAL / "config.json").read_text())
+            if args.action == "render":
+                private_write(LOCAL / "codex.config.toml", render(config))
+                print("Generated .local/codex.config.toml; your active Codex config is unchanged.")
+            else:
+                install(config)
 
 
 if __name__ == "__main__":

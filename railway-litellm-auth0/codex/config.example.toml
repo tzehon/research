@@ -6,7 +6,6 @@ web_search = "disabled"
 name = "Railway Auth0 Lab"
 base_url = "https://YOUR-GATEWAY.up.railway.app/v1"
 wire_api = "responses"
-requires_openai_auth = false
 supports_websockets = false
 
 [model_providers.railway-auth0-lab.gateway_oauth]

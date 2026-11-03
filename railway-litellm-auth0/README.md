@@ -274,13 +274,13 @@ Keep this guide open in an editor or browser and use **Terminal.app** for the fo
 1. Finish/save active Codex work, then **fully quit Codex with Cmd-Q**.
 2. Run `npm run lab -- codex-install`.
 3. Open your normal installed Codex desktop app.
-4. Follow **Codex's gateway sign-in prompt** to open the browser. Sign in as a lab Auth0 user, then return to Codex. Codex obtains the token automatically; do not copy a token or API key into TOML. A prior browser session may make sign-in shorter.
+4. Follow **Codex's gateway sign-in prompt** to open a fresh browser login. Sign in as a lab Auth0 user. If Auth0 says `codex-gateway-lab-codex is requesting access`, review the requested permissions and click **Accept**. **Keep Codex open until the browser returns to `127.0.0.1` and Codex finishes signing in.** Codex obtains the token automatically; do not copy a token or API key into TOML. A prior browser session may make sign-in shorter. If you cancel, quit, or restart Codex during this step, close that login tab and start a fresh sign-in from Codex; an old consent/callback tab cannot resume the canceled attempt.
 5. Create a new chat in a harmless test directory. Ask: `Reply with exactly: gateway-ok`.
 6. Ask it to read a small file in that directory and summarize it, then ask a follow-up about the contents. This checks streaming, a real tool call, and continuation through the gateway.
 7. Wait beyond the five-minute access-token lifetime and make another request. Confirm that Codex refreshes the grant and the same user is attributed. If the session can no longer refresh, Codex should request sign-in again.
 8. Continue to step 6 to check the matching usage records. A reply by itself does not prove which provider handled it.
 
-`codex-install` changes the effective top-level model/provider, disables web search for this initial qualification, adds the native OAuth provider, and retains unrelated TOML settings/comments. It saves the original bytes in a private ignored backup. Active CLI profiles, managed workspace requirements, or trusted project configuration can override user configuration; the installer refuses an explicit default profile, and you must verify the active provider in the client. WebSockets, voice, and non-Responses routes are outside this first version.
+`codex-install` changes the effective top-level model/provider, disables web search for this initial qualification, adds the native OAuth provider, and retains unrelated TOML settings/comments. It saves the original bytes and the exact installed version in private ignored backups. Keep an external Terminal window open with `python3 scripts/codex-config.py restore` ready; recovery does not require the Codex app, npm, `.env`, or the deployed services. Active CLI profiles, managed workspace requirements, or trusted project configuration can override user configuration; the installer refuses an explicit default profile, and you must verify the active provider in the client. WebSockets, voice, and non-Responses routes are outside this first version.
 
 There is no browserless/device-code fallback for this native flow. The browser must reach `http://127.0.0.1:43127/callback`. A port conflict or callback mismatch prevents login.
 
@@ -340,7 +340,7 @@ Only `GET /v1/models` and `POST /v1/responses` are exposed, plus health endpoint
 | Your usual configuration | Whatever was selected before the lab | Your usual ChatGPT sign-in | Your existing ChatGPT arrangement |
 | Lab configuration | `railway-auth0-lab` | Codex sends an Auth0 access token; the server handles internal LiteLLM keys | Your OpenAI API project |
 
-The lab selects `requires_openai_auth = false`: inference uses the gateway's provider key. Gateway OAuth is independent of ChatGPT sign-in. The configuration switch does not edit `auth.json`, delete your ChatGPT credentials, or sign you out. In lab mode, the inference request's `Authorization` header carries the Auth0 access token. The gateway validates it and creates a separate server-to-server request using its internal LiteLLM credential; client tokens, cookies, and account headers are not forwarded. Account-dependent plugins or other workspace features may behave differently while using a standalone provider.
+The lab omits `requires_openai_auth`, whose Codex default is `false`; it does not require ChatGPT credentials for this provider. Native `gateway_oauth` supplies the Auth0 access token for inference authentication. Gateway OAuth is independent of ChatGPT sign-in. The configuration switch does not edit `auth.json`, delete your ChatGPT credentials, or sign you out. In lab mode, the inference request's `Authorization` header carries the Auth0 access token. The gateway validates it and creates a separate server-to-server request using its internal LiteLLM credential; client tokens, cookies, and account headers are not forwarded. Account-dependent plugins or other workspace features may behave differently while using a standalone provider.
 
 Fully quit Codex with **Cmd-Q**. From **Terminal.app**, restore your original configuration:
 
@@ -351,7 +351,19 @@ npm run lab -- codex-restore
 
 **Reopen the same installed Codex app** and start a new chat to check your usual setup.
 
-The original TOML is restored exactly. If it changed after installation, restoration refuses to overwrite those later edits. Your original is retained at `.local/codex-config.before.toml`; merge it manually with your current configuration to preserve any intervening edits. Your normal stored sign-in can be reused if it remains valid. Codex manages the separate gateway grant in its credential storage; restoring the provider configuration does not revoke that grant. Revoke it through Auth0 if needed.
+If there were no later edits, the original TOML is restored exactly. Otherwise, restore removes the lab settings and preserves unrelated changes, including Codex plugin updates and newly trusted projects. It checks the resulting TOML before replacing the active file. Every restore attempt saves private recovery copies under `.local/recovery/`; the original and current files are retained there even after a successful restore. If you already restored the original manually, this command clears the old installation record without rewriting the active file. Repeating restore after success is harmless.
+
+If automatic restore reports a conflict, or npm cannot run, use this independent recovery command from the same directory:
+
+```sh
+python3 scripts/codex-config.py restore --original
+```
+
+This explicitly restores the original backup after saving the current file in a new recovery directory. Later edits are retained in that directory's `current.toml`, rather than merged into the active file; you can recover them later. The command verifies the original backup's checksum and TOML and refuses to replace a symlink. You can also invoke it as `npm run lab -- codex-restore --original`. Do not delete `.local/codex-backup.json` or the backup files to work around an error.
+
+Reopen Codex after restoration. No Auth0 or Railway commands need to be rerun.
+
+Your normal stored sign-in can be reused if it remains valid. Codex manages the separate gateway grant in its credential storage; restoring the provider configuration does not revoke that grant. Revoke it through Auth0 if needed.
 
 This lab uses one active provider configuration at a time, with an app restart when switching. It does not promise two independent simultaneous instances or per-chat provider isolation. OpenAI also documents [gateway OAuth alongside ChatGPT workspace sign-in](https://learn.chatgpt.com/docs/enterprise/connect-to-a-gateway#enable-chatgpt-sign-in-recommended), with managed workspace requirements and distinct credential paths. That is a separate rollout configuration; keep it separate from this API-billed test.
 
@@ -416,7 +428,7 @@ The integration suite creates randomly named local Docker containers with fake c
 
 The pinned `@railway/cli` installer imports the default export from its declared `tar` 6 dependency. Overriding it to `tar` 7 breaks a fresh install with `does not provide an export named 'default'`; this project does not apply that incompatible override. The upstream installer dependency currently has npm audit advisories (one high and one critical in the full development tree on 2026-11-03). These remain unresolved upstream; `npm audit --omit=dev` reports zero vulnerabilities, and the gateway Docker image installs with `--omit=dev`. Do not use `npm audit fix --force` for this warning: its proposed CLI downgrade does not preserve the IaC commands required by this lab.
 
-Preparation on 2026-11-03 verified the installed app version `26.1027.61615` and its bundled CLI `0.166.0-alpha.5.1`. Temporary command-line provider overrides, with both omitted `delivery` and explicit `Authorization` delivery, returned `required: true`, `status: notReady`, `error: null` from `account/gatewayOAuth/read`. That establishes configuration recognition, **not completed browser login**. See [VALIDATION.md](VALIDATION.md) for the exact checks and remaining live qualification.
+Checks on 2026-11-03 verified the installed app version `26.1027.61615` and its bundled CLI `0.166.0-alpha.5.1`. Temporary command-line provider overrides, with both omitted `delivery` and explicit `Authorization` delivery, returned `required: true`, `status: notReady`, `error: null` from `account/gatewayOAuth/read`. That establishes configuration recognition. A later test completed browser login and token exchange using the installed Codex backend in a separate process while leaving the normal desktop config unchanged. A fresh backend process subsequently reported `notReady`, so saved-grant reuse after restart, the desktop UI flow, and inference remain unqualified. See [VALIDATION.md](VALIDATION.md) for exact evidence and remaining checks.
 
 | Problem | Check |
 |---|---|
@@ -428,6 +440,8 @@ Preparation on 2026-11-03 verified the installed app version `26.1027.61615` and
 | Login succeeds, gateway returns 401 | The Auth0 token must arrive in `Authorization: Bearer …`; regenerate an older custom-header config with `npm run lab -- codex-config`. Also check API audience, RS256, standard Auth0 access-token profile, and issuer trailing slash. If the older lab config is already installed, fully quit Codex, run `codex-restore`, then `codex-install` using the `npm run lab --` prefix, and reopen. |
 | Gateway returns 403 | `llm:invoke` scope, native client's `azp`, model allowlist, or revoked internal key |
 | Gateway returns 503 | PostgreSQL/LiteLLM readiness, internal secrets, provisioning failure or changed seed |
+| Old restore says `Codex config changed after installation` | Update the repository and run `npm run lab -- codex-restore`. Routine unrelated changes are merged; for a conflict, use the explicit `restore --original` recovery command in step 7. |
+| `OAuth callback state did not match`, browser cannot reach `127.0.0.1`, or an old consent tab is still open | Keep Codex running during sign-in. Each attempt has its own state value. After a cancellation or restart, close the old login tabs and start a fresh sign-in from Codex; use only the newly opened tab. A successful Auth0 login alone does not prove Codex exchanged and saved the token. |
 | Browser login is denied | Auth0 **Monitoring → Logs**; match callback, native client, and enabled connection; never copy tokens into diagnostics |
 | Auth0 management returns 403 | Missing Management API scopes on the Terraform application; use the scope named in the error |
 | App still uses usual provider | Full restart; managed/project/profile overrides; active model/provider |
@@ -440,6 +454,8 @@ The backend maps the configured model IDs to `openai/<id>`. To add a different p
 
 ## References
 
+- [Codex source: provider authentication defaults](https://github.com/openai/codex/blob/a8051434868233a8ba2d916440c20e92900d41a7/codex-rs/model-provider-info/src/lib.rs#L218)
+- [Codex source: gateway OAuth callback lifecycle](https://github.com/openai/codex/blob/a8051434868233a8ba2d916440c20e92900d41a7/codex-rs/login/src/oauth_session_callback.rs)
 - [Codex native gateway OAuth and macOS setup](https://learn.chatgpt.com/docs/enterprise/connect-to-a-gateway)
 - [Codex gateway compatibility requirements](https://learn.chatgpt.com/docs/enterprise/gateway-compatibility)
 - [Railway native IaC](https://docs.railway.com/infrastructure-as-code) and [reference](https://docs.railway.com/infrastructure-as-code/reference)

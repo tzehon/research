@@ -60,7 +60,8 @@ try {
   down --confirm ID    Delete this lab's recorded Railway project and all its data
   codex-config         Generate a standalone Codex TOML for review
   codex-install        Back up and switch your actual Codex TOML to this lab
-  codex-restore        Restore original TOML, refusing to overwrite subsequent edits
+  codex-restore        Undo lab settings while preserving unrelated edits
+  codex-restore --original  Save current TOML, then restore the original backup
   smoke                Browser OAuth + streaming, refresh, and tool-loop checks (uses API credit)
   diagnose             Read recent failed IaC operation messages (no changes)
   status               Show recorded Railway project and public gateway URL
@@ -76,7 +77,7 @@ See README.md for first-time setup and validation.`);
     const action = { 'codex-config': 'render', 'codex-install': 'install', 'codex-restore': 'restore' }[command];
     if (!action) throw new Error('Unknown Codex command');
     if (action !== 'restore') validateIdentity(readConfig());
-    run('python3', ['scripts/codex-config.py', action]);
+    run('python3', ['scripts/codex-config.py', action, ...process.argv.slice(3)]);
   } else {
     const c = readConfig();
     if (command.startsWith('auth0-')) {

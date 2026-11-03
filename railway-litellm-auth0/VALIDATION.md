@@ -7,7 +7,7 @@ Initial preparation on 2026-11-03 created no Railway/Auth0 resources, read or st
 - TypeScript type-check of gateway, Railway definitions, scripts, and tests.
 - 19 passing unit/config/IaC/diagnostic tests: RS256 token validation; invalid signature/issuer/audience/client/scope/expiry; user identity stability across refresh; distinct users; credential/metadata stripping; model/route/request-size restrictions; incremental SSE; upstream status preservation.
 - Authorization transport regression: accept a valid signed token in `Authorization`, reject missing/malformed/legacy-only credentials and actual repeated Authorization fields before key provisioning, and replace the client token with the server-only per-user key on the LiteLLM hop.
-- Codex config test: render native `gateway_oauth` with omitted `delivery` (default Authorization), preserve unrelated settings, install into a temporary home, reject restoration after intervening edits, and restore the original bytes.
+- Codex configuration recovery: 14 Python regression cases run through the Node test suite, using temporary homes only. They cover native OAuth defaults, plugin removal, added projects/comments, exact restoration, conflicted edits and explicit recovery, invalid current TOML, checksum/symlink protection, old journals, missing local settings, repeat restore, and manually restored configuration.
 - Railway definition test: evaluate the SDK resource definitions with fake secrets, one database volume, and provider key present only in LiteLLM. This is not a live Railway plan.
 - Volume sizing: 500 MB for fresh and pre-existing local configs, explicit larger-size override, and rejection of invalid sizes. The user-run apply failed on the old 1,024 MB volume; a read-only history query returned `Max size of 500 MB on current plan. Please select a valid size or upgrade`. No database volume or running service instance was present after that failure. The corrected apply has not yet been run by the assistant.
 - Apply diagnostics: filter failed IaC operations by environment and attempt time, ignore unrelated history, and redact raw/URL-encoded local secrets. The read-only `diagnose` command retrieved the actual 500 MB limit error, and a live plan with the corrected default succeeded. No corrected apply/deployment was attempted.
@@ -38,6 +38,19 @@ App version: `26.1027.61615`; bundled CLI: `0.166.0-alpha.5.1` (the standalone H
 
 This verifies that the installed app's backend accepts both Authorization configuration forms; the lab uses omitted `delivery` to match the supplied example. The public gateway guide still described Authorization as reserved when checked on 2026-11-03, so that restriction was not treated as authoritative for this installed build. This read-only check does not observe an outgoing authenticated request or verify a completed Auth0 grant or the desktop UI interaction.
 
+## Recovery incident investigation
+
+On 2026-11-03, the saved installed configuration and the failed-restore configuration differed semantically only by removal of the `computer-history@openai-bundled` plugin entry. The desktop startup log recorded that plugin removal. The old whole-file checksum guard therefore refused a routine Codex edit. The corrected restore compares the original, installed, and current files, preserves unrelated settings, validates the merged result, and archives recovery copies. Explicit `restore --original` remains available when edits conflict. The user's manually restored active configuration matched the original backup byte for byte. Replaying the actual saved incident through the new merge restored the original settings while preserving the plugin removal. The stale installation journal was archived and cleared without changing the active file bytes or modification time.
+
+Auth0 recorded a successful browser login at 09:59:01 UTC. The available Codex log recorded cancellation of its pending gateway login at 09:58:26 UTC, and no successful token exchange was observed in the inspected Auth0 logs. This is consistent with returning to a canceled attempt; the original on-screen error was not available, so it is not a confirmed complete diagnosis of the login failure.
+
+A read-only probe using the installed Codex backend and actual public lab OAuth settings, with both `requires_openai_auth` and `delivery` omitted, returned `required: true`, `status: notReady`, `error: null`. The active TOML's checksum remained unchanged. Codex source confirms `requires_openai_auth` defaults to false. This probe establishes config acceptance, not successful login or inference.
+
+A subsequent browser sign-in used that installed Codex backend in a separate process with the real lab provider, leaving the normal desktop TOML unchanged. An older browser tab returned `OAuth callback state did not match`; inspection confirmed its state belonged to another attempt. The fresh tab's callback state matched, the browser displayed `Sign-in complete`, `account/gatewayOAuth/login` completed successfully, and `account/gatewayOAuth/read` in that process returned `status: succeeded`, `error: null`. The encrypted gateway credential file was updated. No model request was sent.
+
+A fresh backend process subsequently returned `status: notReady`, `error: null`. Reuse of the saved grant after restart is therefore **not qualified** by this test; the live desktop restart/refresh checks below remain required. No credential-store mode was changed to work around this result. The normal desktop config stayed byte-for-byte identical to the original throughout.
+
+
 ## Public dashboard check
 
 On 2026-11-03, after the user deployed the lab, Railway reported successful deployments for all three services. At the user's request, a generated HTTPS domain was added to LiteLLM on port 4000. An unauthenticated GET to `/ui` returned its HTML page with HTTP 200; an unauthenticated GET to `/v1/models` returned HTTP 401. No credentials were submitted to the UI, and no Codex/Auth0 settings were changed by this networking action. This check does not qualify native desktop SSO.
@@ -48,7 +61,7 @@ After the account setup/deployment steps:
 
 1. Apply Auth0 resources and create test users.
 2. Run a Railway plan/apply and verify health and private services.
-3. Use the installed desktop app's native gateway sign-in prompt and Auth0 browser callback.
+3. Use the installed desktop app's native gateway sign-in prompt and Auth0 browser callback. The separate native-backend login succeeded, but the desktop UI path and saved-grant readiness after restart still need qualification.
 4. Check actual OpenAI model availability, completed SSE, tool calls, and replayed follow-up turns.
 5. Wait for expiry and verify automatic refresh in Codex, with stable user attribution.
 6. Confirm two users' usage/spend in Postgres. The optional smoke script can exercise both accounts independently.
