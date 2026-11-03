@@ -1,0 +1,23 @@
+railway-litellm-auth0/VALIDATION.md
+  s_f3a5c383ca5211::t_595a886bb81ba7 72-79
+railway-litellm-auth0/README.md
+  s_f3a5c383ca5211::t_3038556a2051a9 27,95,268,278,283-291,303,406,477
+railway-litellm-auth0/codex/config.example.toml
+  s_f3a5c383ca5211::t_e100a08dc253f7 3-4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8328d4bdc5ef4cb0aa8087a0556ce220bcd485f9",
+  "prompts": {},
+  "sessions": {
+    "s_f3a5c383ca5211": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1a3c3-0473-7831-b04b-6464ac8df3ae",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tth <xyz@foo.com>"
+    }
+  }
+}
