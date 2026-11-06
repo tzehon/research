@@ -71,7 +71,11 @@ for date, folder in projects:
     print(get_summary(folder))
     print()
 ]]]-->
-## 11 projects
+## 12 projects
+
+### [ynab-mcp-sdlc-guide](https://github.com/tzehon/research/tree/main/ynab-mcp-sdlc-guide) (2026-11-06)
+
+A resumable implementation guide plans a personal [YNAB](https://api.ynab.com/) MCP server hosted on [Railway](https://railway.com/) and accessed from Codex and ChatGPT. It walks through Jira Free, a separate GitHub repository, issue-to-code traceability, authenticated deployment, client connections, and working across machines. The folder contains planning documents and reusable templates; no server or cloud resources are implemented by the guide.
 
 ### [railway-litellm-auth0](https://github.com/tzehon/research/tree/main/railway-litellm-auth0) (2026-11-03)
 
