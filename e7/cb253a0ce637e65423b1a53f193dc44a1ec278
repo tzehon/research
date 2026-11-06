@@ -1,0 +1,47 @@
+ynab-mcp-sdlc-guide/03-build-server.md
+  s_1d643f41a6b8a6::t_13e4f8fb354208 1-158
+ynab-mcp-sdlc-guide/03a-authentication.md
+  s_1d643f41a6b8a6::t_13e4f8fb354208 1-110
+ynab-mcp-sdlc-guide/00-preflight.md
+  s_1d643f41a6b8a6::t_13e4f8fb354208 1-81
+ynab-mcp-sdlc-guide/PROGRESS.md
+  s_1d643f41a6b8a6::t_13e4f8fb354208 1-65
+ynab-mcp-sdlc-guide/02-codex-workflow.md
+  s_1d643f41a6b8a6::t_13e4f8fb354208 1-163
+ynab-mcp-sdlc-guide/README.md
+  s_1d643f41a6b8a6::t_13e4f8fb354208 1-70
+ynab-mcp-sdlc-guide/templates/issue.md
+  s_1d643f41a6b8a6::t_13e4f8fb354208 1-52
+ynab-mcp-sdlc-guide/05-client-connections.md
+  s_1d643f41a6b8a6::t_13e4f8fb354208 1-104
+ynab-mcp-sdlc-guide/templates/AGENTS.md
+  s_1d643f41a6b8a6::t_13e4f8fb354208 1-45
+ynab-mcp-sdlc-guide/_summary.md
+  s_1d643f41a6b8a6::t_13e4f8fb354208 1
+ynab-mcp-sdlc-guide/templates/backlog.md
+  s_1d643f41a6b8a6::t_13e4f8fb354208 1-16
+ynab-mcp-sdlc-guide/01-jira-and-github.md
+  s_1d643f41a6b8a6::t_13e4f8fb354208 1-140
+ynab-mcp-sdlc-guide/06-operate-and-resume.md
+  s_1d643f41a6b8a6::t_13e4f8fb354208 1-121
+ynab-mcp-sdlc-guide/04-railway-deployment.md
+  s_1d643f41a6b8a6::t_13e4f8fb354208 1-146
+ynab-mcp-sdlc-guide/templates/pull_request_template.md
+  s_1d643f41a6b8a6::t_13e4f8fb354208 1-24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e7cb253a0ce637e65423b1a53f193dc44a1ec278",
+  "prompts": {},
+  "sessions": {
+    "s_1d643f41a6b8a6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "unknown"
+      },
+      "human_author": "tth <xyz@foo.com>"
+    }
+  }
+}
