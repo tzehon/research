@@ -177,6 +177,19 @@ Record settings completion separately from first-review evidence. Settings alone
 4. If your GitHub plan supports custom autolinks, open **Repository settings → Autolink references**. Configure numeric prefix `YNAB-` and URL `https://YOUR-SITE.atlassian.net/browse/YNAB-<num>`. Otherwise keep full issue URLs in PR and commit bodies. [GitHub autolinks](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/configuring-autolinks-to-reference-external-resources)
 5. Configure squash merging to default to the PR title. Before merging, verify the final commit message still includes the key; the message can be edited. [Squash settings](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/configuring-commit-squashing-for-pull-requests)
 
+For the current Jira UI, **Development → Connections → Install GitHub for Atlassian** opens the installation dialog. Verify the publisher is Atlassian and the price is **Free app / No payment required**. Review its terms, data processing and requested permissions before installing; this is separate from selecting repositories in GitHub. After installation, verify the saved connection and selected repository scope instead of treating app installation as a completed integration.
+
+If the organization-selection button does not open a chooser, open the official [Atlassian GitHub App](https://github.com/apps/atlassian), choose Install, and inspect the account and permissions. The personal tzehon account was successfully installed and connected in this walkthrough despite the Jira wizard’s organization wording; no organization or repository transfer was needed. Choose **Only select repositories → ynab-mcp**, never the default All repositories. GitHub may require fresh passkey/authenticator confirmation; complete that in the browser. If authentication loses the form, inspect whether installation succeeded before retrying, then reselect the same repository scope. After GitHub installation, return to Jira’s GitHub for Atlassian app, restart Continue → GitHub Cloud if needed, and choose **Connect** beside the intended account. Verify the success page says the account is connected with selected repositories only, then inspect GitHub’s saved app settings for the exact repository list. Do not infer a completed Jira connection from a successful GitHub installation alone.
+
+The numeric autolink and squash title defaults can be inspected from any authenticated machine:
+
+```bash
+gh api repos/tzehon/ynab-mcp/autolinks
+gh api repos/tzehon/ynab-mcp --jq '{squash_merge_commit_title,squash_merge_commit_message}'
+```
+
+For the autolink, expect `key_prefix` to be `YNAB-`, `is_alphanumeric` to be `false`, and the URL template to end in `/browse/YNAB-<num>` on your actual Jira site. Avoid posting the raw response in public progress notes. Expect `squash_merge_commit_title` to be `PR_TITLE`. Both settings were saved and read back on 7 November 2026; actual link navigation awaits the first PR. [GitHub autolink API](https://docs.github.com/en/rest/repos/autolinks)
+
 Use [the PR template](./templates/pull_request_template.md) at `.github/pull_request_template.md` in the new repository. Its issue link, approval evidence and AC-to-check mapping are mandatory information, even before a validator exists.
 
 After Chapter 2 creates and merges the first real setup PR, return to validate: Jira issue → **Development → PR count → PR**; GitHub PR → Jira link; commit → Jira link. If Development is hidden, inspect the issue layout and development permissions. Jira displays linked records, with a 100-commit display limit; do not treat it as an exhaustive historical archive. [Development UI](https://support.atlassian.com/jira-software-cloud/docs/view-development-information-for-an-issue/)
