@@ -1,0 +1,21 @@
+ynab-mcp-sdlc-guide/01-jira-and-github.md
+  s_1d643f41a6b8a6::t_888db6fa479238 180-192
+ynab-mcp-sdlc-guide/PROGRESS.md
+  s_1d643f41a6b8a6::t_e1cdedda239081 3,24-26,46,104-107,113-114,117-120,150
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e9693718acddeebeedaa39e076b2a534ff6fd6f7",
+  "prompts": {},
+  "sessions": {
+    "s_1d643f41a6b8a6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "unknown"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}
