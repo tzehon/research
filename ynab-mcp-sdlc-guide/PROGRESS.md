@@ -19,7 +19,7 @@ Guided execution started on 7 November 2026. Phase 0 preflight and Phase 1 Jira/
 | Jira site / cloud ID | Existing personal site verified through browser and Atlassian plugin; Jira Free plan verified in Atlassian Administration on 2026-11-07. Keep identifiers in 1Password. |
 | Jira space/project key | YNAB — changed on the existing ynab-mcp project and verified after reload and through the Atlassian plugin on 2026-11-07. |
 | Intent/epic issue URL | Not created |
-| Current implementation issue URL | Adapter/tools Task: Implement read-only YNAB adapter and tools using mocked data. Locate it in YNAB; site-specific URL omitted here. In Progress. Owner intent draft-r1 and spec-r1/ac-r1 approvals verified; approved fields unchanged. Proposed plan-r1 saved and separately attached/retrieved with exact byte verification. Owner plan-r1 approval verified; implementation underway on the issue branch. |
+| Current implementation issue URL | Adapter/tools Task: Implement read-only YNAB adapter and tools using mocked data. Locate it in YNAB; site-specific URL omitted here. In Review. Owner intent draft-r1 and spec-r1/ac-r1 approvals verified; approved fields unchanged. Proposed plan-r1 saved and separately attached/retrieved with exact byte verification. Owner plan-r1 approval verified; implementation published in PR #3; final-head reviews pending. |
 | Spec / Plan / Acceptance criteria field IDs | Discovered and verified through Jira metadata and the saved Task on 2026-11-07. All three are space-scoped rich-text Paragraph fields shared by Task and Bug layouts. IDs omitted from this public register; saving the mapping to 1Password remains pending. |
 | GitHub for Atlassian installation scope | Connected on 2026-11-07. Owner approved Jira terms/permissions, GitHub identity authorization and repository permissions; completed GitHub authenticator check. Installed GitHub settings verify Only select repositories with exactly tzehon/ynab-mcp. Jira confirms tzehon is now connected and Only select repos connected. Site/installation identifiers remain private. |
 | GitHub issue autolinks | Numeric YNAB- autolink configured; actual PR issue link and commit → associated PR → issue navigation verified. Commit title itself displayed as plain text. Exact Jira destination omitted from this register. |
@@ -166,6 +166,8 @@ Guided execution started on 7 November 2026. Phase 0 preflight and Phase 1 Jira/
 
 - [x] 3.3–3.5 implementation checkpoint: feature commit f6c2764 adds the bounded in-memory adapter, four new strict read tools, exact milliunit projections, cancellation/resource limits and safe error handling. Full local check passes 87 tests. Preserved dependencies/workflow and original list-plans contract. Minor necessary delivery adjustment: exact nine-AC coverage for the current issue, retaining existing eight-AC checks for other issues. Fresh-clone/start/dev/mutation evidence and publication/review remain pending.
 
+- [x] 3.3–3.5 publication checkpoint: PR #3 is open at e0b41e4. Added explicit all-tool argument, count and exact result-byte boundary tests; clean-clone verification passes 92 tests and actual start/dev/smoke/rejection/mutation exercises. Source/diff audit keeps private Jira evidence outside Git and dependencies/workflow unchanged. Task In Review with separate agent evidence; final-head CI/native reviews and AC-8 delivery gates remain pending.
+
 ## Completion verification safeguard
 
 - [x] 2026-11-07: corrected the bootstrap Task's missing Resolution using its available Done-to-Done transition. Direct read-back verified Status Done, Resolution Done and a populated resolution date. The earlier status-only completion check was insufficient; the historical cause of the missing value is not established.
@@ -177,13 +179,13 @@ Guided execution started on 7 November 2026. Phase 0 preflight and Phase 1 Jira/
 
 Chapter checkpoint mapping: J1–J3/G1 establish P1; G2 is completed at C6 and establishes P1-links. C1–C4 establish P2. C5–C6 describe the repeating implementation/review cycle. RD-01–RD-06 establish P4 and contribute to P3-auth; Chapter 05 establishes both client checkpoints before RD-07 enables P5-live. RD-08 plus the recovery procedure establishes P6-recovery.
 
-- Last updated (date/time/time zone): 2026-11-07 17:40 Asia/Singapore
-- Current phase/checkpoint: Chapter 3.3–3.5 mocked adapter/tools implementation in progress; approved plan-r1 verified.
-- Current Jira issue + approved revision: adapter/tools Task in YNAB, In Progress. Owner intent draft-r1, spec-r1/ac-r1 and plan-r1 approvals verified; all four live fields still exactly match the approved snapshot.
-- Current app branch/PR and commit: YNAB-3-mocked-adapter-tools at f6c2764; no PR yet. PR #2 remains the last delivered main revision.
-- Last observed successful check: npm run check passes 87 tests with strict typecheck/lint/build, both real HTTP SDK eras, process-wide admission, deadline/late-result handling and pre-import I/O guards. Approved fields rechecked unchanged. Fresh-clone install/check and actual start/dev smoke are in progress.
+- Last updated (date/time/time zone): 2026-11-07 17:55 Asia/Singapore
+- Current phase/checkpoint: Chapter 3.3–3.5 mocked adapter/tools PR published; final-head CI/native reviews underway.
+- Current Jira issue + approved revision: adapter/tools Task in YNAB, In Review. Owner intent draft-r1, spec-r1/ac-r1 and plan-r1 approvals verified; all four live fields still exactly match the approved snapshot.
+- Current app branch/PR and commit: YNAB-3-mocked-adapter-tools at e0b41e4; https://github.com/tzehon/ynab-mcp/pull/3 is open. PR #2 remains the last delivered main revision.
+- Last observed successful check: final e0b41e4 fresh-clone npm ci --ignore-scripts and npm run check pass 92 tests plus strict typecheck/lint/build. Actual start/dev each pass both-era five-tool smoke and reject missing flags/production. Both scratch mutations detected; restored tests pass and tracked files clean. Initial PR CI passed; new-head CI/native reviews still pending.
 - Blocker or decision needed: none for approved implementation. Separate owner merge/release decisions remain required.
-- Next concrete action: complete clean-clone and negative-mutation evidence, publish the issue-keyed PR and obtain final-head CI/Codex review. Keep delivery ACs pending until separately authorized merge. No live resources or credentials.
+- Next concrete action: verify final-head required CI/native reviews and latest metadata-edit run; resolve findings, then present the reviewed PR for the separate owner merge decision. Keep delivery ACs pending until separately authorized merge. No live resources or credentials.
 - Where evidence lives: Task approved Description/Spec/AC/Plan, owner decisions and separate intent/spec/plan snapshots in Jira (site/attachment identifiers omitted here). Predecessor delivery: https://github.com/tzehon/ynab-mcp/pull/2. Temporary snapshots remain outside public Git.
 
 ## Decision log
