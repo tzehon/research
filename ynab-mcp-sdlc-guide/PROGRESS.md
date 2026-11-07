@@ -25,7 +25,8 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 | Auth0 client registration route | Planned: separate explicitly registered clients; see Phase 3a |
 | Client application IDs (non-secret) | Not configured |
 | Private identity/secret register item name | 1Password Secure Note: YNAB MCP deployment; saved per user confirmation on 2026-11-07; contents not inspected |
-| Railway workspace / project ID / environment / service ID | Existing account; no project selected |
+| Railway workspace / project ID / environment / service ID | Existing workspace access and Admin role verified on 2026-11-07; zero active projects. No YNAB project created. Keep identifiers in 1Password. |
+| Railway plan / usage check | Trial plan; usage and credit balance inspected on 2026-11-07. Recheck trial eligibility and hosting plan before deployment; private billing amounts omitted. |
 | Railway service URL / exact MCP URL | Not configured |
 | Tested Node / npm / SDK / Codex versions | Not recorded |
 | Application CI workflow + job names | Not implemented |
@@ -63,7 +64,8 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 - [ ] 0.2 GitHub protection/review configuration: not yet verified; configuration remains Phase 1.
 - [x] 0.2 Jira access: user confirmed signup; browser and newly installed Atlassian plugin verified access to the existing ynab-mcp software project, with zero issues.
 - [x] 0.2 Jira subscription: Atlassian Administration billing page explicitly showed Jira on the Free plan with one user on 2026-11-07.
-- [ ] 0.2 Railway access: inspect existing workspace, plan, usage/billing and member permissions; do not create a project yet.
+- [x] 0.2 Railway access: existing workspace, Trial plan, usage/billing and Admin membership verified; zero active projects. No project or paid subscription created.
+- [ ] 0.2 YNAB access: verify sign-in and Developer Settings access; do not generate a token yet.
 - [x] Phase 1 repository creation brought forward at user request: public ynab-mcp exists with README seed.
 - [ ] Phase 1 review setup: Codex cloud integration enabled and review of a real PR observed.
 - [ ] 0.3: local tools and Git identity verified.
@@ -74,13 +76,13 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 
 Chapter checkpoint mapping: J1–J3/G1 establish P1; G2 is completed at C6 and establishes P1-links. C1–C4 establish P2. C5–C6 describe the repeating implementation/review cycle. RD-01–RD-06 establish P4 and contribute to P3-auth; Chapter 05 establishes both client checkpoints before RD-07 enables P5-live. RD-08 plus the recovery procedure establishes P6-recovery.
 
-- Last updated (date/time/time zone): 2026-11-07 10:45 Asia/Singapore
-- Current phase/checkpoint: P0 / 0.2 — Jira access, project key and Free subscription verified; Railway account check next
+- Last updated (date/time/time zone): 2026-11-07 12:04 Asia/Singapore
+- Current phase/checkpoint: P0 / 0.2 — Railway account check complete; YNAB developer access next
 - Current Jira issue + approved revision: none
 - Current app branch/PR and commit: main at de44eb5d7745a8b51b96eb9824be910f30baf362 (GitHub initialization only); no application PR yet
-- Last observed successful check: Atlassian Administration → Billing and subscriptions showed Jira on the Free plan with one user for the existing personal site
-- Blocker or decision needed: No Jira access/subscription blocker; remaining account/client eligibility checks are pending
-- Next concrete action: Inspect the existing Railway account: workspace, plan, usage/billing and member permissions. Record only generic verification here; keep account-specific details in 1Password. Do not create a project yet.
+- Last observed successful check: Railway dashboard showed zero active projects; Usage showed Trial plan and credit/billing details; People showed the signed-in account as Admin
+- Blocker or decision needed: Railway trial is time-limited; recheck plan and remaining credits before deployment. Remaining account/client eligibility checks are pending.
+- Next concrete action: Verify access to the YNAB web app and Developer Settings. Check eligibility only; do not generate or copy a personal access token yet.
 - Where evidence lives (links only; redact before sharing): https://github.com/tzehon/ynab-mcp and https://github.com/tzehon/research/pull/12
 
 ## Decision log
@@ -97,3 +99,4 @@ Record links to decisions in Jira, not duplicated specifications.
 | 2026-11-07 | User signup/plugin confirmation and live verification in guided chat | Reuse existing ynab-mcp Jira project. Access verified; key alignment and Free subscription verification remain pending. |
 | 2026-11-07 | User requested agent to apply the agreed key | Existing Jira project key changed to YNAB and verified in the browser and plugin. No duplicate project created. |
 | 2026-11-07 | Live subscription verification in guided chat | Existing Jira subscription is Free; no plan change was needed. Continue Phase 0 with existing Railway account checks. |
+| 2026-11-07 | Live Railway account verification in guided chat | Existing workspace is accessible with Admin role; Trial plan and usage checked. Reuse this workspace and recheck hosting eligibility before deployment. |
