@@ -1,0 +1,19 @@
+ynab-mcp-sdlc-guide/PROGRESS.md
+  s_eb80e8fdbdac14::t_01e5a9e9de8850 3,22,36,38,175-180,192-194,197-199,263-264
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "83047f18d08e62377c7f4439e7b1d72f8815850a",
+  "prompts": {},
+  "sessions": {
+    "s_eb80e8fdbdac14": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}
