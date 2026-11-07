@@ -1,6 +1,6 @@
 # Progress and resource register
 
-Guided execution started on 7 November 2026. Phase 0 preflight, Phase 1.2 Jira fields and Phase 1.3 workflow/board configuration are complete; formal intent approval, delivery configuration and implementation remain pending. Update after observed results, then commit and push. It is an index, not a replacement for Jira specifications or approvals. Use a private register instead if these identifiers should not appear in this repository.
+Guided execution started on 7 November 2026. Phase 0 preflight and Phase 1.1–1.3 Jira setup are complete, including verified human intent approval. GitHub delivery configuration, integration and implementation remain pending. Update after observed results, then commit and push. It is an index, not a replacement for Jira specifications or approvals. Use a private register instead if these identifiers should not appear in this repository.
 
 ## Resource register — no credentials or financial data
 
@@ -19,7 +19,7 @@ Guided execution started on 7 November 2026. Phase 0 preflight, Phase 1.2 Jira f
 | Jira site / cloud ID | Existing personal site verified through browser and Atlassian plugin; Jira Free plan verified in Atlassian Administration on 2026-11-07. Keep identifiers in 1Password. |
 | Jira space/project key | YNAB — changed on the existing ynab-mcp project and verified after reload and through the Atlassian plugin on 2026-11-07. |
 | Intent/epic issue URL | Not created |
-| Current implementation issue URL | Bootstrap Task created: Set up the YNAB MCP repository and delivery workflow. Locate it in YNAB; site-specific URL stays private. Draft only, no formal approval recorded. |
+| Current implementation issue URL | Bootstrap Task created: Set up the YNAB MCP repository and delivery workflow. Locate it in YNAB; site-specific URL stays private. Intent draft-r1 approved by the owner and verified on 2026-11-07; status Spec review. Spec/plan/AC remain drafts. |
 | Spec / Plan / Acceptance criteria field IDs | Discovered and verified through Jira metadata and the saved Task on 2026-11-07. All three are space-scoped rich-text Paragraph fields shared by Task and Bug layouts. IDs omitted from this public register; saving the mapping to 1Password remains pending. |
 | GitHub for Atlassian installation scope | Not configured |
 | Auth0 tenant / issuer / API audience | Account access verified on 2026-11-07; one existing development tenant listed, with prior gateway-lab applications. YNAB tenant selection, issuer verification and API configuration deferred to Phase 3a; identifiers stay private. |
@@ -94,20 +94,20 @@ Guided execution started on 7 November 2026. Phase 0 preflight, Phase 1.2 Jira f
 - [x] 1.3 board configuration: published eight columns in the intended order. Every Task/Bug status is mapped. The Idea column also contains the existing To Do status for other work types. Plugin verified the saved column mapping and categories independently of the browser.
 - [x] Existing bootstrap Task migrated from To Do to Idea as part of workflow publication; plugin and board verified it remains visible. This migration is not an approval.
 - [x] J3 review preparation: attached a timestamped JSON snapshot of the bootstrap Task's draft-r1 intent/spec/plan/AC, verified field IDs, source updated timestamp and capture time. The attachment was downloaded and byte-compared with the original; SHA-256 matched. Snapshot remains in Jira, outside public Git. This is historical review evidence, not an approval.
-- [ ] J3 intent approval: owner reviews the Description/intent draft-r1 and posts an explicit intent decision in Jira naming the snapshot attachment. Draft spec/plan/AC remain unapproved. Await the user's confirmation, then read back the approval comment and capture its permalink before moving to Spec review. Do not create another bootstrap ticket.
+- [x] J3 intent approval: owner confirmed posting the comment; plugin read-back verified the author, 2026-11-07 15:36:33 Asia/Singapore timestamp, exact intent draft-r1 approval and snapshot filename. Description, Spec, Plan and Acceptance criteria still matched the verified snapshot exactly. Transitioned the existing Task from Idea to Spec review using the discovered transition; Jira returned Spec review. Spec/plan/AC and implementation remain unapproved. Approval evidence stays on the Jira issue; no replacement comment or snapshot created.
 - [ ] Delivery configuration: enforce PR-only main protection, configure subsequent-push Codex reviews, and connect GitHub for Atlassian with scoped repository access.
 
 ## Session handoff
 
 Chapter checkpoint mapping: J1–J3/G1 establish P1; G2 is completed at C6 and establishes P1-links. C1–C4 establish P2. C5–C6 describe the repeating implementation/review cycle. RD-01–RD-06 establish P4 and contribute to P3-auth; Chapter 05 establishes both client checkpoints before RD-07 enables P5-live. RD-08 plus the recovery procedure establishes P6-recovery.
 
-- Last updated (date/time/time zone): 2026-11-07 15:34 Asia/Singapore
-- Current phase/checkpoint: Phase 1.3 / J3 intent review prepared; awaiting the owner’s explicit decision in Jira
-- Current Jira issue + approved revision: Bootstrap Task “Set up the YNAB MCP repository and delivery workflow” exists in YNAB, status Idea; draft-r1 intent/spec/plan/AC, no approved revision. Discover its key and URL from Jira before work.
+- Last updated (date/time/time zone): 2026-11-07 15:37 Asia/Singapore
+- Current phase/checkpoint: Phase 1.3 / J3 complete; GitHub delivery configuration in Phase 1.5 is next (repository creation in 1.4 already complete)
+- Current Jira issue + approved revision: Bootstrap Task “Set up the YNAB MCP repository and delivery workflow” in YNAB, status Spec review. Intent draft-r1 approved by owner comment at 2026-11-07 15:36:33 Asia/Singapore; spec/plan/AC remain unapproved drafts. Resolve the exact issue and comment link in Jira when resuming.
 - Current app branch/PR and commit: main at de44eb5d7745a8b51b96eb9824be910f30baf362 (GitHub initialization only); no application PR yet
-- Last observed successful check: Jira lists one JSON revision snapshot attachment; downloaded file matched the original byte for byte (SHA-256 607e41b89635a0c33da7bb0c96097af3a87c1701ac197ccda7f8e1a636972720). Description remains draft-r1 and status remains Idea.
-- Blocker or decision needed: Human intent decision for the bootstrap Task. The guide calls for the owner to post the decision personally in Jira; no approval has been inferred or posted by the agent. Implementation, spec/plan approval, GitHub protection and integration remain later steps.
-- Next concrete action: Owner reviews Description/intent draft-r1 and posts an intent approval or requested changes in Jira, citing the existing snapshot attachment. On confirmation, read back the comment, record its permalink privately and transition to Spec review only if approved. Recheck the current fields against the snapshot if they have changed.
+- Last observed successful check: Owner approval comment names intent draft-r1 and the verified snapshot; all four live fields exactly matched that snapshot. Jira transition result confirmed Spec review. Snapshot SHA-256: 607e41b89635a0c33da7bb0c96097af3a87c1701ac197ccda7f8e1a636972720.
+- Blocker or decision needed: No J3 blocker. Configure GitHub protection, review triggers and integration before implementation. Spec/AC and plan require their own later review decisions. Private register mapping/comment link has not been written to 1Password by the agent.
+- Next concrete action: Phase 1.5 — inspect current main protection and configure PR-only delivery for the existing public ynab-mcp repository, with no routine bypass, force pushes or branch deletion. Configure review coverage for later pushes; actual CI/review enforcement evidence follows the first approved implementation PR. Do not recreate the repo or push to app main.
 - Where evidence lives (links only; redact before sharing): https://github.com/tzehon/ynab-mcp and https://github.com/tzehon/research/pull/12
 
 ## Decision log
@@ -136,3 +136,4 @@ Record links to decisions in Jira, not duplicated specifications.
 | 2026-11-07 | Jira fields and persistence verified in guided chat | J2 complete. Reuse the three project-scoped rich-text fields and existing draft bootstrap Task; workflow stages and formal intent approval remain next. |
 | 2026-11-07 | Workflow and board verified in guided chat | Eight stages applied only to Task and Bug; other work-type statuses preserved. All stages mapped to visible columns; bootstrap Task is in Idea. Formal intent approval remains pending. |
 | 2026-11-07 | Jira revision snapshot prepared and retrieved in guided chat | Draft-r1 snapshot attached and verified by byte comparison and SHA-256. Intent approval is pending the owner’s personal Jira comment; status remains Idea. |
+| 2026-11-07 | Owner-posted intent approval verified in Jira after user confirmation | Intent draft-r1 approved against the existing verified snapshot. Live fields match; Task moved to Spec review. Spec, plan, AC and implementation are not approved by this decision. |
