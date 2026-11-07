@@ -1,6 +1,6 @@
 # Progress and resource register
 
-Guided execution started on 7 November 2026. Phase 0 and Phase 1 setup are complete. PR #1 delivered the Jira/GitHub foundations; PR #2 delivered the local fixture MCP transport. Owner-authorized, rebase-merged PR #3 now delivers the mocked read-only adapter and five-tool surface at e79fcbe. All nine adapter/tools ACs have evidence: reviewed/delivered patches and tree match, main CI passes 92 tests, Jira navigation works for the merged PR and both delivered commits, and remote/local feature branches are deleted with local main synchronized. The adapter/tools Task is Done; status, Resolution Done and resolution date were independently verified, and the paginated project consistency audit found no mismatches. Authentication, hosting, live YNAB data and actual Codex/ChatGPT connections remain later work. This register is an index, not a replacement for Jira requirements or owner approvals.
+Guided execution started on 7 November 2026. Phase 0 and Phase 1 setup are complete. PR #1 delivered the Jira/GitHub foundations; PR #2 delivered the local fixture MCP transport. Owner-authorized, rebase-merged PR #3 now delivers the mocked read-only adapter and five-tool surface at e79fcbe. All nine adapter/tools ACs have evidence: reviewed/delivered patches and tree match, main CI passes 92 tests, Jira navigation works for the merged PR and both delivered commits, and remote/local feature branches are deleted with local main synchronized. The adapter/tools Task is Done; status, Resolution Done and resolution date were independently verified, and the paginated project consistency audit found no mismatches. Authentication, hosting, live YNAB data and actual Codex/ChatGPT connections remain later work. The next local authentication Task is now in Idea with proposed intent draft-r1 and a verified downloadable snapshot; owner intent approval is pending. This register is an index, not a replacement for Jira requirements or owner approvals.
 
 ## Resource register — no credentials or financial data
 
@@ -19,7 +19,7 @@ Guided execution started on 7 November 2026. Phase 0 and Phase 1 setup are compl
 | Jira site / cloud ID | Existing personal site verified through browser and Atlassian plugin; Jira Free plan verified in Atlassian Administration on 2026-11-07. Keep identifiers in 1Password. |
 | Jira space/project key | YNAB — changed on the existing ynab-mcp project and verified after reload and through the Atlassian plugin on 2026-11-07. |
 | Intent/epic issue URL | Not created |
-| Current implementation issue URL | Adapter/tools Task delivered through PR #3 and verified Done. All nine ACs passed; approved intent/spec/AC/plan unchanged. Site-specific URL omitted. Next issue not created. |
+| Current implementation issue URL | Local authentication Task created in Idea; intent draft-r1 proposed, exact snapshot attached/retrieved and verified. Spec/AC/Plan empty; owner intent approval pending. Adapter/tools predecessor delivered and verified Done. Site-specific URLs omitted. |
 | Spec / Plan / Acceptance criteria field IDs | Discovered and verified through Jira metadata and the saved Task on 2026-11-07. All three are space-scoped rich-text Paragraph fields shared by Task and Bug layouts. IDs omitted from this public register; saving the mapping to 1Password remains pending. |
 | GitHub for Atlassian installation scope | Connected on 2026-11-07. Owner approved Jira terms/permissions, GitHub identity authorization and repository permissions; completed GitHub authenticator check. Installed GitHub settings verify Only select repositories with exactly tzehon/ynab-mcp. Jira confirms tzehon is now connected and Only select repos connected. Site/installation identifiers remain private. |
 | GitHub issue autolinks | Numeric YNAB- autolink configured; actual PR issue link and commit → associated PR → issue navigation verified. Commit title itself displayed as plain text. Exact Jira destination omitted from this register. |
@@ -33,9 +33,9 @@ Guided execution started on 7 November 2026. Phase 0 and Phase 1 setup are compl
 | Railway service URL / exact MCP URL | Not configured |
 | Tested Node / npm / SDK / Codex versions | Codex CLI 0.163.0; desktop 26.1103.41825 (build 25679, prod), updater reported up_to_date on 2026-11-07. Node 26.13.0 and npm 11.20.0 verified on 2026-11-07; server/client SDK 2.4.0 and Node adapter 2.1.2 installed; real legacy/modern loopback calls pass. Clean-clone checks and Linux CI pass; native code/security reviews complete on final 51dfcfe; no code findings or review threads. |
 | Local development tools | Git 2.56.0; GitHub CLI 2.103.3; version commands and GitHub CLI authentication verified on 2026-11-07. |
-| Local application checkout | Clean main at b396495b2683230fc364b44da04c0798124ffdb5, matching origin/main. PR #2 rebase-merged; its remote/local feature branches are deleted. No direct app main push. |
+| Local application checkout | Clean main at e79fcbe410688ee77ae11e86bc509a4f24369ab0, matching origin/main after PR #3 delivery; remote/local feature branches deleted. No application changes for the authentication intent draft. |
 | Git commit identity policy | User selected GitHub profile name and verified GitHub no-reply email for research and ynab-mcp; repository-local overrides verified in both. Global settings unchanged; reapply after cloning on each machine. |
-| Application CI workflow + job names | PR checks: required bootstrap-tests and pr-metadata passed on reviewed 51dfcfe, including final metadata-edit run 42359208054. Delivered main run 42359479743 passed application checks and all 62 tests; PR-only metadata job skipped as designed. Trusted origin uses masked secret storage; obsolete repository variable removed after delivery. |
+| Application CI workflow + job names | PR checks: required bootstrap-tests and pr-metadata passed on reviewed e0b41e4, including final metadata-edit run 42361975769. Delivered main run 42362615519 passed application checks and all 92 tests; PR-only metadata job skipped as designed. Trusted origin uses masked secret storage; obsolete repository variable removed. |
 | Last successful deployed commit / deployment link | None |
 | Last good rollback deployment | None |
 | Last guide revision used | `8952807a72d5d33dfc18cf842c3688c1e0e561fe` verified by Phase 0.4 fast-forward-only refresh on 2026-11-07; subsequent checkpoint changes are recorded in this file’s Git history. |
@@ -172,6 +172,12 @@ Guided execution started on 7 November 2026. Phase 0 and Phase 1 setup are compl
 
 - [x] 3.3–3.5 delivery/closure: owner explicitly approved merge in chat. Revalidated approvals/fields/reviews/final edited CI, rebase-merged PR #3, verified identical patches/tree and green main CI (92 tests), browser navigation for Jira/PR/all delivered commits, remote/local cleanup and synchronized main. All nine ACs passed. Task transitioned through Ready to release to Done; independent full read-back confirms Done/category done, Resolution Done with ID and populated resolution date. Post-closure audit returned no issues and no further page. No hosted release or live resources.
 
+## Phase 3a detail
+
+- [x] A1–A2 intent preparation: complete backlog search found only the three delivered predecessors; paginated status/resolution audit found no mismatches. Created the local authentication Task in Idea with proposed intent draft-r1. Exact saved Description and empty Spec/AC/Plan snapshot attached, downloaded and byte/hash verified. Current MCP authorization reference is linked in Jira; implementation/library choices remain for specification.
+- [ ] Owner intent approval: review the local-only, synthetic-token/mock-discovery scope and personally post the decision naming the verified Jira attachment. Intent approval authorizes spec/AC drafting only.
+- [ ] Specification, acceptance criteria, plan, implementation and PR delivery remain later gates. Auth0 configuration, Railway/bootstrap deployment, actual-client sign-ins and live YNAB access are excluded from this issue.
+
 ## Completion verification safeguard
 
 - [x] 2026-11-07: corrected the bootstrap Task's missing Resolution using its available Done-to-Done transition. Direct read-back verified Status Done, Resolution Done and a populated resolution date. The earlier status-only completion check was insufficient; the historical cause of the missing value is not established.
@@ -183,14 +189,14 @@ Guided execution started on 7 November 2026. Phase 0 and Phase 1 setup are compl
 
 Chapter checkpoint mapping: J1–J3/G1 establish P1; G2 is completed at C6 and establishes P1-links. C1–C4 establish P2. C5–C6 describe the repeating implementation/review cycle. RD-01–RD-06 establish P4 and contribute to P3-auth; Chapter 05 establishes both client checkpoints before RD-07 enables P5-live. RD-08 plus the recovery procedure establishes P6-recovery.
 
-- Last updated (date/time/time zone): 2026-11-07 18:11 Asia/Singapore
-- Current phase/checkpoint: Chapter 3 mocked adapter/tools milestone delivered; authorization and later hosted/client/live checkpoints remain incomplete.
-- Current Jira issue + approved revision: adapter/tools Task in YNAB is Done with independently verified Resolution Done and populated resolution date. Approved intent draft-r1, spec-r1/ac-r1 and plan-r1 remain unchanged. All nine ACs have evidence.
+- Last updated (date/time/time zone): 2026-11-07 18:19 Asia/Singapore
+- Current phase/checkpoint: Phase 3a A1–A2 local authentication intent drafted; awaiting owner intent approval. Authentication and hosted/client/live checkpoints remain incomplete.
+- Current Jira issue + approved revision: local authentication Task in Idea with proposed intent draft-r1; no approved revision yet. Spec, Acceptance criteria and Plan are empty. Adapter/tools predecessor remains Done with its approved fields unchanged.
 - Current app branch/PR and commit: clean main at e79fcbe410688ee77ae11e86bc509a4f24369ab0; https://github.com/tzehon/ynab-mcp/pull/3 rebase-merged. Delivered commits d618a77 and e79fcbe correspond exactly to reviewed f6c2764 and e0b41e4. Remote/local feature branches removed.
 - Last observed successful check: main CI https://github.com/tzehon/ynab-mcp/actions/runs/42362615519 passes typecheck/lint/build and 92 tests. Final reviewed/delivered trees and both patches match. Jira Development displays the merged PR and both delivered commits; browser commit → PR → issue navigation works. Direct closure read-back verifies Done/category done, Resolution Done with ID and a resolution date; full project audit has no mismatches and no next page.
-- Blocker or decision needed: none for this completed milestone. The next issue needs its own staged owner approvals; no hosted release or live access is authorized by this merge.
-- Next concrete action: on the next guided step, inspect the authentication chapter/backlog and draft the next scoped intent, preserving the mock-only boundary until authentication and client checks are approved and verified. Do not create credentials, live adapter mode or Railway resources merely because PR #3 merged.
-- Where evidence lives: approved issue fields, personal decisions, exact historical snapshots and separate final delivery/closure report in Jira; public PR #3 contains all nine ACs and delivered CI/navigation/equivalence evidence. Site-specific identifiers and snapshot contents remain outside public Git.
+- Blocker or decision needed: owner must personally approve the authentication intent in Jira against its verified attachment before specification drafting. This follows the staged approval procedure in 02-codex-workflow.md section 2.3.
+- Next concrete action: after owner confirmation, read the personal intent approval and compare the saved Description to its snapshot; then draft spec/AC and move to Spec review. Keep implementation and provider/deployment setup behind their later approvals.
+- Where evidence lives: new authentication Description, verified intent attachment and separate agent review-preparation comment in Jira; predecessor approved fields, personal decisions, historical snapshots and delivery/closure report remain there; public PR #3 contains all nine ACs and delivered CI/navigation/equivalence evidence. Site-specific identifiers and snapshot contents remain outside public Git.
 
 ## Decision log
 
@@ -254,3 +260,5 @@ Record links to decisions in Jira, not duplicated specifications.
 | 2026-11-07 | Approved mocked adapter/tools implementation published and reviewed | PR #3 at e0b41e4 has 92 passing tests, clean-clone/start/dev/smoke/mutation evidence, completed native code/security reviews and passing final metadata-edit CI. Task In Review; separate owner merge decision and post-merge delivery evidence remain pending. No live resources or release. |
 
 | 2026-11-07 | Owner explicitly approved reviewed PR #3 merge | Rebase delivery at e79fcbe verified with identical patches/tree, passing main CI, delivered Jira navigation and branch cleanup. All nine ACs passed; direct read-back verified Done, Resolution Done and resolution date, with clean project consistency audit. Next milestone remains subject to staged approvals. |
+
+| 2026-11-07 | Owner requested the next guided step; local authentication intent prepared | Created a new Task in Idea after complete backlog/audit checks. Intent draft-r1 proposes owner-only resource-server checks using local test tokens, mocked discovery/JWKS and fixture data. Saved-field snapshot attached/retrieved and byte/hash verified. Owner intent approval pending; Spec/AC/Plan empty and application unchanged. |
