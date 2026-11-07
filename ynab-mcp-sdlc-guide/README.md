@@ -26,7 +26,7 @@ Phases 3a–5 have one intentional loop: create the Railway domain using fixture
 
 ## Agreed repository workflow
 
-On 7 November 2026, the owner selected **public `tzehon/ynab-mcp`**, with all changes submitted through feature branches and pull requests. **Do not push directly to `main`.** Configure Codex cloud automatic code review before the first implementation PR, and verify review of the latest revision before merging. Account-specific setup details and credentials stay in 1Password. The public repository now exists with its GitHub-created README seed; Codex cloud review and branch protection still need configuration and verification. This PR-only policy applies to ynab-mcp; research progress updates may be pushed to main.
+On 7 November 2026, the owner selected **public `tzehon/ynab-mcp`**, with all changes submitted through feature branches and pull requests. **Do not push directly to `main`.** Configure Codex cloud automatic code review before the first implementation PR, and verify review of the latest revision before merging. Account-specific setup details and credentials stay in 1Password. The public repository now exists with its GitHub-created README seed; Codex automatic review is enabled and currently inherits the personal On PR open trigger; branch protection is not yet configured. Phase 1 must cover subsequent pushes and verify a real review. See PROGRESS.md for the completed Phase 0 checks and remaining work. This PR-only policy applies to ynab-mcp; research progress updates may be pushed to main.
 
 ## Recommended first release
 

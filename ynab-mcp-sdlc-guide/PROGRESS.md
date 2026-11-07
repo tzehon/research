@@ -1,6 +1,6 @@
 # Progress and resource register
 
-Guided execution started on 7 November 2026. No phase is complete yet. Update after observed results, then commit and push. It is an index, not a replacement for Jira specifications or approvals. Use a private register instead if these identifiers should not appear in this repository.
+Guided execution started on 7 November 2026. Phase 0 preflight is complete; Phase 1 configuration and implementation remain pending. Update after observed results, then commit and push. It is an index, not a replacement for Jira specifications or approvals. Use a private register instead if these identifiers should not appear in this repository.
 
 ## Resource register — no credentials or financial data
 
@@ -14,7 +14,8 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 | Application delivery policy | Applies to ynab-mcp: feature branches and PRs only; no direct pushes to main. Research progress updates may use main. |
 | Application initial state | GitHub-created README seed; commit de44eb5d7745a8b51b96eb9824be910f30baf362; no implementation code |
 | First-release scope | Agreed 2026-11-07: owner-only, read-only YNAB access to plans, accounts, categories, balances and transactions; writes deferred |
-| Application code review | Codex cloud automatic review selected; not configured or verified yet |
+| Application code review | Repository visible in Codex code review settings; Automatic review enabled and follows personal preferences. Personal automatic review is on, trigger On PR open (verified 2026-11-07). Subsequent-push trigger setup and actual PR review evidence remain pending. |
+| Application branch protection | Public repo and admin access verified; branch ruleset/classic protection controls available. Main is currently unprotected and no rulesets exist (verified 2026-11-07); enforce PR-only rules in Phase 1. |
 | Jira site / cloud ID | Existing personal site verified through browser and Atlassian plugin; Jira Free plan verified in Atlassian Administration on 2026-11-07. Keep identifiers in 1Password. |
 | Jira space/project key | YNAB — changed on the existing ynab-mcp project and verified after reload and through the Atlassian plugin on 2026-11-07. |
 | Intent/epic issue URL | Not created |
@@ -39,7 +40,7 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 
 ## Checkpoints
 
-- [ ] P0: Preflight and development machine verified.
+- [x] P0: Preflight and development machine verified on 2026-11-07. Configuration/enforcement and end-to-end service tests remain later checkpoints.
 - [ ] P1: Jira Free site/space and fields configured; separate GitHub repository exists.
 - [ ] P1-links: An actual issue opens its PR and commit; PR/commit opens the issue.
 - [ ] P2: First intent/spec/plan accepted with explicit revision evidence.
@@ -62,9 +63,10 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 - [x] 0.1 step 3: Jira project key YNAB agreed by user; applied to the existing project and independently verified on 2026-11-07.
 - [x] 0.1 step 4: owner-only, read-only first release agreed by user; writes deferred.
 - [x] 0.1 step 5: 1Password project entry saved (user confirmed).
-- [ ] 0.2: account and client eligibility checks complete.
+- [x] 0.2: account access and client eligibility checks complete; GitHub protection/review controls available. Actual PR enforcement and review evidence belong to Phase 1.
 - [x] 0.2 GitHub identity/access: connected user tzehon; public ynab-mcp owned by tzehon; admin and push permissions verified.
-- [ ] 0.2 GitHub protection/review configuration: not yet verified; configuration remains Phase 1.
+- [x] 0.2 GitHub protection/review availability: public repository with admin access; protection controls available; Codex repository review settings accessible with automatic review enabled.
+- [ ] Phase 1 branch protection: main currently unprotected and rulesets empty; require PRs and block force pushes/deletion, including administrator bypass where supported.
 - [x] 0.2 Jira access: user confirmed signup; browser and newly installed Atlassian plugin verified access to the existing ynab-mcp software project, with zero issues.
 - [x] 0.2 Jira subscription: Atlassian Administration billing page explicitly showed Jira on the Free plan with one user on 2026-11-07.
 - [x] 0.2 Railway access: existing workspace, Trial plan, usage/billing and Admin membership verified; zero active projects. No project or paid subscription created.
@@ -74,7 +76,7 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 - [x] 0.2 Auth0 account access: authenticated dashboard and one listed development tenant verified; application inventory contains two prior gateway-lab registrations. No YNAB-specific tenant/client/API configured.
 - [ ] Phase 3a Auth0 tenant selection: assess existing application impact before reuse; prefer isolation if tenant-wide changes affect other projects. Do not reuse the gateway API/client registrations automatically.
 - [x] Phase 1 repository creation brought forward at user request: public ynab-mcp exists with README seed.
-- [ ] Phase 1 review setup: Codex cloud integration enabled and review of a real PR observed.
+- [ ] Phase 1 review setup: automatic review is enabled and follows personal On PR open preferences; configure coverage for subsequent pushes and observe review of a real PR at its current head SHA.
 - [x] 0.3: Git, GitHub CLI, Node and npm version checks passed; Codex already checked. GitHub CLI authenticated as intended owner with normal credential/network access. User-approved Git identity applied and verified locally in research and ynab-mcp.
 - [x] Application clone brought forward for Git identity setup: HTTPS clone succeeded; SSH attempt stalled and was stopped. No global protocol change or application push.
 - [x] 0.4: correct research fetch/push remote and clean main checkout verified; `git pull --ff-only` succeeded (already up to date) on 2026-11-07. README, progress and resume instructions reviewed; new-machine identity and pre-implementation resume steps clarified. This is not a second-machine MCP test.
@@ -84,13 +86,13 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 
 Chapter checkpoint mapping: J1–J3/G1 establish P1; G2 is completed at C6 and establishes P1-links. C1–C4 establish P2. C5–C6 describe the repeating implementation/review cycle. RD-01–RD-06 establish P4 and contribute to P3-auth; Chapter 05 establishes both client checkpoints before RD-07 enables P5-live. RD-08 plus the recovery procedure establishes P6-recovery.
 
-- Last updated (date/time/time zone): 2026-11-07 12:58 Asia/Singapore
-- Current phase/checkpoint: P0 / 0.5 complete — credential/configuration storage map documented; remaining GitHub protection/review availability check next
+- Last updated (date/time/time zone): 2026-11-07 13:00 Asia/Singapore
+- Current phase/checkpoint: P0 complete — proceed to Phase 1 using the existing Jira site/project and public GitHub repository
 - Current Jira issue + approved revision: none
 - Current app branch/PR and commit: main at de44eb5d7745a8b51b96eb9824be910f30baf362 (GitHub initialization only); no application PR yet
-- Last observed successful check: Reviewed authentication, deployment and client instructions against the agreed private-register policy; added a portable storage map distinguishing host-local Codex setup from account-side ChatGPT setup
-- Blocker or decision needed: GitHub protection/review check remains outstanding. Railway trial is time-limited; recheck before deployment. No local-tools blocker.
-- Next concrete action: Verify GitHub branch-protection/ruleset availability and Codex cloud review access for the existing public application repository. Record current configuration separately from availability; Phase 1 applies and tests the PR-only workflow.
+- Last observed successful check: GitHub API confirmed public repo/admin access, unprotected main and no rulesets; browser exposed protection controls. Codex settings listed ynab-mcp with automatic review enabled, inheriting personal On PR open trigger.
+- Blocker or decision needed: No Phase 0 blocker. Phase 1 must enforce PR-only protection and verify actual reviews; later-push reviews are not established by the current On PR open trigger. Recheck Railway trial before deployment.
+- Next concrete action: Begin Phase 1.2 with the existing YNAB Jira project: inspect project management type, Task/Bug work types and existing fields, then configure Spec, Plan and Acceptance criteria without duplicates. Existing site/signup/repository creation steps must not be repeated.
 - Where evidence lives (links only; redact before sharing): https://github.com/tzehon/ynab-mcp and https://github.com/tzehon/research/pull/12
 
 ## Decision log
@@ -115,3 +117,4 @@ Record links to decisions in Jira, not duplicated specifications.
 | 2026-11-07 | User selected GitHub name and no-reply email in guided chat | Applied repository-local author identity to research and the new local ynab-mcp clone. Global identity preserved; future machines must repeat this local configuration. |
 | 2026-11-07 | Phase 0.4 refresh verified in guided chat | Existing research checkout refreshed successfully with --ff-only. Resume from recorded state; reapply local Git identity after cloning. Second-machine hosted MCP verification remains a later checkpoint. |
 | 2026-11-07 | Phase 0.5 design review in guided chat | Documented per-machine login/configuration, account-side ChatGPT connection, 1Password register and runtime credential destinations. This review does not establish that runtime secrets have been provisioned. |
+| 2026-11-07 | Live GitHub/Codex preflight verification in guided chat | Phase 0 complete. Protection controls and review access exist; main remains unprotected. Automatic review is on with inherited On PR open trigger; Phase 1 must enforce PR delivery and verify current-revision reviews. |
