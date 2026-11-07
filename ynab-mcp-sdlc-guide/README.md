@@ -2,7 +2,7 @@
 
 Build a personal YNAB MCP server in a **separate GitHub repository**, host it on Railway, and connect it to Codex and ChatGPT. Use Jira as the authoritative record for requirements and decisions, with two-way links to implementation in GitHub.
 
-**Status: planning documentation only.** This folder does not contain an implemented server. Writing this guide has not created a Jira site, application repository, Auth0 resources, Railway project, or client connection. Examples such as `YNAB-123` and `tzehon/ynab-mcp` are proposed names, not evidence that resources exist. Sources were checked on **6 November 2026**; verify changing UI labels, eligibility, prices and SDK versions when you execute a phase.
+**Status: planning documentation only.** This folder does not contain an implemented server. The public application repository was created during guided setup on 7 November 2026 with a minimal README. Jira, Auth0, Railway deployment and client connection checkpoints remain unverified; follow PROGRESS.md for current execution state. Ticket identifiers such as `YNAB-123` remain examples until Jira assigns actual issues. Sources were checked on **6 November 2026**; verify changing UI labels, eligibility, prices and SDK versions when you execute a phase.
 
 ## Start here
 
@@ -26,7 +26,7 @@ Phases 3a–5 have one intentional loop: create the Railway domain using fixture
 
 ## Agreed repository workflow
 
-On 7 November 2026, the owner selected **public `tzehon/ynab-mcp`**, with all changes submitted through feature branches and pull requests. **Do not push directly to `main`.** Configure Codex cloud automatic code review before the first implementation PR, and verify review of the latest revision before merging. Account-specific setup details and credentials stay in 1Password. The repository and review integration have not yet been created/configured.
+On 7 November 2026, the owner selected **public `tzehon/ynab-mcp`**, with all changes submitted through feature branches and pull requests. **Do not push directly to `main`.** Configure Codex cloud automatic code review before the first implementation PR, and verify review of the latest revision before merging. Account-specific setup details and credentials stay in 1Password. The public repository now exists with its GitHub-created README seed; Codex cloud review and branch protection still need configuration and verification. This PR-only policy applies to ynab-mcp; research progress updates may be pushed to main.
 
 ## Recommended first release
 
