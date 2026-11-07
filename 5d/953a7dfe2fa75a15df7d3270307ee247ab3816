@@ -1,0 +1,25 @@
+ynab-mcp-sdlc-guide/templates/AGENTS.md
+  s_eb80e8fdbdac14::t_1724fcada108fc 20
+ynab-mcp-sdlc-guide/PROGRESS.md
+  s_eb80e8fdbdac14::t_1724fcada108fc 3,14,22,26,36,47,105,107,127-130,136-143,179
+ynab-mcp-sdlc-guide/01-jira-and-github.md
+  s_eb80e8fdbdac14::t_1724fcada108fc 178,184,188,191
+ynab-mcp-sdlc-guide/02-codex-workflow.md
+  s_eb80e8fdbdac14::t_1724fcada108fc 137,152-154
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5d953a7dfe2fa75a15df7d3270307ee247ab3816",
+  "prompts": {},
+  "sessions": {
+    "s_eb80e8fdbdac14": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}
