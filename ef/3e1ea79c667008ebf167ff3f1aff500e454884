@@ -1,0 +1,29 @@
+ynab-mcp-sdlc-guide/01-jira-and-github.md
+  s_7d16c3836a0910::t_929f4f8a985596 49
+ynab-mcp-sdlc-guide/README.md
+  s_7d16c3836a0910::t_929f4f8a985596 9
+ynab-mcp-sdlc-guide/templates/AGENTS.md
+  s_7d16c3836a0910::t_929f4f8a985596 22-23
+ynab-mcp-sdlc-guide/02-codex-workflow.md
+  s_7d16c3836a0910::t_929f4f8a985596 156-176
+ynab-mcp-sdlc-guide/PROGRESS.md
+  s_7d16c3836a0910::t_929f4f8a985596 161-167
+ynab-mcp-sdlc-guide/AGENTS.md
+  s_7d16c3836a0910::t_929f4f8a985596 1-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ef3e1ea79c667008ebf167ff3f1aff500e454884",
+  "prompts": {},
+  "sessions": {
+    "s_7d16c3836a0910": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a1b555-1452-7740-a80e-7935d12a8228",
+        "model": "unknown"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}
