@@ -1,0 +1,14 @@
+ynab-mcp-sdlc-guide/PROGRESS.md
+  h_60534644ebf874 3,22,173-174,186-193,255-256
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3aaac45fbbca463e49b2b161ffe05920a84dd20c",
+  "prompts": {},
+  "humans": {
+    "h_60534644ebf874": {
+      "author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}
