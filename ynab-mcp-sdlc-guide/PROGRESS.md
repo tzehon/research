@@ -8,7 +8,7 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 | --- | --- |
 | Guide verified against provider docs | 2026-11-06 |
 | Research repository visibility | Public; verified through GitHub on 2026-11-07 |
-| Progress/identifier storage policy | Pending user decision; account identifiers and credentials not recorded |
+| Progress/identifier storage policy | Agreed 2026-11-07: generic progress in this public file; account-specific identifiers, deployment configuration and credentials in 1Password |
 | Application GitHub owner/name | Proposed: `tzehon/ynab-mcp`; not created by this guide |
 | Application repo URL / visibility | Not verified |
 | Jira site / cloud ID | Not created or verified |
@@ -20,7 +20,7 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 | Auth0 tenant / issuer / API audience | Not configured |
 | Auth0 client registration route | Planned: separate explicitly registered clients; see Phase 3a |
 | Client application IDs (non-secret) | Not configured |
-| Private identity/secret register item name | Not configured |
+| Private identity/secret register item name | 1Password selected; project entry not yet created/confirmed (step 0.1.5) |
 | Railway workspace / project ID / environment / service ID | Existing account; no project selected |
 | Railway service URL / exact MCP URL | Not configured |
 | Tested Node / npm / SDK / Codex versions | Not recorded |
@@ -49,7 +49,7 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 
 - [x] Guide and progress register read on this machine.
 - [x] Current research repository visibility verified: public.
-- [ ] 0.1 step 1: progress/private identifier storage policy agreed.
+- [x] 0.1 step 1: generic progress stays here; private setup details go in 1Password (user confirmed).
 - [ ] 0.1 step 2: application repository name and visibility agreed.
 - [ ] 0.1 step 3: proposed Jira key agreed.
 - [ ] 0.1 step 4: personal read-only first release agreed.
@@ -63,13 +63,13 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 
 Chapter checkpoint mapping: J1–J3/G1 establish P1; G2 is completed at C6 and establishes P1-links. C1–C4 establish P2. C5–C6 describe the repeating implementation/review cycle. RD-01–RD-06 establish P4 and contribute to P3-auth; Chapter 05 establishes both client checkpoints before RD-07 enables P5-live. RD-08 plus the recovery procedure establishes P6-recovery.
 
-- Last updated (date/time/time zone): 2026-11-07 10:29 Asia/Singapore
-- Current phase/checkpoint: P0 / 0.1 step 1 — choose progress and private identifier storage
+- Last updated (date/time/time zone): 2026-11-07 10:30 Asia/Singapore
+- Current phase/checkpoint: P0 / 0.1 step 2 — choose application repository name and visibility
 - Current Jira issue + approved revision: none
 - Current app branch/PR and commit: none
-- Last observed successful check: guide available locally; research checkout clean and synced before this update; GitHub confirms the research repository is public
-- Blocker or decision needed: choose whether to keep generic progress here and account-specific identifiers in a private register
-- Next concrete action: agree on the register storage policy; then confirm the proposed application repository name/visibility
+- Last observed successful check: user confirmed the public-progress/private-details policy and selected 1Password; no project entry has been verified
+- Blocker or decision needed: confirm the proposed separate application repository name and private visibility
+- Next concrete action: confirm proposed tzehon/ynab-mcp as a private repository; creation remains Phase 1
 - Where evidence lives (links only; redact before sharing): https://github.com/tzehon/research (repository visibility verified via GitHub connector)
 
 ## Decision log
@@ -78,4 +78,4 @@ Record links to decisions in Jira, not duplicated specifications.
 
 | Date | Jira decision link | Consequence for setup |
 | --- | --- | --- |
-| Not started | — | — |
+| 2026-11-07 | Pre-Jira setup decision confirmed in guided chat | Keep generic progress public; use 1Password for private setup details. Project entry creation remains pending. |
