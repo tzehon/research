@@ -12,6 +12,9 @@ Copy this file into the new application's root and replace placeholders after th
 
 ## Delivery and traceability
 
+- The application repository is public. Push changes only to feature branches and open/update PRs targeting main. Never push directly to main, including for documentation or bootstrap code.
+- Use Codex cloud review on PRs. After new commits, verify a review of the latest revision; request a fresh review if needed. Address findings and passing checks before the user explicitly merges. Do not auto-merge by default.
+
 - Branch: YNAB-123-short-description; commit and PR title: YNAB-123: imperative summary.
 - PR description includes the full Jira URL, approved revision, acceptance-criterion evidence and release implications.
 - Preserve issue keys in final merged commits. A PR merge alone does not close a ticket that still has implementation, deployment or acceptance work.
@@ -38,7 +41,7 @@ Copy this file into the new application's root and replace placeholders after th
 
 Keep this list aligned with package.json. Do not report an unavailable script as a passed check.
 
-## Review
+## Code Review Rules
 
 - Check the approved Jira criteria, correctness, authorization, data handling and deployment consequences.
 - Test edits are allowed when justified. Flag weakened assertions, skipped checks and changed expectations that conceal a defect.

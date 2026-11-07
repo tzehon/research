@@ -24,6 +24,10 @@ Build a personal YNAB MCP server in a **separate GitHub repository**, host it on
 
 Phases 3a–5 have one intentional loop: create the Railway domain using fixture mode, register that exact URL and the client callbacks with Auth0, then complete authentication testing. Do not attach a real YNAB token until the public endpoint rejects unauthorized access and both clients pass the fixture checks.
 
+## Agreed repository workflow
+
+On 7 November 2026, the owner selected **public `tzehon/ynab-mcp`**, with all changes submitted through feature branches and pull requests. **Do not push directly to `main`.** Configure Codex cloud automatic code review before the first implementation PR, and verify review of the latest revision before merging. Account-specific setup details and credentials stay in 1Password. The repository and review integration have not yet been created/configured.
+
 ## Recommended first release
 
 - One owner, one allowlisted identity, one hosted service, read-only YNAB tools.
