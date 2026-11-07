@@ -67,7 +67,8 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 - [x] 0.2 Railway access: existing workspace, Trial plan, usage/billing and Admin membership verified; zero active projects. No project or paid subscription created.
 - [x] 0.2 YNAB access: authenticated Developer Settings page opened on 2026-11-07; Personal Access Tokens section visible. Eligibility only; no token generated and no financial data read.
 - [x] 0.2 Codex access: CLI 0.163.0 reports logged in using ChatGPT; desktop 26.1103.41825 reports up to date. Installed CLI help confirms Streamable HTTP MCP configuration and OAuth login support, including explicit client ID. No YNAB server connection tested yet.
-- [ ] 0.2 ChatGPT eligibility: verify Add custom MCP server is available in the intended account/workspace.
+- [x] 0.2 ChatGPT eligibility: signed-in Plugins → Add → Add custom MCP server form opened on 2026-11-07, with Server URL and OAuth options. No server registered; actual authentication/connectivity remains untested.
+- [ ] 0.2 Auth0 account/tenant: inspect existing access and identify whether a suitable tenant exists; defer new tenant/application setup to Phase 3a.
 - [x] Phase 1 repository creation brought forward at user request: public ynab-mcp exists with README seed.
 - [ ] Phase 1 review setup: Codex cloud integration enabled and review of a real PR observed.
 - [ ] 0.3: local tools and Git identity verified.
@@ -78,13 +79,13 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 
 Chapter checkpoint mapping: J1–J3/G1 establish P1; G2 is completed at C6 and establishes P1-links. C1–C4 establish P2. C5–C6 describe the repeating implementation/review cycle. RD-01–RD-06 establish P4 and contribute to P3-auth; Chapter 05 establishes both client checkpoints before RD-07 enables P5-live. RD-08 plus the recovery procedure establishes P6-recovery.
 
-- Last updated (date/time/time zone): 2026-11-07 12:18 Asia/Singapore
-- Current phase/checkpoint: P0 / 0.2 — Codex client eligibility verified; ChatGPT custom MCP eligibility next
+- Last updated (date/time/time zone): 2026-11-07 12:21 Asia/Singapore
+- Current phase/checkpoint: P0 / 0.2 — ChatGPT custom MCP eligibility verified; Auth0 account/tenant check next
 - Current Jira issue + approved revision: none
 - Current app branch/PR and commit: main at de44eb5d7745a8b51b96eb9824be910f30baf362 (GitHub initialization only); no application PR yet
-- Last observed successful check: Codex desktop updater reported up_to_date; CLI version and ChatGPT login status succeeded; mcp add/login help confirmed the required configuration capabilities
+- Last observed successful check: ChatGPT Plugins Add menu exposed Add custom MCP server; its setup form opened with Server URL and OAuth authentication options
 - Blocker or decision needed: Railway trial is time-limited; recheck plan and remaining credits before deployment. Remaining account/client eligibility checks are pending.
-- Next concrete action: Open ChatGPT Plugins and verify Add custom MCP server is available in the intended account/workspace. Inspect eligibility only; server registration and authentication tests come later.
+- Next concrete action: Inspect existing Auth0 account/tenant access and determine whether a suitable tenant exists. Record generic readiness only; keep tenant identifiers in 1Password and defer configuration to Phase 3a.
 - Where evidence lives (links only; redact before sharing): https://github.com/tzehon/ynab-mcp and https://github.com/tzehon/research/pull/12
 
 ## Decision log
@@ -104,3 +105,4 @@ Record links to decisions in Jira, not duplicated specifications.
 | 2026-11-07 | Live Railway account verification in guided chat | Existing workspace is accessible with Admin role; Trial plan and usage checked. Reuse this workspace and recheck hosting eligibility before deployment. |
 | 2026-11-07 | Live YNAB eligibility verification in guided chat | Authenticated Developer Settings access confirmed. Token creation remains deferred to the later credential setup step. |
 | 2026-11-07 | Local Codex client verification in guided chat | Installed CLI is signed in through ChatGPT and exposes Streamable HTTP MCP plus OAuth configuration. Desktop updater reports up to date; actual YNAB connectivity remains untested. |
+| 2026-11-07 | Live ChatGPT eligibility verification in guided chat | Custom MCP server setup form is available with OAuth support. Dual-client preflight eligibility is established; deployed authentication and tool calls still require testing. |
