@@ -48,6 +48,15 @@ Idea → Spec review → Plan review → Ready to build
 
 Keep Idea through Ready to build in the To do category; In progress through Ready to release in In progress; only Done in Done. You may group several statuses into one board column. Add a route back to the relevant review stage when scope changes.
 
+For an existing shared workflow, use this sequence (verified in the UI on 7 November 2026):
+
+1. Add the missing statuses with the categories above. Select **Allow transitions from any status** if using this guide's flexible review process.
+2. Select the initial **To Do** status and use **Replace** to create **Idea** in the To do category. Replacement keeps the original status available to other workflows; renaming a shared status can affect them. Do not add a separate Idea node first if the replacement picker excludes statuses already in the draft.
+3. Select **Update workflow** to open **Save workflow for selected work types**. Keep only **Task** and **Bug** selected. This scope selection precedes the final publication action.
+4. Select **Next**, check the migration from **To Do** to **Idea**, then publish with **Update workflow**. Existing Task/Bug items may take a moment to migrate. A migration does not record approval.
+5. On the board, open **More board view actions → Configure columns**. Map every new status out of **Hidden statuses**. Create and order the eight columns shown above; the Idea column can also hold the original To Do status for other work types. Publish the mapping separately.
+6. Verify the board and read back statuses per work type and board configuration through the Atlassian plugin. Confirm Task/Bug have eight statuses, other work types retain their original statuses, and no Task/Bug stage is hidden.
+
 Use these explicit gates:
 
 | Gate | Human decision | Result |

@@ -1,6 +1,6 @@
 # Progress and resource register
 
-Guided execution started on 7 November 2026. Phase 0 preflight and Phase 1.2 Jira fields are complete; workflow, delivery configuration and implementation remain pending. Update after observed results, then commit and push. It is an index, not a replacement for Jira specifications or approvals. Use a private register instead if these identifiers should not appear in this repository.
+Guided execution started on 7 November 2026. Phase 0 preflight, Phase 1.2 Jira fields and Phase 1.3 workflow/board configuration are complete; formal intent approval, delivery configuration and implementation remain pending. Update after observed results, then commit and push. It is an index, not a replacement for Jira specifications or approvals. Use a private register instead if these identifiers should not appear in this repository.
 
 ## Resource register — no credentials or financial data
 
@@ -89,20 +89,24 @@ Guided execution started on 7 November 2026. Phase 0 preflight and Phase 1.2 Jir
 - [x] 1.2: Created one project-scoped rich-text Paragraph field each for Spec, Plan and Acceptance criteria. Added the same fields after Description on both Task and Bug; saved layouts persisted after reload and field availability was independently verified through Jira metadata.
 - [x] J2: Created the planned bootstrap Task, “Set up the YNAB MCP repository and delivery workflow”, after confirming the project had no issues. Description and all three custom fields contain draft-r1 content; values survived browser reload and an independent plugin read. No formal human approval was recorded.
 - [ ] Private register: save the verified custom-field mapping and bootstrap issue URL in 1Password. Rediscover from the existing issue when resuming; never guess IDs or recreate fields.
-- [ ] J3: Configure Task/Bug workflow stages and board mapping, then capture explicit human intent approval. Bootstrap ticket creation was brought forward for the J2 persistence check; do not create it again.
+- [x] 1.3 workflow configuration: published the eight-stage workflow for Task and Bug only. Idea, Spec review, Plan review and Ready to build use the To do category; In Progress, In Review and Ready to release use In progress; Done uses Done. New Task/Bug items start in Idea. Any-status transitions permit returning to review; formal approvals are working agreements, not enforced transition gates.
+- [x] 1.3 scope verification: plugin confirmed Epic, Subtask, Story and Feature retain their original four statuses. Replaced To Do within the Task/Bug workflow rather than renaming the shared status.
+- [x] 1.3 board configuration: published eight columns in the intended order. Every Task/Bug status is mapped. The Idea column also contains the existing To Do status for other work types. Plugin verified the saved column mapping and categories independently of the browser.
+- [x] Existing bootstrap Task migrated from To Do to Idea as part of workflow publication; plugin and board verified it remains visible. This migration is not an approval.
+- [ ] J3 intent approval: prepare a retrievable revision snapshot of the existing bootstrap ticket, then capture an explicit human intent decision. Draft spec/plan/AC remain unapproved. Do not create another bootstrap ticket.
 - [ ] Delivery configuration: enforce PR-only main protection, configure subsequent-push Codex reviews, and connect GitHub for Atlassian with scoped repository access.
 
 ## Session handoff
 
 Chapter checkpoint mapping: J1–J3/G1 establish P1; G2 is completed at C6 and establishes P1-links. C1–C4 establish P2. C5–C6 describe the repeating implementation/review cycle. RD-01–RD-06 establish P4 and contribute to P3-auth; Chapter 05 establishes both client checkpoints before RD-07 enables P5-live. RD-08 plus the recovery procedure establishes P6-recovery.
 
-- Last updated (date/time/time zone): 2026-11-07 13:06 Asia/Singapore
-- Current phase/checkpoint: Phase 1.2 / J2 complete; Phase 1.3 workflow stages next
-- Current Jira issue + approved revision: Bootstrap Task “Set up the YNAB MCP repository and delivery workflow” exists in YNAB; draft-r1 intent/spec/plan/AC, no approved revision. Discover its key and URL from Jira before work.
+- Last updated (date/time/time zone): 2026-11-07 13:25 Asia/Singapore
+- Current phase/checkpoint: Phase 1.3 workflow and board configured; J3 remains open for formal intent approval
+- Current Jira issue + approved revision: Bootstrap Task “Set up the YNAB MCP repository and delivery workflow” exists in YNAB, status Idea; draft-r1 intent/spec/plan/AC, no approved revision. Discover its key and URL from Jira before work.
 - Current app branch/PR and commit: main at de44eb5d7745a8b51b96eb9824be910f30baf362 (GitHub initialization only); no application PR yet
-- Last observed successful check: Task and Bug layouts persisted with Description, Spec, Plan and Acceptance criteria. All four populated bootstrap Task fields survived browser reload and an independent plugin read.
-- Blocker or decision needed: No field-configuration blocker. Workflow and approval records remain pending, as do GitHub PR enforcement, subsequent-push review coverage and integration. Private field mapping has not been saved to 1Password by the agent.
-- Next concrete action: Phase 1.3 — inspect and configure Task/Bug workflow stages and board columns using the existing project and bootstrap ticket. Keep draft content unapproved until an explicit human decision is captured.
+- Last observed successful check: Browser showed eight ordered board columns and the existing Task in Idea. Plugin confirmed Task/Bug statuses and categories, original statuses for the other four work types, complete board mapping, and the Task status Idea.
+- Blocker or decision needed: Workflow configuration is complete. Formal human intent approval remains pending, as do GitHub PR enforcement, subsequent-push review coverage and integration. Private field mapping has not been saved to 1Password by the agent.
+- Next concrete action: Finish J3 by preparing a timestamped revision snapshot of the existing bootstrap ticket and presenting its intent for an explicit human decision. Record the decision against that snapshot; do not infer approval from a status move or a generic proceed.
 - Where evidence lives (links only; redact before sharing): https://github.com/tzehon/ynab-mcp and https://github.com/tzehon/research/pull/12
 
 ## Decision log
@@ -129,3 +133,4 @@ Record links to decisions in Jira, not duplicated specifications.
 | 2026-11-07 | Phase 0.5 design review in guided chat | Documented per-machine login/configuration, account-side ChatGPT connection, 1Password register and runtime credential destinations. This review does not establish that runtime secrets have been provisioned. |
 | 2026-11-07 | Live GitHub/Codex preflight verification in guided chat | Phase 0 complete. Protection controls and review access exist; main remains unprotected. Automatic review is on with inherited On PR open trigger; Phase 1 must enforce PR delivery and verify current-revision reviews. |
 | 2026-11-07 | Jira fields and persistence verified in guided chat | J2 complete. Reuse the three project-scoped rich-text fields and existing draft bootstrap Task; workflow stages and formal intent approval remain next. |
+| 2026-11-07 | Workflow and board verified in guided chat | Eight stages applied only to Task and Bug; other work-type statuses preserved. All stages mapped to visible columns; bootstrap Task is in Idea. Formal intent approval remains pending. |
