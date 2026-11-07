@@ -1,0 +1,21 @@
+ynab-mcp-sdlc-guide/00-preflight.md
+  s_eb80e8fdbdac14::t_3770a69376bcde 79-96
+ynab-mcp-sdlc-guide/PROGRESS.md
+  s_eb80e8fdbdac14::t_3770a69376bcde 81,87-88,91,93,117
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8ef3dd79363414ae1ad5be4b731a627bb23a44d6",
+  "prompts": {},
+  "sessions": {
+    "s_eb80e8fdbdac14": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}
