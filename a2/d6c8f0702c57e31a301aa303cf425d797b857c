@@ -1,0 +1,21 @@
+ynab-mcp-sdlc-guide/01-jira-and-github.md
+  s_eb80e8fdbdac14::t_69754f1d5b4282 23,32-33,38,73
+ynab-mcp-sdlc-guide/PROGRESS.md
+  s_eb80e8fdbdac14::t_69754f1d5b4282 3,22-23,85-94,99-101,103-105,131
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a2d6c8f0702c57e31a301aa303cf425d797b857c",
+  "prompts": {},
+  "sessions": {
+    "s_eb80e8fdbdac14": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}
