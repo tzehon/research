@@ -21,7 +21,7 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 | Current implementation issue URL | Not created |
 | Spec / Plan / Acceptance criteria field IDs | Not discovered |
 | GitHub for Atlassian installation scope | Not configured |
-| Auth0 tenant / issuer / API audience | Not configured |
+| Auth0 tenant / issuer / API audience | Account access verified on 2026-11-07; one existing development tenant listed, with prior gateway-lab applications. YNAB tenant selection, issuer verification and API configuration deferred to Phase 3a; identifiers stay private. |
 | Auth0 client registration route | Planned: separate explicitly registered clients; see Phase 3a |
 | Client application IDs (non-secret) | Not configured |
 | Private identity/secret register item name | 1Password Secure Note: YNAB MCP deployment; saved per user confirmation on 2026-11-07; contents not inspected |
@@ -68,7 +68,8 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 - [x] 0.2 YNAB access: authenticated Developer Settings page opened on 2026-11-07; Personal Access Tokens section visible. Eligibility only; no token generated and no financial data read.
 - [x] 0.2 Codex access: CLI 0.163.0 reports logged in using ChatGPT; desktop 26.1103.41825 reports up to date. Installed CLI help confirms Streamable HTTP MCP configuration and OAuth login support, including explicit client ID. No YNAB server connection tested yet.
 - [x] 0.2 ChatGPT eligibility: signed-in Plugins → Add → Add custom MCP server form opened on 2026-11-07, with Server URL and OAuth options. No server registered; actual authentication/connectivity remains untested.
-- [ ] 0.2 Auth0 account/tenant: inspect existing access and identify whether a suitable tenant exists; defer new tenant/application setup to Phase 3a.
+- [x] 0.2 Auth0 account access: authenticated dashboard and one listed development tenant verified; application inventory contains two prior gateway-lab registrations. No YNAB-specific tenant/client/API configured.
+- [ ] Phase 3a Auth0 tenant selection: assess existing application impact before reuse; prefer isolation if tenant-wide changes affect other projects. Do not reuse the gateway API/client registrations automatically.
 - [x] Phase 1 repository creation brought forward at user request: public ynab-mcp exists with README seed.
 - [ ] Phase 1 review setup: Codex cloud integration enabled and review of a real PR observed.
 - [ ] 0.3: local tools and Git identity verified.
@@ -79,13 +80,13 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 
 Chapter checkpoint mapping: J1–J3/G1 establish P1; G2 is completed at C6 and establishes P1-links. C1–C4 establish P2. C5–C6 describe the repeating implementation/review cycle. RD-01–RD-06 establish P4 and contribute to P3-auth; Chapter 05 establishes both client checkpoints before RD-07 enables P5-live. RD-08 plus the recovery procedure establishes P6-recovery.
 
-- Last updated (date/time/time zone): 2026-11-07 12:21 Asia/Singapore
-- Current phase/checkpoint: P0 / 0.2 — ChatGPT custom MCP eligibility verified; Auth0 account/tenant check next
+- Last updated (date/time/time zone): 2026-11-07 12:48 Asia/Singapore
+- Current phase/checkpoint: P0 — account access checks recorded; local development tools next. GitHub protection/review check remains outstanding.
 - Current Jira issue + approved revision: none
 - Current app branch/PR and commit: main at de44eb5d7745a8b51b96eb9824be910f30baf362 (GitHub initialization only); no application PR yet
-- Last observed successful check: ChatGPT Plugins Add menu exposed Add custom MCP server; its setup form opened with Server URL and OAuth authentication options
+- Last observed successful check: Auth0 dashboard opened signed in; tenant picker listed one development tenant and its Applications page showed two gateway-lab registrations
 - Blocker or decision needed: Railway trial is time-limited; recheck plan and remaining credits before deployment. Remaining account/client eligibility checks are pending.
-- Next concrete action: Inspect existing Auth0 account/tenant access and determine whether a suitable tenant exists. Record generic readiness only; keep tenant identifiers in 1Password and defer configuration to Phase 3a.
+- Next concrete action: Run Phase 0.3 local Git, GitHub CLI, Node and npm checks and verify Git identity. Codex version/login/MCP capability already checked; preserve account-specific identity details privately.
 - Where evidence lives (links only; redact before sharing): https://github.com/tzehon/ynab-mcp and https://github.com/tzehon/research/pull/12
 
 ## Decision log
@@ -106,3 +107,4 @@ Record links to decisions in Jira, not duplicated specifications.
 | 2026-11-07 | Live YNAB eligibility verification in guided chat | Authenticated Developer Settings access confirmed. Token creation remains deferred to the later credential setup step. |
 | 2026-11-07 | Local Codex client verification in guided chat | Installed CLI is signed in through ChatGPT and exposes Streamable HTTP MCP plus OAuth configuration. Desktop updater reports up to date; actual YNAB connectivity remains untested. |
 | 2026-11-07 | Live ChatGPT eligibility verification in guided chat | Custom MCP server setup form is available with OAuth support. Dual-client preflight eligibility is established; deployed authentication and tool calls still require testing. |
+| 2026-11-07 | Live Auth0 access verification in guided chat | Existing development tenant access confirmed; prior gateway-lab applications remain present. Defer YNAB tenant selection and configuration to Phase 3a after reviewing shared-setting impact. |
