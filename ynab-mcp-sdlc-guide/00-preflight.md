@@ -5,7 +5,7 @@ Return to [the guide](README.md). Complete this chapter before creating paid res
 ## 0.1 Record the initial decisions
 
 1. Open [PROGRESS.md](PROGRESS.md). Decide whether its non-secret resource register is safe in the research repo's current visibility. Use a private register for identifiers you do not want public.
-2. Keep the proposed application repository name `ynab-mcp`, or record a replacement once. Default to private. This guide's `tzehon` owner comes from the research remote; verify the owner/account when creating the new repository.
+2. Use the agreed application repository name `ynab-mcp` with **Public** visibility. Changes go through feature branches and PRs with Codex cloud review; never push directly to `main`. This guide's `tzehon` owner comes from the research remote; verify the owner/account when creating the new repository.
 3. Keep proposed Jira key `YNAB`, or replace it consistently in templates and checks. Do not assume the first actual issue number will be 1.
 4. Confirm the first release is read-only and for your own account. Later writes are a separate accepted specification.
 5. Choose a secret manager you can access from every machine. Create an item named, for example, `YNAB MCP deployment`, initially containing only resource links and notes. Keep token values out of the progress file.
@@ -14,7 +14,7 @@ Return to [the guide](README.md). Complete this chapter before creating paid res
 
 | Service | Action now | Record |
 | --- | --- | --- |
-| GitHub | Sign in; confirm the intended owner and private-repo plan features | Owner, visibility decision, CI/branch protection availability |
+| GitHub | Sign in; confirm the intended owner and public-repo protection features | Owner, visibility decision, CI/branch protection availability |
 | Jira | If none exists, use the Free signup in Phase 1; avoid creating a second site if one already exists | Site URL and selected plan after signup |
 | Railway | Use your existing account; inspect workspace, plan, usage/billing and member permissions | Workspace name; no project yet |
 | YNAB | Sign in to the web app; confirm you can open Developer Settings | Eligibility only; no token in docs |

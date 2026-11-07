@@ -1,6 +1,6 @@
 # 1. Set up Jira and GitHub
 
-This chapter prepares the proposed private repository `tzehon/ynab-mcp` and a personal Jira Cloud Free project. It is a runbook, not evidence that either has been created. Check before every create step; resume existing resources rather than duplicating them. Documentation checked **6 November 2026**.
+This chapter prepares the agreed public repository `tzehon/ynab-mcp` and a personal Jira Cloud Free project. It is a runbook, not evidence that either has been created. Check before every create step; resume existing resources rather than duplicating them. Documentation checked **6 November 2026**.
 
 Jira now calls projects **spaces** and issues **work items** in some screens. Both wordings refer to the same objects below. `YNAB` is the proposed project key; choose the actual key once, then substitute it throughout this guide and the templates.
 
@@ -68,7 +68,7 @@ Decision: allow implementation planning. Open concerns: none.
 
 For plan approval, name the plan revision and approved spec/AC revisions. Copy the comment permalink for the PR. Jira records the commenter and time. A status move or a comment posted by an agent using your token does not independently prove a human approved it. These are personal working agreements, not tamper-proof or independently enforced approvals.
 
-Create the first Task: **Set up the YNAB MCP repository and delivery workflow**. Record the actual assigned key; `YNAB-1` below is an example. Give it ACs for repository privacy, instructions/template, meaningful checks, and bidirectional navigation. This issue covers the initial bootstrap commit and the first workflow PR.
+Create the first Task: **Set up the YNAB MCP repository and delivery workflow**. Record the actual assigned key; `YNAB-1` below is an example. Give it ACs for public visibility, PR-only delivery, Codex cloud review, instructions/template, meaningful checks, and bidirectional navigation. This issue covers the initial bootstrap commit and the first workflow PR.
 
 **Checkpoint J3:** The board shows the stages, the bootstrap ticket exists, and its intent is approved. Continue its spec and plan in Chapter 2 before substantive implementation.
 
@@ -86,44 +86,51 @@ If GitHub CLI is absent, install it from [the official CLI site](https://cli.git
 
 If the repository exists, confirm its owner and privacy and clone it into your chosen projects directory. Do not initialize over an existing checkout.
 
-If it does not exist, use GitHub **New repository**: owner `tzehon`, name `ynab-mcp`, **Private**. Leave automatic README, license and `.gitignore` initialization unchecked so the initial commit can carry the Jira key. Create the empty remote, then from your chosen parent directory run:
+If it does not exist, use GitHub **New repository**: owner `tzehon`, name `ynab-mcp`, **Public**. Select **Add a README** to establish the initial default branch. This is GitHub's minimal repository-creation seed, not a direct push of implementation code; a PR needs an existing base commit. Put no private identifiers in the seed. All subsequent content changes, including replacing that README and adding CI/instructions, go through a PR. Do not use the former direct-to-main bootstrap commands.
+
+Clone from your chosen parent directory:
 
 ```bash
 gh repo clone tzehon/ynab-mcp
 cd ynab-mcp
-```
-
-An empty-repository warning is expected. Do not run this over an existing directory. Before creating the first commit, set **repository-local** identity:
-
-```bash
 git config user.name 'YOUR_COMMIT_NAME'
 git config user.email 'YOUR_VERIFIED_OR_GITHUB_NOREPLY_EMAIL'
-git config --get user.name
-git config --get user.email
+git remote -v
+git status --short --branch
 ```
 
-Use actual values from your personal GitHub email settings. Git author identity and the authenticated GitHub account are separate. On a new machine, verify both again.
-
-For the minimal bootstrap, create `README.md` in your editor stating the project's purpose and Jira project URL. Review it, then run the following with the **actual** issue key substituted for `YNAB-123`:
+Use your actual Git identity. Confirm that the remote's default branch is `main`. Prepare the setup ticket's accepted plan in Chapter 2 before implementation. Then create a feature branch using its actual Jira key:
 
 ```bash
-git add README.md
-git commit -m "YNAB-123: Initialize YNAB MCP repository"
-git branch -M main
-git push -u origin main
+git switch -c YNAB-123-delivery-foundations
 ```
 
-These initialization commands are for the verified empty repo only. Record this one-time direct bootstrap in the ticket; subsequent work uses PRs. Do not copy private YNAB data, tokens or exported budgets into the README.
+After implementing and reviewing that planned change, stage only intended files, commit with the real key, and push the feature branch:
 
-**Checkpoint G1:** The remote is `tzehon/ynab-mcp`, visibility is Private, the local remote matches, and the bootstrap commit has the ticket key.
+```bash
+git commit -m "YNAB-123: Establish delivery workflow"
+git push -u origin YNAB-123-delivery-foundations
+```
 
-## 1.5 Set realistic solo review rules
+Open a PR targeting `main`, using the PR template and issue link. Never run `git push origin main`, including for documentation, fixes, or bootstrap application code. Fixes after review stay on the PR branch. Merge through GitHub after review and checks; do not enable automatic merging by default.
 
-For a private personal repository, protected branches require GitHub Pro or an applicable higher plan. If supported, add protection for `main`: require PRs and passing named CI checks; block force pushes/deletion and bypasses where available. Until CI has run, the check names may not be selectable. Return after the first successful workflow run. [GitHub branch protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches)
+**Checkpoint G1:** The remote is `tzehon/ynab-mcp`, visibility is Public, the local remote matches, and `main` has the minimal GitHub-created seed. The first implementation PR follows in Chapter 2.
 
-Do **not** require an approving review from yourself when you author the PR: GitHub forbids authors approving their own PRs. For a solo project, manually review and merge after checks; a second human reviewer can become a required gate later. A `CODEOWNERS` entry by itself is not independent review. [GitHub approval rules](https://docs.github.com/en/pull-requests/how-tos/review-pull-requests/approving-a-pull-request-with-required-reviews)
+## 1.5 Configure PR protection and Codex cloud review
 
-If staying on GitHub Free with this private repository, record that PR/CI discipline is manual rather than technically enforced. Also defer deployment gates: environment required reviewers on Free, Pro and Team are limited to public repositories. [Environment availability](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments)
+For this public repository, configure protection/rules for `main`: require PRs, disallow force pushes and deletion, apply to administrators where supported, and add passing named CI checks after the first workflow has run. Avoid routine bypasses. [GitHub branch protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches)
+
+Do not require your own approving review when you authored the PR. A solo workflow uses your review of the diff, Codex findings and CI, followed by an explicit GitHub merge. Codex cloud review is additional evidence; do not assume it satisfies a required human approval or automatically blocks merging. [GitHub approval rules](https://docs.github.com/en/pull-requests/how-tos/review-pull-requests/approving-a-pull-request-with-required-reviews)
+
+Before the first implementation PR:
+
+1. Connect the public `ynab-mcp` repository to Codex's GitHub integration and verify repository access.
+2. Open [Codex code review settings](https://chatgpt.com/settings/code-review), select the repository and enable automatic review under Review code.
+3. Check personal Automatic review preferences and Review trigger. Select the available setting covering your PRs and subsequent pushes if offered. Opening a PR is not sufficient without these settings.
+4. Put concise `## Code Review Rules` in root `AGENTS.md` through the first PR. Use the guide's template as a starting point.
+5. Open the implementation PR as ready for review. Confirm that a Codex review actually appears; check its reviewed revision after further commits. If a fresh review does not run, request `@codex review` in the PR and wait for the result.
+
+Record actual setup and first-review evidence before checking this off. Native cloud review is the selected first-release workflow; the separate API-backed Jira-aware reviewer in Chapter 2 is optional later work. [Official OpenAI review instructions](https://learn.chatgpt.com/docs/third-party/github)
 
 ## 1.6 Connect native traceability
 

@@ -147,17 +147,17 @@ Run the check when PRs open, synchronize, reopen **and when title/body are edite
 ## 2.6 Review, merge and close deliberately
 
 1. Open a PR using [the PR template](./templates/pull_request_template.md). Include the full Jira URL, exact approved revisions/snapshot and comment links, AC-to-test mapping, actual commands/results and known gaps. Set Jira **In review**.
-2. Request a separate Codex review session against the current diff **and** approved Jira content. Inspect its findings yourself. AI review does not substitute for deterministic checks or your decision.
+2. Wait for Codex cloud review on this PR, configured in Chapter 1. After further pushes, verify that the latest revision has been reviewed; request `@codex review` if a fresh review does not run. Separately compare the approved Jira content with the change: do not assume cloud review inherits your desktop Jira connection. Inspect findings yourself; review does not replace CI or your merge decision.
 3. Fix findings, rerun affected checks, then review the final PR head SHA. Record the human review decision. On a solo PR you authored, manually merging is the decision; GitHub will not let you submit an approving review of your own PR.
 4. Confirm the final squash message includes the Jira key, merge, and check that Jira's development view shows the merged PR and new commit.
 5. Set **Ready to release**. Mark **Done** only when all required PRs and ACs are complete and the result is usable. For setup/documentation work, merge plus verification may suffice; for shipped server behavior, record the applicable release or local-install smoke test. Do not auto-close on the first merged PR.
 
 **Checkpoint C6:** Ticket → PR/commit and PR/commit → ticket work; evidence identifies the reviewed and delivered revisions.
 
-## 2.7 Resume safely and defer unattended review
+## 2.7 Resume safely and optionally extend Jira-aware review
 
 On returning later, read the issue, latest approval, working-tree status, branch and existing PR before changing anything. Ask: “Which checkpoint is proven complete, what changed since then, and what is the next unfinished step?” Do not recreate tickets, branches or connections because the chat is new. Authentication is rechecked on every machine; secrets are never moved through Git.
 
-Only after several successful issues should you add unattended Codex review. OpenAI documents `openai/codex-action` and `codex exec` for CI. A GitHub runner needs its **own configured OpenAI API credential and usage budget**, GitHub permissions and Jira read access; it does not inherit desktop sign-in. [OpenAI GitHub Action documentation](https://learn.chatgpt.com/docs/github-action)
+Native Codex cloud review is required by this project workflow from the first implementation PR. After several successful issues, you may add a separate custom Jira-aware CI reviewer. OpenAI documents `openai/codex-action` and `codex exec` for CI. A GitHub runner needs its **own configured OpenAI API credential and usage budget**, GitHub permissions and Jira read access; it does not inherit desktop sign-in. [OpenAI GitHub Action documentation](https://learn.chatgpt.com/docs/github-action)
 
 Start with a read-only reviewer. Fetch and sanitize the approved Jira snapshot using a trusted deterministic step, pass that evidence to the reviewer, and post findings in a separate minimally privileged step. Keep secrets away from untrusted PR code. Pin the chosen action version/commit, test on a deliberately flawed PR, and observe errors and costs before making review routine. Jira-triggered implementation and automatic status transitions remain later work, not prerequisites for this pilot.
