@@ -17,6 +17,7 @@ Copy this file into the new application's root and replace placeholders after th
 
 - Branch: YNAB-123-short-description; commit and PR title: YNAB-123: imperative summary.
 - PR description includes the full Jira URL, approved revision, acceptance-criterion evidence and release implications.
+- After explicit owner merge approval, use rebase merging and preserve issue keys in every delivered commit. Verify delivered contents and Jira links, delete the merged remote/local branches, and leave a clean, fast-forwarded main checkout. Do not discard unique local work.
 - Preserve issue keys in final merged commits. A PR merge alone does not close a ticket that still has implementation, deployment or acceptance work.
 - Use the actual issue key. Do not fabricate issue links, approvals, test results or deployment status.
 - Prefer one small coherent PR per implementation issue; explicitly list related issues for cross-cutting work.

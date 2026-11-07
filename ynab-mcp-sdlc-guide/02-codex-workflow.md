@@ -134,7 +134,7 @@ The guide deliberately does not include a token-dependent workflow pretending to
 | Issue URL | Matches that key on the configured Jira site |
 | Jira lookup | Issue exists, belongs to the intended project and is accessible |
 | Approval evidence | Required fields, approved snapshot and decision links exist; reviewed field content matches the approved revision |
-| Commit messages | Each pushed development commit carries its relevant key; inspect final squash message manually too |
+| Commit messages | Each pushed development commit carries its relevant key; verify every delivered rebased commit retains it |
 | AC evidence | Every current AC ID has an executable check or an explicit manual result |
 | API failure | Reports authentication/network/unavailable distinctly; never treats failed verification as success |
 
@@ -149,8 +149,9 @@ Run the check when PRs open, synchronize, reopen **and when title/body are edite
 1. Open a PR using [the PR template](./templates/pull_request_template.md). Include the full Jira URL, exact approved revisions/snapshot and comment links, AC-to-test mapping, actual commands/results and known gaps. Set Jira **In review**.
 2. Wait for Codex cloud review on this PR, configured in Chapter 1. After further pushes, verify that the latest revision has been reviewed; request `@codex review` if a fresh review does not run. Separately compare the approved Jira content with the change: do not assume cloud review inherits your desktop Jira connection. Inspect findings yourself; review does not replace CI or your merge decision.
 3. Fix findings, rerun affected checks, then review the final PR head SHA. Record the human review decision. On a solo PR you authored, manually merging is the decision; GitHub will not let you submit an approving review of your own PR.
-4. Confirm the final squash message includes the Jira key, merge, and check that Jira's development view shows the merged PR and new commit.
-5. Set **Ready to release**. Mark **Done** only when all required PRs and ACs are complete and the result is usable. For setup/documentation work, merge plus verification may suffice; for shipped server behavior, record the applicable release or local-install smoke test. Do not auto-close on the first merged PR.
+4. Use **Rebase and merge** after the owner’s explicit decision, guarding the operation with the reviewed head SHA. Verify all delivered commits retain their Jira key and that the delivered tree matches the reviewed tree. Check Jira’s Development view shows the merged PR and new commits; exercise delivered commit → associated PR → Jira navigation. Rebase changes SHAs: record both reviewed and delivered revisions.
+5. Confirm the merged remote branch was automatically deleted. With a clean local checkout, fetch with pruning, switch to main and fast-forward only. Compare the old branch’s patches/tree with delivered main before deleting the local feature branch. If Git rejects ordinary branch deletion because rebasing changed SHAs, use forced local branch deletion only after proving all changes were delivered and no unique work would be lost. Never force-update main or delete unrelated branches.
+6. Set **Ready to release**. Mark **Done** only when all required PRs and ACs are complete and the result is usable. For setup/documentation work, merge plus verification may suffice; for shipped server behavior, record the applicable release or local-install smoke test. Do not auto-close on the first merged PR.
 
 **Checkpoint C6:** Ticket → PR/commit and PR/commit → ticket work; evidence identifies the reviewed and delivered revisions.
 
