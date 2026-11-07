@@ -1,0 +1,19 @@
+ynab-mcp-sdlc-guide/PROGRESS.md
+  s_1d643f41a6b8a6::t_7645b9a502a997 18-19,64-65,76-77,80-82,96
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6f4bf2beb2ce38b2cd07159af26725e6c9fcfbed",
+  "prompts": {},
+  "sessions": {
+    "s_1d643f41a6b8a6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "unknown"
+      },
+      "human_author": "tth <xyz@foo.com>"
+    }
+  }
+}
