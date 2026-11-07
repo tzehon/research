@@ -15,8 +15,8 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 | Application initial state | GitHub-created README seed; commit de44eb5d7745a8b51b96eb9824be910f30baf362; no implementation code |
 | First-release scope | Agreed 2026-11-07: owner-only, read-only YNAB access to plans, accounts, categories, balances and transactions; writes deferred |
 | Application code review | Codex cloud automatic review selected; not configured or verified yet |
-| Jira site / cloud ID | Not created or verified |
-| Jira space/project key | YNAB agreed on 2026-11-07; Jira project not yet created |
+| Jira site / cloud ID | Existing personal site verified through browser and Atlassian plugin on 2026-11-07; keep identifiers in 1Password. Free subscription not yet verified. |
+| Jira space/project key | Existing ynab-mcp project verified; current key differs from agreed YNAB. Key change pending; do not create a duplicate project. |
 | Intent/epic issue URL | Not created |
 | Current implementation issue URL | Not created |
 | Spec / Plan / Acceptance criteria field IDs | Not discovered |
@@ -61,7 +61,8 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 - [ ] 0.2: account and client eligibility checks complete.
 - [x] 0.2 GitHub identity/access: connected user tzehon; public ynab-mcp owned by tzehon; admin and push permissions verified.
 - [ ] 0.2 GitHub protection/review configuration: not yet verified; configuration remains Phase 1.
-- [ ] 0.2 Jira access: existing personal site/account not yet confirmed; connector site lookup unavailable in this session.
+- [x] 0.2 Jira access: user confirmed signup; browser and newly installed Atlassian plugin verified access to the existing ynab-mcp software project, with zero issues.
+- [ ] 0.2 Jira subscription: verify Free plan; account access alone does not establish the subscription tier.
 - [x] Phase 1 repository creation brought forward at user request: public ynab-mcp exists with README seed.
 - [ ] Phase 1 review setup: Codex cloud integration enabled and review of a real PR observed.
 - [ ] 0.3: local tools and Git identity verified.
@@ -72,13 +73,13 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 
 Chapter checkpoint mapping: J1–J3/G1 establish P1; G2 is completed at C6 and establishes P1-links. C1–C4 establish P2. C5–C6 describe the repeating implementation/review cycle. RD-01–RD-06 establish P4 and contribute to P3-auth; Chapter 05 establishes both client checkpoints before RD-07 enables P5-live. RD-08 plus the recovery procedure establishes P6-recovery.
 
-- Last updated (date/time/time zone): 2026-11-07 10:39 Asia/Singapore
-- Current phase/checkpoint: P0 / 0.2 — account access; next verify personal Jira account/site
+- Last updated (date/time/time zone): 2026-11-07 10:42 Asia/Singapore
+- Current phase/checkpoint: P0 / 0.2 — Jira access verified; align existing project key before continuing account eligibility checks
 - Current Jira issue + approved revision: none
 - Current app branch/PR and commit: main at de44eb5d7745a8b51b96eb9824be910f30baf362 (GitHub initialization only); no application PR yet
-- Last observed successful check: user confirmed the 1Password entry is saved; GitHub connector verified tzehon identity and admin/push access to public ynab-mcp
-- Blocker or decision needed: confirm whether an appropriate personal Jira site/account already exists; connector site lookup returned unavailable-tool error, which does not establish account absence
-- Next concrete action: identify existing personal Jira access or proceed to Jira Free signup; do not create a duplicate site
+- Last observed successful check: Atlassian plugin successfully listed the existing ynab-mcp software project and reported zero issues; browser confirmed Space settings exposes an editable key
+- Blocker or decision needed: existing project key differs from agreed YNAB; Free subscription remains unverified. Earlier connector error is resolved after plugin installation.
+- Next concrete action: in the existing project, open Space settings → Details, change Space key to YNAB and save; verify through the plugin after user confirmation. Do not create another site or project.
 - Where evidence lives (links only; redact before sharing): https://github.com/tzehon/ynab-mcp and https://github.com/tzehon/research/pull/12
 
 ## Decision log
@@ -92,3 +93,4 @@ Record links to decisions in Jira, not duplicated specifications.
 | 2026-11-07 | Pre-Jira setup decision confirmed in guided chat | Jira key YNAB agreed. Created public ynab-mcp ahead of Phase 1 at user request. PR-only restriction applies to ynab-mcp, not research. |
 | 2026-11-07 | Pre-Jira setup decision confirmed in guided chat | First release is for the owner only and read-only; creating or changing transactions is deferred. |
 | 2026-11-07 | User completion confirmation in guided chat | 1Password project entry saved; Phase 0.1 complete. GitHub identity and repository access verified independently; remaining Phase 0 checks are pending. |
+| 2026-11-07 | User signup/plugin confirmation and live verification in guided chat | Reuse existing ynab-mcp Jira project. Access verified; key alignment and Free subscription verification remain pending. |
