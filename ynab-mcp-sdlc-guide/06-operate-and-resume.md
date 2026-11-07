@@ -24,13 +24,23 @@ If two machines edit the register concurrently, reconcile it using Jira/GitHub/R
 ## 6.2 Start on a second machine
 
 1. Follow [preflight](00-preflight.md) for Git, GitHub CLI, Codex and the pinned application runtime.
-2. Clone or fast-forward `tzehon/research`. Read README and PROGRESS.md, then open the current Jira issue and latest approval evidence.
-3. Clone or update the **existing** `tzehon/ynab-mcp` repository. Verify remote and Git identity, then fetch branches and select the recorded work branch. Check for uncommitted work before switching.
+2. Clone or fast-forward `tzehon/research`. Read README and PROGRESS.md, then open the current Jira issue and latest approval evidence. During initial setup, if no Jira issue exists yet, resume from the register’s next concrete action; do not invent an issue or approval.
+3. Clone or update the **existing** `tzehon/ynab-mcp` repository. Verify remote and Git identity, then fetch branches and select the recorded work branch. Check for uncommitted work before switching. If only the initialization commit exists and no work branch is recorded, keep that checkout for inspection; create a feature branch before making application changes.
 4. Install the runtime version recorded in `.node-version`, then run `npm ci` and `npm run check` once the application has those files/scripts. Do not regenerate the lockfile merely because the new machine has a newer npm version.
 5. Reauthenticate Jira in the selected Codex environment and verify that it reads the intended issue. Then re-add/login to the existing remote YNAB MCP endpoint as described in [client connections](05-client-connections.md).
 6. You do not need the YNAB PAT on a machine that only uses the hosted service. Local development should use fixtures. A controlled live-adapter diagnostic is a separate task with temporary local secret access.
 7. Sign into Railway only if you need deployment administration. Select/link the existing workspace/project/environment/service IDs, confirm them, and inspect current deployment before changing anything.
 8. Compare the actual active deployment SHA with the register and GitHub. Resolve differences before resuming release work.
+
+The agreed Git identity is your GitHub profile name plus your verified GitHub no-reply email. Repository-local settings live in `.git/config` and do not travel with a clone. On each new machine, obtain the exact no-reply address from GitHub email settings and apply it separately inside both checkouts:
+
+```sh
+git config --local user.name "YOUR_GITHUB_PROFILE_NAME"
+git config --local user.email "YOUR_VERIFIED_GITHUB_NOREPLY_EMAIL"
+git var GIT_AUTHOR_IDENT
+```
+
+Replace both placeholders before running these commands. Keep account-specific values in your private register. These commands leave global Git identity unchanged. If SSH cloning stalls, use the repository’s HTTPS clone URL without changing global GitHub CLI preferences.
 
 **Checkpoint P6-machine:** one hosted call succeeds from the second machine in the service's existing mode: a fixture call when it is in fixture mode, or a narrow authorized read when already live. Run local fixture tests separately. Do not switch the hosted data mode, create another project or redeploy solely to test a new machine. P6-recovery remains separate until restart and rollback have also been exercised.
 

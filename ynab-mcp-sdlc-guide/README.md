@@ -2,7 +2,7 @@
 
 Build a personal YNAB MCP server in a **separate GitHub repository**, host it on Railway, and connect it to Codex and ChatGPT. Use Jira as the authoritative record for requirements and decisions, with two-way links to implementation in GitHub.
 
-**Status: planning documentation only.** This folder does not contain an implemented server. The public application repository was created during guided setup on 7 November 2026 with a minimal README. Jira, Auth0, Railway deployment and client connection checkpoints remain unverified; follow PROGRESS.md for current execution state. Ticket identifiers such as `YNAB-123` remain examples until Jira assigns actual issues. Sources were checked on **6 November 2026**; verify changing UI labels, eligibility, prices and SDK versions when you execute a phase.
+**Status: planning documentation only.** This folder does not contain an implemented server. The public application repository was created during guided setup on 7 November 2026 with a minimal README. Account access and client eligibility have been checked, and the existing Jira project now uses YNAB. Jira workflow/integration, Auth0 configuration, Railway deployment and end-to-end client connections remain pending; follow PROGRESS.md for current execution state. Ticket identifiers such as `YNAB-123` remain examples until Jira assigns actual issues. Sources were checked on **6 November 2026**; verify changing UI labels, eligibility, prices and SDK versions when you execute a phase.
 
 ## Start here
 
@@ -57,7 +57,7 @@ Auth0 and YNAB credentials are different. Your MCP server does not need an OpenA
 | --- | --- |
 | This reusable guide and portable setup index | `research/ynab-mcp-sdlc-guide/` |
 | Intent, specification, plan, acceptance criteria, approval | Jira issue |
-| Source, tests, lockfiles, operating instructions, PR review | Proposed `ynab-mcp` repository |
+| Source, tests, lockfiles, operating instructions, PR review | Existing `ynab-mcp` repository |
 | Read-only copy of an approved specification used by CI | Evidence artifact referenced from Jira/PR, labelled with revision/hash |
 | Tokens, passwords, client secrets | Password manager, Railway variables or appropriate client credential store |
 
