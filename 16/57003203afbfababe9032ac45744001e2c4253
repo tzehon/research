@@ -1,0 +1,29 @@
+ynab-mcp-sdlc-guide/README.md
+  s_eb80e8fdbdac14::t_5c8eff07008acd 27-30
+ynab-mcp-sdlc-guide/00-preflight.md
+  s_eb80e8fdbdac14::t_5c8eff07008acd 8,17
+ynab-mcp-sdlc-guide/01-jira-and-github.md
+  s_eb80e8fdbdac14::t_5c8eff07008acd 3,71,89-91,96-99,102,105,108,111-112,115-119,121,123,125,127-131,133
+ynab-mcp-sdlc-guide/PROGRESS.md
+  s_eb80e8fdbdac14::t_5c8eff07008acd 12-15,55,60,69-70,73-75,85
+ynab-mcp-sdlc-guide/02-codex-workflow.md
+  s_eb80e8fdbdac14::t_5c8eff07008acd 150,157,161
+ynab-mcp-sdlc-guide/templates/AGENTS.md
+  s_eb80e8fdbdac14::t_5c8eff07008acd 15-17,44
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1657003203afbfababe9032ac45744001e2c4253",
+  "prompts": {},
+  "sessions": {
+    "s_eb80e8fdbdac14": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tth <xyz@foo.com>"
+    }
+  }
+}
