@@ -13,6 +13,7 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 | Application repo URL / visibility | https://github.com/tzehon/ynab-mcp — Public; verified on 2026-11-07; default branch main |
 | Application delivery policy | Applies to ynab-mcp: feature branches and PRs only; no direct pushes to main. Research progress updates may use main. |
 | Application initial state | GitHub-created README seed; commit de44eb5d7745a8b51b96eb9824be910f30baf362; no implementation code |
+| First-release scope | Agreed 2026-11-07: owner-only, read-only YNAB access to plans, accounts, categories, balances and transactions; writes deferred |
 | Application code review | Codex cloud automatic review selected; not configured or verified yet |
 | Jira site / cloud ID | Not created or verified |
 | Jira space/project key | YNAB agreed on 2026-11-07; Jira project not yet created |
@@ -55,7 +56,7 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 - [x] 0.1 step 1: generic progress stays here; private setup details go in 1Password (user confirmed).
 - [x] 0.1 step 2: tzehon/ynab-mcp, Public; PR-only delivery with Codex cloud review agreed.
 - [x] 0.1 step 3: Jira project key YNAB agreed by user.
-- [ ] 0.1 step 4: personal read-only first release agreed.
+- [x] 0.1 step 4: owner-only, read-only first release agreed by user; writes deferred.
 - [ ] 0.1 step 5: private secret-manager record selected/created.
 - [ ] 0.2: account and client eligibility checks complete.
 - [x] Phase 1 repository creation brought forward at user request: public ynab-mcp exists with README seed.
@@ -68,13 +69,13 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 
 Chapter checkpoint mapping: J1–J3/G1 establish P1; G2 is completed at C6 and establishes P1-links. C1–C4 establish P2. C5–C6 describe the repeating implementation/review cycle. RD-01–RD-06 establish P4 and contribute to P3-auth; Chapter 05 establishes both client checkpoints before RD-07 enables P5-live. RD-08 plus the recovery procedure establishes P6-recovery.
 
-- Last updated (date/time/time zone): 2026-11-07 10:35 Asia/Singapore
-- Current phase/checkpoint: P0 / 0.1 step 4 — agree first-release scope
+- Last updated (date/time/time zone): 2026-11-07 10:36 Asia/Singapore
+- Current phase/checkpoint: P0 / 0.1 step 5 — create/select private 1Password project entry
 - Current Jira issue + approved revision: none
 - Current app branch/PR and commit: main at de44eb5d7745a8b51b96eb9824be910f30baf362 (GitHub initialization only); no application PR yet
-- Last observed successful check: public application repository and README seed verified via GitHub; Jira key YNAB confirmed by user; research guide PR 12 merged after successful checks
-- Blocker or decision needed: confirm personal read-only first release
-- Next concrete action: agree first-release scope; then select/create the project entry in 1Password
+- Last observed successful check: user confirmed owner-only read-only first release; 1Password project entry remains unconfirmed
+- Blocker or decision needed: create or identify the private 1Password project entry
+- Next concrete action: create a Secure Note named YNAB MCP deployment in an appropriate private 1Password vault, or reuse an existing project entry; report completion without sharing private contents
 - Where evidence lives (links only; redact before sharing): https://github.com/tzehon/ynab-mcp and https://github.com/tzehon/research/pull/12
 
 ## Decision log
@@ -86,3 +87,4 @@ Record links to decisions in Jira, not duplicated specifications.
 | 2026-11-07 | Pre-Jira setup decision confirmed in guided chat | Keep generic progress public; use 1Password for private setup details. Project entry creation remains pending. |
 | 2026-11-07 | Pre-Jira setup decision confirmed in guided chat | Public tzehon/ynab-mcp; feature branches and PRs only, with Codex cloud review. No direct pushes to main. |
 | 2026-11-07 | Pre-Jira setup decision confirmed in guided chat | Jira key YNAB agreed. Created public ynab-mcp ahead of Phase 1 at user request. PR-only restriction applies to ynab-mcp, not research. |
+| 2026-11-07 | Pre-Jira setup decision confirmed in guided chat | First release is for the owner only and read-only; creating or changing transactions is deferred. |
