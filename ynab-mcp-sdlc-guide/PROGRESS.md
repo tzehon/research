@@ -24,7 +24,7 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 | Auth0 tenant / issuer / API audience | Not configured |
 | Auth0 client registration route | Planned: separate explicitly registered clients; see Phase 3a |
 | Client application IDs (non-secret) | Not configured |
-| Private identity/secret register item name | 1Password selected; project entry not yet created/confirmed (step 0.1.5) |
+| Private identity/secret register item name | 1Password Secure Note: YNAB MCP deployment; saved per user confirmation on 2026-11-07; contents not inspected |
 | Railway workspace / project ID / environment / service ID | Existing account; no project selected |
 | Railway service URL / exact MCP URL | Not configured |
 | Tested Node / npm / SDK / Codex versions | Not recorded |
@@ -57,8 +57,11 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 - [x] 0.1 step 2: tzehon/ynab-mcp, Public; PR-only delivery with Codex cloud review agreed.
 - [x] 0.1 step 3: Jira project key YNAB agreed by user.
 - [x] 0.1 step 4: owner-only, read-only first release agreed by user; writes deferred.
-- [ ] 0.1 step 5: private secret-manager record selected/created.
+- [x] 0.1 step 5: 1Password project entry saved (user confirmed).
 - [ ] 0.2: account and client eligibility checks complete.
+- [x] 0.2 GitHub identity/access: connected user tzehon; public ynab-mcp owned by tzehon; admin and push permissions verified.
+- [ ] 0.2 GitHub protection/review configuration: not yet verified; configuration remains Phase 1.
+- [ ] 0.2 Jira access: existing personal site/account not yet confirmed; connector site lookup unavailable in this session.
 - [x] Phase 1 repository creation brought forward at user request: public ynab-mcp exists with README seed.
 - [ ] Phase 1 review setup: Codex cloud integration enabled and review of a real PR observed.
 - [ ] 0.3: local tools and Git identity verified.
@@ -69,13 +72,13 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 
 Chapter checkpoint mapping: J1–J3/G1 establish P1; G2 is completed at C6 and establishes P1-links. C1–C4 establish P2. C5–C6 describe the repeating implementation/review cycle. RD-01–RD-06 establish P4 and contribute to P3-auth; Chapter 05 establishes both client checkpoints before RD-07 enables P5-live. RD-08 plus the recovery procedure establishes P6-recovery.
 
-- Last updated (date/time/time zone): 2026-11-07 10:36 Asia/Singapore
-- Current phase/checkpoint: P0 / 0.1 step 5 — create/select private 1Password project entry
+- Last updated (date/time/time zone): 2026-11-07 10:39 Asia/Singapore
+- Current phase/checkpoint: P0 / 0.2 — account access; next verify personal Jira account/site
 - Current Jira issue + approved revision: none
 - Current app branch/PR and commit: main at de44eb5d7745a8b51b96eb9824be910f30baf362 (GitHub initialization only); no application PR yet
-- Last observed successful check: user confirmed owner-only read-only first release; 1Password project entry remains unconfirmed
-- Blocker or decision needed: create or identify the private 1Password project entry
-- Next concrete action: create a Secure Note named YNAB MCP deployment in an appropriate private 1Password vault, or reuse an existing project entry; report completion without sharing private contents
+- Last observed successful check: user confirmed the 1Password entry is saved; GitHub connector verified tzehon identity and admin/push access to public ynab-mcp
+- Blocker or decision needed: confirm whether an appropriate personal Jira site/account already exists; connector site lookup returned unavailable-tool error, which does not establish account absence
+- Next concrete action: identify existing personal Jira access or proceed to Jira Free signup; do not create a duplicate site
 - Where evidence lives (links only; redact before sharing): https://github.com/tzehon/ynab-mcp and https://github.com/tzehon/research/pull/12
 
 ## Decision log
@@ -88,3 +91,4 @@ Record links to decisions in Jira, not duplicated specifications.
 | 2026-11-07 | Pre-Jira setup decision confirmed in guided chat | Public tzehon/ynab-mcp; feature branches and PRs only, with Codex cloud review. No direct pushes to main. |
 | 2026-11-07 | Pre-Jira setup decision confirmed in guided chat | Jira key YNAB agreed. Created public ynab-mcp ahead of Phase 1 at user request. PR-only restriction applies to ynab-mcp, not research. |
 | 2026-11-07 | Pre-Jira setup decision confirmed in guided chat | First release is for the owner only and read-only; creating or changing transactions is deferred. |
+| 2026-11-07 | User completion confirmation in guided chat | 1Password project entry saved; Phase 0.1 complete. GitHub identity and repository access verified independently; remaining Phase 0 checks are pending. |
