@@ -46,7 +46,7 @@ Idea → Spec review → Plan review → Ready to build
      → In progress → In review → Ready to release → Done
 ```
 
-Keep Idea through Ready to build in the To do category; In progress through Ready to release in In progress; only Done in Done. You may group several statuses into one board column. Add a route back to the relevant review stage when scope changes.
+Keep Idea through Ready to build in the To do category; In progress through Ready to release in In progress; only Done in Done. You may group several statuses into one board column. Add a route back to the relevant review stage when scope changes. Status and Resolution are separate: before declaring a later issue complete, follow the [post-transition read-back and resolution audit](02-codex-workflow.md#resolution-consistency-check). Workflow publication or a Done category alone does not prove Resolution is populated.
 
 For an existing shared workflow, use this sequence (verified in the UI on 7 November 2026):
 

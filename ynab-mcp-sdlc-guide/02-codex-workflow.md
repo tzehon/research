@@ -153,7 +153,27 @@ Run the check when PRs open, synchronize, reopen **and when title/body are edite
 5. Confirm the merged remote branch was automatically deleted. With a clean local checkout, fetch with pruning, switch to main and fast-forward only. Compare the old branch’s patches/tree with delivered main before deleting the local feature branch. If Git rejects ordinary branch deletion because rebasing changed SHAs, use forced local branch deletion only after proving all changes were delivered and no unique work would be lost. Never force-update main or delete unrelated branches.
 6. Set **Ready to release**. Mark **Done** only when all required PRs and ACs are complete and the result is usable. For setup/documentation work, merge plus verification may suffice; for shipped server behavior, record the applicable release or local-install smoke test. Do not auto-close on the first merged PR.
 
-**Checkpoint C6:** Ticket → PR/commit and PR/commit → ticket work; evidence identifies the reviewed and delivered revisions.
+7. After transitioning to Done, fetch the issue again with explicit `status`, `resolution` and `resolutiondate` fields. For successfully delivered work in this workflow, require status name **Done**, status category key `done`, resolution **Done** with a nonempty ID, and a populated resolution date. A successful transition response or green status badge does not establish resolution. If a connector omits requested fields, inspect Jira's Resolution column or a full issue response; omitted data is not passing evidence.
+8. Record the observed status, resolution and resolution date in the Jira delivery evidence. Record a generic verification result in PROGRESS.md. Only then report closure as complete. After an authorized reopen, verify a non-Done status and that resolution and resolution date are cleared.
+
+### Resolution consistency check
+
+At session resume and after closure/reopening, run this read-only project audit and consume every results page:
+
+```jql
+project = YNAB AND (
+  (statusCategory = Done AND resolution IS EMPTY)
+  OR (statusCategory != Done AND resolution IS NOT EMPTY)
+)
+```
+
+No returned issues means this query found no status/resolution mismatches among accessible issues. It does not replace the direct read-back of the issue just changed. A failed query, incomplete pagination or missing access leaves the audit unverified.
+
+If a completed issue remains unresolved, do not report success or blindly repeat transitions. Re-read its completion evidence and discover available transitions. An existing Done-to-Done transition can repair resolution without reopening work; use it only within the authorized correction, then read all completion fields again. If no suitable transition exists or the read-back still fails, report the specific inconsistency and inspect the workflow before any further mutation. Never bulk-close unfinished work, change approved fields, or invent a resolution named Unresolved/None. Genuine cancellation/duplicate outcomes require their appropriate resolution rather than automatically using Done.
+
+For future workflow changes, verify resolution is set on completion and cleared on reopening through the path actually used (including API calls). Do not rely solely on transition screens or board columns. Avoid adding a second automation that competes with an existing resolution-setting workflow. These checks follow [Atlassian's resolution guidance](https://support.atlassian.com/jira/kb/best-practices-on-using-the-resolution-field-in-jira-cloud/); configuration controls differ between team-managed and company-managed projects.
+
+**Checkpoint C6:** Ticket → PR/commit and PR/commit → ticket work; evidence identifies the reviewed and delivered revisions. Direct post-transition read-back verifies status, resolution and resolution date, and the consistency audit has no unresolved mismatch.
 
 ## 2.7 Resume safely and optionally extend Jira-aware review
 

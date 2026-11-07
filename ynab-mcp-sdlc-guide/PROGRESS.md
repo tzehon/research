@@ -158,6 +158,13 @@ Guided execution started on 7 November 2026. Phase 0 preflight and Phase 1 Jira/
 - [x] 3.3–3.5 review preparation: saved Description read back exactly; Spec, Plan and Acceptance criteria are empty. Attached an exact timestamped field snapshot to Jira, downloaded it, and verified byte equality/SHA-256. Snapshot and private identifiers remain outside public Git. API/schema verification and concrete contract choices belong to the later specification step.
 - [ ] 3.3–3.5 intent decision: owner must review draft-r1 and personally post the decision naming its verified Jira attachment. Intent approval permits specification drafting only; no spec/AC/plan, implementation, merge or release approval is inferred.
 
+## Completion verification safeguard
+
+- [x] 2026-11-07: corrected the bootstrap Task's missing Resolution using its available Done-to-Done transition. Direct read-back verified Status Done, Resolution Done and a populated resolution date. The earlier status-only completion check was insufficient; the historical cause of the missing value is not established.
+- [x] Read-only project consistency audit returned no issues and no further page: neither Done-with-empty-resolution nor non-Done-with-resolution mismatches remain among accessible YNAB issues.
+- [x] Guide AGENTS.md, workflow instructions and application instruction template now require direct status/resolution/resolutiondate read-back before closure is reported, plus a paginated project audit at resume and after closure/reopening. Missing fields/errors cannot pass; reopening must clear resolution. These are documented agent checks, not a new scheduled automation or authenticated CI gate.
+- The application checkout and active adapter/tools intent remain unchanged by this documentation correction. Apply the updated application-template rule when next revising application instructions through its normal PR process; do not overwrite the existing root instructions.
+
 ## Session handoff
 
 Chapter checkpoint mapping: J1–J3/G1 establish P1; G2 is completed at C6 and establishes P1-links. C1–C4 establish P2. C5–C6 describe the repeating implementation/review cycle. RD-01–RD-06 establish P4 and contribute to P3-auth; Chapter 05 establishes both client checkpoints before RD-07 enables P5-live. RD-08 plus the recovery procedure establishes P6-recovery.

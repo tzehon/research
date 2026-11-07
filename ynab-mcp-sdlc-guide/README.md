@@ -6,7 +6,7 @@ Build a personal YNAB MCP server in a **separate GitHub repository**, host it on
 
 ## Start here
 
-1. Read [preflight and machine setup](00-preflight.md).
+1. Read [guide agent instructions](AGENTS.md) and [preflight and machine setup](00-preflight.md).
 2. Fill the non-secret resource register and checkboxes in [PROGRESS.md](PROGRESS.md).
 3. Follow the chapters below in order. Each checkpoint needs observed evidence before it is marked complete.
 4. At the end of a session, commit and push the progress update. On another machine, pull it and use [resume instructions](06-operate-and-resume.md).

@@ -19,6 +19,8 @@ Copy this file into the new application's root and replace placeholders after th
 - PR description includes the full Jira URL, approved revision, acceptance-criterion evidence and release implications.
 - After explicit owner merge approval, use rebase merging and preserve issue keys in every delivered commit. Verify delivered contents and Jira links, delete the merged remote/local branches, and leave a clean, fast-forwarded main checkout. Do not discard unique local work.
 - Preserve issue keys in final merged commits. A PR merge alone does not close a ticket that still has implementation, deployment or acceptance work.
+- After a Done transition, independently read `status`, `resolution` and `resolutiondate`. For successfully delivered work require Done status/category, Done resolution with an ID, and a populated resolution date before reporting closure. A transition success response is insufficient. Missing fields or API errors leave closure unverified; do not infer success.
+- After an authorized reopen, verify non-Done status and cleared resolution/resolutiondate. Audit accessible project issues at resume and after closure/reopening using `project = YNAB AND ((statusCategory = Done AND resolution IS EMPTY) OR (statusCategory != Done AND resolution IS NOT EMPTY))`, consuming every page. Investigate mismatches without bulk-closing work or changing approved requirements. Record observed results in Jira and generic progress in PROGRESS.md.
 - Use the actual issue key. Do not fabricate issue links, approvals, test results or deployment status.
 - Prefer one small coherent PR per implementation issue; explicitly list related issues for cross-cutting work.
 
