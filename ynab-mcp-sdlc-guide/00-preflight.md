@@ -76,6 +76,23 @@ If the checkout is dirty, preserve/commit your own work first. If fast-forward f
 
 Each machine needs its own GitHub and Codex login. Jira/Atlassian integration authorization and the YNAB MCP authorization are separate connections. A repository clone does not carry those sessions. Later, Codex logs in to your hosted MCP endpoint; the YNAB personal token stays on Railway and is not needed merely to use the service from a second machine.
 
-Keep these portable, non-secret facts: repository URLs, Jira issue links, service endpoint, selected versions, workflow status, and next checkpoint. Keep these private: passwords, tokens, OAuth client secrets, refresh tokens, and raw financial responses. Do not copy an entire `.codex` directory between machines.
+The agreed storage policy uses the 1Password Secure Note **YNAB MCP deployment** as the private setup register. Generic progress, versions, public repository links and next steps go in PROGRESS.md. Account-specific identifiers and deployment configuration go in 1Password even when they are not credentials. Raw financial responses are not setup records and do not belong in either repository.
+
+| Item | Where it belongs | On another machine |
+| --- | --- | --- |
+| GitHub CLI and Codex account sign-in | Each client's normal credential storage | Sign in using the normal flow; a clone does not transfer sessions |
+| Git author name and no-reply email | Repository-local `.git/config` in both checkouts | Reapply the agreed identity; do not copy the entire `.git` directory |
+| Atlassian authorization | The selected Codex/ChatGPT integration | Check the existing connection; reauthenticate if needed |
+| Codex YNAB MCP endpoint, public client ID and callback configuration | Host-local MCP configuration; private setup register for reference | Add the same service, verify the machine's actual callback and log in again |
+| ChatGPT YNAB MCP connection | Intended ChatGPT account/workspace | Inspect and reuse the account-side connection; do not recreate it solely for a new computer |
+| Auth0 tenant/issuer, API audience, owner subject, client IDs, callbacks and YNAB plan allowlist | Private setup register; required values later copied to their intended Auth0/client/Railway settings | Reuse the recorded resources and verify current values |
+| YNAB personal access token | 1Password and the Railway service's protected `YNAB_ACCESS_TOKEN` variable | Not needed on a machine that only calls the hosted service; local development uses fixtures |
+| ChatGPT confidential OAuth client secret | 1Password and the ChatGPT connection's credential fields | Not a Railway variable or Codex configuration value |
+| Codex OAuth client secret | None in the planned public native-client design | Use its public client ID and interactive login |
+| OAuth access/refresh tokens | Client-managed credential storage | Let the client authenticate; do not paste tokens into the guide or copy token caches |
+
+This is the planned storage arrangement, not evidence that credentials have been created or installed. The Phase 0 review does not require inspecting 1Password contents, generating tokens, or changing provider settings. At this point the private note is user-confirmed; YNAB service credentials and client registrations remain later work.
+
+When preparing a new machine, clone the repositories, configure local Git identity, sign into the required clients and consult the private register. Do not copy an entire `.codex` directory between machines. Add the real YNAB token to Railway only after the fixture-mode authentication checks pass in both clients.
 
 **Checkpoint P0:** the guide is available locally, GitHub identity is correct, required local tools run, client eligibility is known, and PROGRESS.md records the choices. Continue to [Jira and GitHub](01-jira-and-github.md).

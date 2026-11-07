@@ -78,19 +78,19 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 - [x] 0.3: Git, GitHub CLI, Node and npm version checks passed; Codex already checked. GitHub CLI authenticated as intended owner with normal credential/network access. User-approved Git identity applied and verified locally in research and ynab-mcp.
 - [x] Application clone brought forward for Git identity setup: HTTPS clone succeeded; SSH attempt stalled and was stopped. No global protocol change or application push.
 - [x] 0.4: correct research fetch/push remote and clean main checkout verified; `git pull --ff-only` succeeded (already up to date) on 2026-11-07. README, progress and resume instructions reviewed; new-machine identity and pre-implementation resume steps clarified. This is not a second-machine MCP test.
-- [ ] 0.5: credential/configuration separation reviewed.
+- [x] 0.5: agreed per-machine/account/service storage boundaries reviewed and documented in 00-preflight.md. 1Password remains the private register; actual note contents and runtime credentials were not inspected or provisioned.
 
 ## Session handoff
 
 Chapter checkpoint mapping: J1–J3/G1 establish P1; G2 is completed at C6 and establishes P1-links. C1–C4 establish P2. C5–C6 describe the repeating implementation/review cycle. RD-01–RD-06 establish P4 and contribute to P3-auth; Chapter 05 establishes both client checkpoints before RD-07 enables P5-live. RD-08 plus the recovery procedure establishes P6-recovery.
 
-- Last updated (date/time/time zone): 2026-11-07 12:52 Asia/Singapore
-- Current phase/checkpoint: P0 / 0.4 complete — guide refresh/resume procedure verified; credential/configuration separation review next
+- Last updated (date/time/time zone): 2026-11-07 12:58 Asia/Singapore
+- Current phase/checkpoint: P0 / 0.5 complete — credential/configuration storage map documented; remaining GitHub protection/review availability check next
 - Current Jira issue + approved revision: none
 - Current app branch/PR and commit: main at de44eb5d7745a8b51b96eb9824be910f30baf362 (GitHub initialization only); no application PR yet
-- Last observed successful check: Research origin matched the intended repository; clean main checkout refreshed successfully with git pull --ff-only; resume instructions now explicitly cover local Git identity and pre-implementation state
+- Last observed successful check: Reviewed authentication, deployment and client instructions against the agreed private-register policy; added a portable storage map distinguishing host-local Codex setup from account-side ChatGPT setup
 - Blocker or decision needed: GitHub protection/review check remains outstanding. Railway trial is time-limited; recheck before deployment. No local-tools blocker.
-- Next concrete action: Complete Phase 0.5: review which logins and settings are per-machine, which resource identifiers belong in 1Password, and where runtime credentials will live. Then close the remaining Phase 0 GitHub protection/review availability check before marking P0 complete.
+- Next concrete action: Verify GitHub branch-protection/ruleset availability and Codex cloud review access for the existing public application repository. Record current configuration separately from availability; Phase 1 applies and tests the PR-only workflow.
 - Where evidence lives (links only; redact before sharing): https://github.com/tzehon/ynab-mcp and https://github.com/tzehon/research/pull/12
 
 ## Decision log
@@ -114,3 +114,4 @@ Record links to decisions in Jira, not duplicated specifications.
 | 2026-11-07 | Live Auth0 access verification in guided chat | Existing development tenant access confirmed; prior gateway-lab applications remain present. Defer YNAB tenant selection and configuration to Phase 3a after reviewing shared-setting impact. |
 | 2026-11-07 | User selected GitHub name and no-reply email in guided chat | Applied repository-local author identity to research and the new local ynab-mcp clone. Global identity preserved; future machines must repeat this local configuration. |
 | 2026-11-07 | Phase 0.4 refresh verified in guided chat | Existing research checkout refreshed successfully with --ff-only. Resume from recorded state; reapply local Git identity after cloning. Second-machine hosted MCP verification remains a later checkpoint. |
+| 2026-11-07 | Phase 0.5 design review in guided chat | Documented per-machine login/configuration, account-side ChatGPT connection, 1Password register and runtime credential destinations. This review does not establish that runtime secrets have been provisioned. |
