@@ -28,7 +28,10 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 | Railway workspace / project ID / environment / service ID | Existing workspace access and Admin role verified on 2026-11-07; zero active projects. No YNAB project created. Keep identifiers in 1Password. |
 | Railway plan / usage check | Trial plan; usage and credit balance inspected on 2026-11-07. Recheck trial eligibility and hosting plan before deployment; private billing amounts omitted. |
 | Railway service URL / exact MCP URL | Not configured |
-| Tested Node / npm / SDK / Codex versions | Codex CLI 0.163.0; desktop 26.1103.41825 (build 25679, prod), updater reported up_to_date on 2026-11-07. Node/npm/SDK checks pending. |
+| Tested Node / npm / SDK / Codex versions | Codex CLI 0.163.0; desktop 26.1103.41825 (build 25679, prod), updater reported up_to_date on 2026-11-07. Node 26.13.0 and npm 11.20.0 verified on 2026-11-07; SDK not installed/tested yet. |
+| Local development tools | Git 2.56.0; GitHub CLI 2.103.3; version commands and GitHub CLI authentication verified on 2026-11-07. |
+| Local application checkout | Cloned existing ynab-mcp repository over HTTPS on this machine; clean README seed, no application changes pushed. |
+| Git commit identity policy | User selected GitHub profile name and verified GitHub no-reply email for research and ynab-mcp; repository-local overrides verified in both. Global settings unchanged; reapply after cloning on each machine. |
 | Application CI workflow + job names | Not implemented |
 | Last successful deployed commit / deployment link | None |
 | Last good rollback deployment | None |
@@ -72,7 +75,8 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 - [ ] Phase 3a Auth0 tenant selection: assess existing application impact before reuse; prefer isolation if tenant-wide changes affect other projects. Do not reuse the gateway API/client registrations automatically.
 - [x] Phase 1 repository creation brought forward at user request: public ynab-mcp exists with README seed.
 - [ ] Phase 1 review setup: Codex cloud integration enabled and review of a real PR observed.
-- [ ] 0.3: local tools and Git identity verified.
+- [x] 0.3: Git, GitHub CLI, Node and npm version checks passed; Codex already checked. GitHub CLI authenticated as intended owner with normal credential/network access. User-approved Git identity applied and verified locally in research and ynab-mcp.
+- [x] Application clone brought forward for Git identity setup: HTTPS clone succeeded; SSH attempt stalled and was stopped. No global protocol change or application push.
 - [ ] 0.4: guide refresh procedure verified.
 - [ ] 0.5: credential/configuration separation reviewed.
 
@@ -80,13 +84,13 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 
 Chapter checkpoint mapping: J1–J3/G1 establish P1; G2 is completed at C6 and establishes P1-links. C1–C4 establish P2. C5–C6 describe the repeating implementation/review cycle. RD-01–RD-06 establish P4 and contribute to P3-auth; Chapter 05 establishes both client checkpoints before RD-07 enables P5-live. RD-08 plus the recovery procedure establishes P6-recovery.
 
-- Last updated (date/time/time zone): 2026-11-07 12:48 Asia/Singapore
-- Current phase/checkpoint: P0 — account access checks recorded; local development tools next. GitHub protection/review check remains outstanding.
+- Last updated (date/time/time zone): 2026-11-07 12:51 Asia/Singapore
+- Current phase/checkpoint: P0 / 0.3 complete — local tools and commit identity verified; guide refresh/resume check next
 - Current Jira issue + approved revision: none
 - Current app branch/PR and commit: main at de44eb5d7745a8b51b96eb9824be910f30baf362 (GitHub initialization only); no application PR yet
-- Last observed successful check: Auth0 dashboard opened signed in; tenant picker listed one development tenant and its Applications page showed two gateway-lab registrations
-- Blocker or decision needed: Railway trial is time-limited; recheck plan and remaining credits before deployment. Remaining account/client eligibility checks are pending.
-- Next concrete action: Run Phase 0.3 local Git, GitHub CLI, Node and npm checks and verify Git identity. Codex version/login/MCP capability already checked; preserve account-specific identity details privately.
+- Last observed successful check: Tool versions ran successfully; GitHub CLI authenticated; both local repositories use the user-selected GitHub name/no-reply email, with global identity unchanged; ynab-mcp checkout clean
+- Blocker or decision needed: GitHub protection/review check remains outstanding. Railway trial is time-limited; recheck before deployment. No local-tools blocker.
+- Next concrete action: Complete Phase 0.4: verify the research remote and clean checkout, run a fast-forward-only guide refresh, and confirm the resume procedure. Reapply repository-local Git identity on each new machine because .git/config is not cloned.
 - Where evidence lives (links only; redact before sharing): https://github.com/tzehon/ynab-mcp and https://github.com/tzehon/research/pull/12
 
 ## Decision log
@@ -108,3 +112,4 @@ Record links to decisions in Jira, not duplicated specifications.
 | 2026-11-07 | Local Codex client verification in guided chat | Installed CLI is signed in through ChatGPT and exposes Streamable HTTP MCP plus OAuth configuration. Desktop updater reports up to date; actual YNAB connectivity remains untested. |
 | 2026-11-07 | Live ChatGPT eligibility verification in guided chat | Custom MCP server setup form is available with OAuth support. Dual-client preflight eligibility is established; deployed authentication and tool calls still require testing. |
 | 2026-11-07 | Live Auth0 access verification in guided chat | Existing development tenant access confirmed; prior gateway-lab applications remain present. Defer YNAB tenant selection and configuration to Phase 3a after reviewing shared-setting impact. |
+| 2026-11-07 | User selected GitHub name and no-reply email in guided chat | Applied repository-local author identity to research and the new local ynab-mcp clone. Global identity preserved; future machines must repeat this local configuration. |
