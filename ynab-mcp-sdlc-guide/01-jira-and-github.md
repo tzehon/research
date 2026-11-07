@@ -140,17 +140,34 @@ Open a PR targeting `main`, using the PR template and issue link. Never run `git
 
 For this public repository, configure protection/rules for `main`: require PRs, disallow force pushes and deletion, apply to administrators where supported, and add passing named CI checks after the first workflow has run. Avoid routine bypasses. [GitHub branch protection](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches)
 
+For an existing repository, inspect **Settings → Rules → Rulesets** before creating another rule. Reuse an equivalent rule rather than adding duplicates. The configuration applied on 7 November 2026 is:
+
+1. Create a branch ruleset named **main-pr-only**, set enforcement to **Active**, and target exactly `refs/heads/main`.
+2. Leave the bypass list empty, including administrators and apps.
+3. Enable **Restrict deletions**, **Block force pushes**, and **Require a pull request before merging**.
+4. Set required approving reviews to **0** for this solo project; require review-thread resolution and dismiss stale approvals on new commits. Do not require code-owner or last-push approval without another eligible human reviewer.
+5. Save the ruleset. After the first real CI workflow runs, return to add its exact required check names. Do not invent check names before they exist.
+6. Verify the effective rules and branch SHA with read-only commands; do not test by pushing to main:
+
+```bash
+gh api repos/tzehon/ynab-mcp/rulesets
+gh api repos/tzehon/ynab-mcp/rules/branches/main
+gh api repos/tzehon/ynab-mcp/branches/main --jq '{protected,sha:.commit.sha}'
+```
+
+The effective rules should include `pull_request`, `deletion` and `non_fast_forward`; check the ruleset detail for an empty bypass list. This verifies configuration, not a rejected-push experiment. [GitHub ruleset API](https://docs.github.com/en/rest/repos/rules)
+
 Do not require your own approving review when you authored the PR. A solo workflow uses your review of the diff, Codex findings and CI, followed by an explicit GitHub merge. Codex cloud review is additional evidence; do not assume it satisfies a required human approval or automatically blocks merging. [GitHub approval rules](https://docs.github.com/en/pull-requests/how-tos/review-pull-requests/approving-a-pull-request-with-required-reviews)
 
 Before the first implementation PR:
 
 1. Connect the public `ynab-mcp` repository to Codex's GitHub integration and verify repository access.
 2. Open [Codex code review settings](https://chatgpt.com/settings/code-review), select the repository and enable automatic review under Review code.
-3. Check personal Automatic review preferences and Review trigger. Select the available setting covering your PRs and subsequent pushes if offered. Opening a PR is not sufficient without these settings.
+3. In the repository’s **Shared repository settings → Review code**, keep **Automatic review** on and set **Trigger → On every push**. This repository override covers later pushes without changing other repositories’ personal defaults. If **Review → Follow personal preferences** is selected, confirm personal Automatic review is on for the PR author. The saved trigger was verified for this repository on 7 November 2026. Opening a PR is not sufficient without these settings.
 4. Put concise `## Code Review Rules` in root `AGENTS.md` through the first PR. Use the guide's template as a starting point.
 5. Open the implementation PR as ready for review. Confirm that a Codex review actually appears; check its reviewed revision after further commits. If a fresh review does not run, request `@codex review` in the PR and wait for the result.
 
-Record actual setup and first-review evidence before checking this off. Native cloud review is the selected first-release workflow; the separate API-backed Jira-aware reviewer in Chapter 2 is optional later work. [Official OpenAI review instructions](https://learn.chatgpt.com/docs/third-party/github)
+Record settings completion separately from first-review evidence. Settings alone do not prove that a review ran or that CI blocks merging; verify both against the first implementation PR and its later pushes. Native cloud review is the selected first-release workflow; the separate API-backed Jira-aware reviewer in Chapter 2 is optional later work. [Official OpenAI review instructions](https://learn.chatgpt.com/docs/third-party/github)
 
 ## 1.6 Connect native traceability
 

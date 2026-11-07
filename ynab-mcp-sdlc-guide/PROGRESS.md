@@ -1,6 +1,6 @@
 # Progress and resource register
 
-Guided execution started on 7 November 2026. Phase 0 preflight and Phase 1.1–1.3 Jira setup are complete, including verified human intent approval. GitHub delivery configuration, integration and implementation remain pending. Update after observed results, then commit and push. It is an index, not a replacement for Jira specifications or approvals. Use a private register instead if these identifiers should not appear in this repository.
+Guided execution started on 7 November 2026. Phase 0 preflight and Phase 1.1–1.3 Jira setup are complete, including verified human intent approval. Phase 1.5 PR protection and Codex review triggers are configured. GitHub integration, actual PR/CI review evidence and implementation remain pending. Update after observed results, then commit and push. It is an index, not a replacement for Jira specifications or approvals. Use a private register instead if these identifiers should not appear in this repository.
 
 ## Resource register — no credentials or financial data
 
@@ -14,8 +14,8 @@ Guided execution started on 7 November 2026. Phase 0 preflight and Phase 1.1–1
 | Application delivery policy | Applies to ynab-mcp: feature branches and PRs only; no direct pushes to main. Research progress updates may use main. |
 | Application initial state | GitHub-created README seed; commit de44eb5d7745a8b51b96eb9824be910f30baf362; no implementation code |
 | First-release scope | Agreed 2026-11-07: owner-only, read-only YNAB access to plans, accounts, categories, balances and transactions; writes deferred |
-| Application code review | Repository visible in Codex code review settings; Automatic review enabled and follows personal preferences. Personal automatic review is on, trigger On PR open (verified 2026-11-07). Subsequent-push trigger setup and actual PR review evidence remain pending. |
-| Application branch protection | Public repo and admin access verified; branch ruleset/classic protection controls available. Main is currently unprotected and no rulesets exist (verified 2026-11-07); enforce PR-only rules in Phase 1. |
+| Application code review | Verified 2026-11-07: repository Automatic review on; Review follows personal preferences (personal automatic review is on); repository Trigger explicitly On every push. Personal trigger remains On PR open for other repositories. Actual current-head PR review evidence remains pending. |
+| Application branch protection | Active main-pr-only ruleset: https://github.com/tzehon/ynab-mcp/rules/26749857. Exact refs/heads/main target; no bypass actors; PR required, force pushes and deletion blocked, review threads must be resolved. Zero required human approvals for the solo workflow. Effective branch rules and protected=true verified 2026-11-07; seed SHA unchanged. Named CI checks pending first workflow run. |
 | Jira site / cloud ID | Existing personal site verified through browser and Atlassian plugin; Jira Free plan verified in Atlassian Administration on 2026-11-07. Keep identifiers in 1Password. |
 | Jira space/project key | YNAB — changed on the existing ynab-mcp project and verified after reload and through the Atlassian plugin on 2026-11-07. |
 | Intent/epic issue URL | Not created |
@@ -66,7 +66,7 @@ Guided execution started on 7 November 2026. Phase 0 preflight and Phase 1.1–1
 - [x] 0.2: account access and client eligibility checks complete; GitHub protection/review controls available. Actual PR enforcement and review evidence belong to Phase 1.
 - [x] 0.2 GitHub identity/access: connected user tzehon; public ynab-mcp owned by tzehon; admin and push permissions verified.
 - [x] 0.2 GitHub protection/review availability: public repository with admin access; protection controls available; Codex repository review settings accessible with automatic review enabled.
-- [ ] Phase 1 branch protection: main currently unprotected and rulesets empty; require PRs and block force pushes/deletion, including administrator bypass where supported.
+- [x] Phase 1 branch protection: active main-pr-only ruleset requires PRs, blocks force pushes/deletion, requires resolved review threads and has no bypass actors. Effective rules API confirms enforcement on main; no direct-push test performed.
 - [x] 0.2 Jira access: user confirmed signup; browser and newly installed Atlassian plugin verified access to the existing ynab-mcp software project, with zero issues.
 - [x] 0.2 Jira subscription: Atlassian Administration billing page explicitly showed Jira on the Free plan with one user on 2026-11-07.
 - [x] 0.2 Railway access: existing workspace, Trial plan, usage/billing and Admin membership verified; zero active projects. No project or paid subscription created.
@@ -76,7 +76,8 @@ Guided execution started on 7 November 2026. Phase 0 preflight and Phase 1.1–1
 - [x] 0.2 Auth0 account access: authenticated dashboard and one listed development tenant verified; application inventory contains two prior gateway-lab registrations. No YNAB-specific tenant/client/API configured.
 - [ ] Phase 3a Auth0 tenant selection: assess existing application impact before reuse; prefer isolation if tenant-wide changes affect other projects. Do not reuse the gateway API/client registrations automatically.
 - [x] Phase 1 repository creation brought forward at user request: public ynab-mcp exists with README seed.
-- [ ] Phase 1 review setup: automatic review is enabled and follows personal On PR open preferences; configure coverage for subsequent pushes and observe review of a real PR at its current head SHA.
+- [x] Phase 1 review settings: repository Automatic review enabled and Trigger explicitly On every push, verified in the settings UI. Review eligibility follows the enabled personal preference.
+- [ ] Phase 1 review evidence: observe Codex reviewing a real PR at its current head SHA, including a later push.
 - [x] 0.3: Git, GitHub CLI, Node and npm version checks passed; Codex already checked. GitHub CLI authenticated as intended owner with normal credential/network access. User-approved Git identity applied and verified locally in research and ynab-mcp.
 - [x] Application clone brought forward for Git identity setup: HTTPS clone succeeded; SSH attempt stalled and was stopped. No global protocol change or application push.
 - [x] 0.4: correct research fetch/push remote and clean main checkout verified; `git pull --ff-only` succeeded (already up to date) on 2026-11-07. README, progress and resume instructions reviewed; new-machine identity and pre-implementation resume steps clarified. This is not a second-machine MCP test.
@@ -95,20 +96,23 @@ Guided execution started on 7 November 2026. Phase 0 preflight and Phase 1.1–1
 - [x] Existing bootstrap Task migrated from To Do to Idea as part of workflow publication; plugin and board verified it remains visible. This migration is not an approval.
 - [x] J3 review preparation: attached a timestamped JSON snapshot of the bootstrap Task's draft-r1 intent/spec/plan/AC, verified field IDs, source updated timestamp and capture time. The attachment was downloaded and byte-compared with the original; SHA-256 matched. Snapshot remains in Jira, outside public Git. This is historical review evidence, not an approval.
 - [x] J3 intent approval: owner confirmed posting the comment; plugin read-back verified the author, 2026-11-07 15:36:33 Asia/Singapore timestamp, exact intent draft-r1 approval and snapshot filename. Description, Spec, Plan and Acceptance criteria still matched the verified snapshot exactly. Transitioned the existing Task from Idea to Spec review using the discovered transition; Jira returned Spec review. Spec/plan/AC and implementation remain unapproved. Approval evidence stays on the Jira issue; no replacement comment or snapshot created.
-- [ ] Delivery configuration: enforce PR-only main protection, configure subsequent-push Codex reviews, and connect GitHub for Atlassian with scoped repository access.
+- [x] 1.5 protection configuration: created active main-pr-only ruleset with no bypass actors. Effective branch rules show PR requirement, deletion and non-fast-forward protection; branch reports protected=true. Main still has the original seed SHA.
+- [x] 1.5 review configuration: set the repository-specific trigger to On every push; Automatic review is on. Personal defaults and existing security-review settings retained. UI confirmed the saved value.
+- [ ] 1.5 implementation follow-up: add named required CI checks after their first real run; verify Codex review against the current PR head and subsequent pushes. Automatic review is not itself a required merge check.
+- [ ] 1.6 integration configuration: connect GitHub for Atlassian with scoped repository access and configure issue autolinks.
 
 ## Session handoff
 
 Chapter checkpoint mapping: J1–J3/G1 establish P1; G2 is completed at C6 and establishes P1-links. C1–C4 establish P2. C5–C6 describe the repeating implementation/review cycle. RD-01–RD-06 establish P4 and contribute to P3-auth; Chapter 05 establishes both client checkpoints before RD-07 enables P5-live. RD-08 plus the recovery procedure establishes P6-recovery.
 
-- Last updated (date/time/time zone): 2026-11-07 15:37 Asia/Singapore
-- Current phase/checkpoint: Phase 1.3 / J3 complete; GitHub delivery configuration in Phase 1.5 is next (repository creation in 1.4 already complete)
+- Last updated (date/time/time zone): 2026-11-07 15:42 Asia/Singapore
+- Current phase/checkpoint: Phase 1.5 settings complete; Phase 1.6 native GitHub/Jira integration is next. Required CI checks and actual PR review evidence follow the first approved implementation PR.
 - Current Jira issue + approved revision: Bootstrap Task “Set up the YNAB MCP repository and delivery workflow” in YNAB, status Spec review. Intent draft-r1 approved by owner comment at 2026-11-07 15:36:33 Asia/Singapore; spec/plan/AC remain unapproved drafts. Resolve the exact issue and comment link in Jira when resuming.
 - Current app branch/PR and commit: main at de44eb5d7745a8b51b96eb9824be910f30baf362 (GitHub initialization only); no application PR yet
-- Last observed successful check: Owner approval comment names intent draft-r1 and the verified snapshot; all four live fields exactly matched that snapshot. Jira transition result confirmed Spec review. Snapshot SHA-256: 607e41b89635a0c33da7bb0c96097af3a87c1701ac197ccda7f8e1a636972720.
-- Blocker or decision needed: No J3 blocker. Configure GitHub protection, review triggers and integration before implementation. Spec/AC and plan require their own later review decisions. Private register mapping/comment link has not been written to 1Password by the agent.
-- Next concrete action: Phase 1.5 — inspect current main protection and configure PR-only delivery for the existing public ynab-mcp repository, with no routine bypass, force pushes or branch deletion. Configure review coverage for later pushes; actual CI/review enforcement evidence follows the first approved implementation PR. Do not recreate the repo or push to app main.
-- Where evidence lives (links only; redact before sharing): https://github.com/tzehon/ynab-mcp and https://github.com/tzehon/research/pull/12
+- Last observed successful check: GitHub effective rules API confirms PR-only protection on main; branch protected=true and seed SHA unchanged. Codex settings UI confirms repository Trigger On every push and Automatic review on. No application commit, PR or direct push was made.
+- Blocker or decision needed: No Phase 1.5 settings blocker. GitHub/Jira integration remains next; spec/AC and plan require their own later review decisions. Private register mapping/comment link has not been written to 1Password by the agent.
+- Next concrete action: Phase 1.6 — inspect existing GitHub for Atlassian connections, connect only the intended repository, configure YNAB issue autolinks and preserve issue keys in squash commit titles. Actual bidirectional navigation follows the first approved implementation PR. Do not recreate the repo or push to app main.
+- Where evidence lives (links only; redact before sharing): https://github.com/tzehon/ynab-mcp/rules/26749857 and https://chatgpt.com/settings/code-review (select tzehon/ynab-mcp); prior guide review https://github.com/tzehon/research/pull/12
 
 ## Decision log
 
@@ -137,3 +141,4 @@ Record links to decisions in Jira, not duplicated specifications.
 | 2026-11-07 | Workflow and board verified in guided chat | Eight stages applied only to Task and Bug; other work-type statuses preserved. All stages mapped to visible columns; bootstrap Task is in Idea. Formal intent approval remains pending. |
 | 2026-11-07 | Jira revision snapshot prepared and retrieved in guided chat | Draft-r1 snapshot attached and verified by byte comparison and SHA-256. Intent approval is pending the owner’s personal Jira comment; status remains Idea. |
 | 2026-11-07 | Owner-posted intent approval verified in Jira after user confirmation | Intent draft-r1 approved against the existing verified snapshot. Live fields match; Task moved to Spec review. Spec, plan, AC and implementation are not approved by this decision. |
+| 2026-11-07 | Live GitHub rules and Codex settings verified in guided chat | Phase 1.5 configuration complete: main requires PRs with no bypass, force push or deletion; repository reviews trigger on every push. No application commits or PRs created. Required CI checks and current-head review evidence remain pending the first approved implementation. |
