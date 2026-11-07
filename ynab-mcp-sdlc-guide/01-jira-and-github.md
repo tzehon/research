@@ -67,9 +67,18 @@ Use these explicit gates:
 | PR | Does this exact change satisfy the approved scope? | Review current head SHA, then merge |
 | Completion | Is the intended result usable and verified? | Move Ready to release to Done |
 
-Before approval, capture the current intent/spec/plan/AC text in a timestamped snapshot attached to the Jira issue, for example `YNAB-1-approved-r1.json`. Include issue key, site, custom field IDs, revision labels, capture time, and Jira's observed updated timestamp. This is historical evidence; **the current Jira fields remain authoritative**. Do not edit an old snapshot to match later decisions.
+Before approval, capture the current intent/spec/plan/AC text in a timestamped snapshot attached to the Jira issue, for example `YNAB-1-intent-draft-r1-YYYYMMDDTHHMMSSZ.json`. Include issue key, site, custom field IDs, revision labels, capture time, and Jira's observed updated timestamp. This is historical evidence; **the current Jira fields remain authoritative**. Do not edit an old snapshot to match later decisions. Label a pre-approval snapshot as draft/review evidence, not approved. Download the attached file and compare its bytes or SHA-256 with the original before citing it. Keep account-specific snapshots in Jira and private storage, outside public Git.
 
-Post the approval yourself in Jira, for example:
+For the first intent gate, review the Description field and post an explicit decision yourself in Jira, naming the exact snapshot attachment. For example:
+
+```text
+Approved intent draft-r1 for YNAB-1.
+Evidence: <exact snapshot attachment filename or link>.
+Decision: proceed to specification review for the repository and delivery workflow setup.
+Spec, plan and acceptance criteria remain drafts; implementation is not approved by this comment.
+```
+
+For the later spec gate, post the approval yourself in Jira, for example:
 
 ```text
 Approved spec r1 and AC r1 for YNAB-1.
