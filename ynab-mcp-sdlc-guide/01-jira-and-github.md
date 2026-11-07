@@ -20,7 +20,7 @@ Jira now calls projects **spaces** and issues **work items** in some screens. Bo
 3. Name it **YNAB MCP** and set its key to **YNAB**, if available. Finish creation. Verify the project details identify it as team-managed. [Atlassian creation instructions](https://support.atlassian.com/jira-software-cloud/docs/create-edit-and-delete-team-managed-projects/)
 4. Start with the Task and Bug work types. Use Task for the setup issue; avoid designing a large hierarchy before you have working examples.
 
-Open **Project/Space settings → Fields → Add fields → Create field**. Create the paragraph fields below, then add them to the Task and Bug layouts under **Work types**. Existing fields should be reused within this project, not recreated. Put them in the main description area when the layout allows it. [Atlassian field configuration](https://support.atlassian.com/jira-software-cloud/docs/customize-an-issues-fields-in-team-managed-projects/)
+Open **Project/Space settings → Fields → Add field → Create a new field** (labels may vary). Create the paragraph fields below, then add them to the Task and Bug layouts under **Work types**. Existing fields should be reused within this project, not recreated. Put them in the main description area when the layout allows it. [Atlassian field configuration](https://support.atlassian.com/jira-software-cloud/docs/customize-an-issues-fields-in-team-managed-projects/)
 
 | Field | Contents |
 |---|---|
@@ -29,11 +29,13 @@ Open **Project/Space settings → Fields → Add fields → Create field**. Crea
 | Plan, paragraph | Implementation order, risks, files/components and verification |
 | Acceptance criteria, paragraph | Stable IDs such as `AC-1`, each with observable pass conditions |
 
+Choose **Paragraph (supports rich text)**, not the plain-text variant. Save the Task and Bug layouts separately, reusing the same three fields. Reload each layout to verify the change.
+
 Use [the issue template](./templates/issue.md) as the starting content. If setting a default Description is unavailable, paste the template when creating the issue; no paid template app is required.
 
 When Codex is connected in Chapter 2, ask it to read a sample issue and report the **actual custom field IDs** for these fields. Save the mapping with the site URL and cloud ID in setup notes. API scripts must use verified IDs, not guessed `customfield_12345` values. Display names alone are ambiguous across projects.
 
-**Checkpoint J2:** A Task shows all four fields, and text survives save/reload.
+**Checkpoint J2:** A Task shows all four fields, and text survives save/reload. You can use the bootstrap Task named in 1.3 for this check, with clearly marked draft content. Search before creating it, and reuse it in later steps; creating a ticket does not constitute human approval.
 
 ## 1.3 Define stages and approval records
 
@@ -68,7 +70,7 @@ Decision: allow implementation planning. Open concerns: none.
 
 For plan approval, name the plan revision and approved spec/AC revisions. Copy the comment permalink for the PR. Jira records the commenter and time. A status move or a comment posted by an agent using your token does not independently prove a human approved it. These are personal working agreements, not tamper-proof or independently enforced approvals.
 
-Create the first Task: **Set up the YNAB MCP repository and delivery workflow**. Record the actual assigned key; `YNAB-1` below is an example. Give it ACs for public visibility, PR-only delivery, Codex cloud review, instructions/template, meaningful checks, and bidirectional navigation. This issue covers the initial bootstrap commit and the first workflow PR.
+Create or reuse the first Task: **Set up the YNAB MCP repository and delivery workflow**. If it was created for J2, update that existing ticket. Record the actual assigned key; `YNAB-1` below is an example. Give it ACs for public visibility, PR-only delivery, Codex cloud review, instructions/template, meaningful checks, and bidirectional navigation. This issue covers the initial bootstrap commit and the first workflow PR.
 
 **Checkpoint J3:** The board shows the stages, the bootstrap ticket exists, and its intent is approved. Continue its spec and plan in Chapter 2 before substantive implementation.
 

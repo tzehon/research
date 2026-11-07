@@ -1,6 +1,6 @@
 # Progress and resource register
 
-Guided execution started on 7 November 2026. Phase 0 preflight is complete; Phase 1 configuration and implementation remain pending. Update after observed results, then commit and push. It is an index, not a replacement for Jira specifications or approvals. Use a private register instead if these identifiers should not appear in this repository.
+Guided execution started on 7 November 2026. Phase 0 preflight and Phase 1.2 Jira fields are complete; workflow, delivery configuration and implementation remain pending. Update after observed results, then commit and push. It is an index, not a replacement for Jira specifications or approvals. Use a private register instead if these identifiers should not appear in this repository.
 
 ## Resource register — no credentials or financial data
 
@@ -19,8 +19,8 @@ Guided execution started on 7 November 2026. Phase 0 preflight is complete; Phas
 | Jira site / cloud ID | Existing personal site verified through browser and Atlassian plugin; Jira Free plan verified in Atlassian Administration on 2026-11-07. Keep identifiers in 1Password. |
 | Jira space/project key | YNAB — changed on the existing ynab-mcp project and verified after reload and through the Atlassian plugin on 2026-11-07. |
 | Intent/epic issue URL | Not created |
-| Current implementation issue URL | Not created |
-| Spec / Plan / Acceptance criteria field IDs | Not discovered |
+| Current implementation issue URL | Bootstrap Task created: Set up the YNAB MCP repository and delivery workflow. Locate it in YNAB; site-specific URL stays private. Draft only, no formal approval recorded. |
+| Spec / Plan / Acceptance criteria field IDs | Discovered and verified through Jira metadata and the saved Task on 2026-11-07. All three are space-scoped rich-text Paragraph fields shared by Task and Bug layouts. IDs omitted from this public register; saving the mapping to 1Password remains pending. |
 | GitHub for Atlassian installation scope | Not configured |
 | Auth0 tenant / issuer / API audience | Account access verified on 2026-11-07; one existing development tenant listed, with prior gateway-lab applications. YNAB tenant selection, issuer verification and API configuration deferred to Phase 3a; identifiers stay private. |
 | Auth0 client registration route | Planned: separate explicitly registered clients; see Phase 3a |
@@ -82,17 +82,27 @@ Guided execution started on 7 November 2026. Phase 0 preflight is complete; Phas
 - [x] 0.4: correct research fetch/push remote and clean main checkout verified; `git pull --ff-only` succeeded (already up to date) on 2026-11-07. README, progress and resume instructions reviewed; new-machine identity and pre-implementation resume steps clarified. This is not a second-machine MCP test.
 - [x] 0.5: agreed per-machine/account/service storage boundaries reviewed and documented in 00-preflight.md. 1Password remains the private register; actual note contents and runtime credentials were not inspected or provisioned.
 
+## Phase 1 detail
+
+- [x] J1: Existing personal Jira Free site reused; no duplicate site or project.
+- [x] 1.2: Existing YNAB project confirmed team-managed. Task and Bug exist; other work types retained.
+- [x] 1.2: Created one project-scoped rich-text Paragraph field each for Spec, Plan and Acceptance criteria. Added the same fields after Description on both Task and Bug; saved layouts persisted after reload and field availability was independently verified through Jira metadata.
+- [x] J2: Created the planned bootstrap Task, “Set up the YNAB MCP repository and delivery workflow”, after confirming the project had no issues. Description and all three custom fields contain draft-r1 content; values survived browser reload and an independent plugin read. No formal human approval was recorded.
+- [ ] Private register: save the verified custom-field mapping and bootstrap issue URL in 1Password. Rediscover from the existing issue when resuming; never guess IDs or recreate fields.
+- [ ] J3: Configure Task/Bug workflow stages and board mapping, then capture explicit human intent approval. Bootstrap ticket creation was brought forward for the J2 persistence check; do not create it again.
+- [ ] Delivery configuration: enforce PR-only main protection, configure subsequent-push Codex reviews, and connect GitHub for Atlassian with scoped repository access.
+
 ## Session handoff
 
 Chapter checkpoint mapping: J1–J3/G1 establish P1; G2 is completed at C6 and establishes P1-links. C1–C4 establish P2. C5–C6 describe the repeating implementation/review cycle. RD-01–RD-06 establish P4 and contribute to P3-auth; Chapter 05 establishes both client checkpoints before RD-07 enables P5-live. RD-08 plus the recovery procedure establishes P6-recovery.
 
-- Last updated (date/time/time zone): 2026-11-07 13:00 Asia/Singapore
-- Current phase/checkpoint: P0 complete — proceed to Phase 1 using the existing Jira site/project and public GitHub repository
-- Current Jira issue + approved revision: none
+- Last updated (date/time/time zone): 2026-11-07 13:06 Asia/Singapore
+- Current phase/checkpoint: Phase 1.2 / J2 complete; Phase 1.3 workflow stages next
+- Current Jira issue + approved revision: Bootstrap Task “Set up the YNAB MCP repository and delivery workflow” exists in YNAB; draft-r1 intent/spec/plan/AC, no approved revision. Discover its key and URL from Jira before work.
 - Current app branch/PR and commit: main at de44eb5d7745a8b51b96eb9824be910f30baf362 (GitHub initialization only); no application PR yet
-- Last observed successful check: GitHub API confirmed public repo/admin access, unprotected main and no rulesets; browser exposed protection controls. Codex settings listed ynab-mcp with automatic review enabled, inheriting personal On PR open trigger.
-- Blocker or decision needed: No Phase 0 blocker. Phase 1 must enforce PR-only protection and verify actual reviews; later-push reviews are not established by the current On PR open trigger. Recheck Railway trial before deployment.
-- Next concrete action: Begin Phase 1.2 with the existing YNAB Jira project: inspect project management type, Task/Bug work types and existing fields, then configure Spec, Plan and Acceptance criteria without duplicates. Existing site/signup/repository creation steps must not be repeated.
+- Last observed successful check: Task and Bug layouts persisted with Description, Spec, Plan and Acceptance criteria. All four populated bootstrap Task fields survived browser reload and an independent plugin read.
+- Blocker or decision needed: No field-configuration blocker. Workflow and approval records remain pending, as do GitHub PR enforcement, subsequent-push review coverage and integration. Private field mapping has not been saved to 1Password by the agent.
+- Next concrete action: Phase 1.3 — inspect and configure Task/Bug workflow stages and board columns using the existing project and bootstrap ticket. Keep draft content unapproved until an explicit human decision is captured.
 - Where evidence lives (links only; redact before sharing): https://github.com/tzehon/ynab-mcp and https://github.com/tzehon/research/pull/12
 
 ## Decision log
@@ -118,3 +128,4 @@ Record links to decisions in Jira, not duplicated specifications.
 | 2026-11-07 | Phase 0.4 refresh verified in guided chat | Existing research checkout refreshed successfully with --ff-only. Resume from recorded state; reapply local Git identity after cloning. Second-machine hosted MCP verification remains a later checkpoint. |
 | 2026-11-07 | Phase 0.5 design review in guided chat | Documented per-machine login/configuration, account-side ChatGPT connection, 1Password register and runtime credential destinations. This review does not establish that runtime secrets have been provisioned. |
 | 2026-11-07 | Live GitHub/Codex preflight verification in guided chat | Phase 0 complete. Protection controls and review access exist; main remains unprotected. Automatic review is on with inherited On PR open trigger; Phase 1 must enforce PR delivery and verify current-revision reviews. |
+| 2026-11-07 | Jira fields and persistence verified in guided chat | J2 complete. Reuse the three project-scoped rich-text fields and existing draft bootstrap Task; workflow stages and formal intent approval remain next. |
