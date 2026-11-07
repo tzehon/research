@@ -16,7 +16,7 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 | First-release scope | Agreed 2026-11-07: owner-only, read-only YNAB access to plans, accounts, categories, balances and transactions; writes deferred |
 | Application code review | Codex cloud automatic review selected; not configured or verified yet |
 | Jira site / cloud ID | Existing personal site verified through browser and Atlassian plugin on 2026-11-07; keep identifiers in 1Password. Free subscription not yet verified. |
-| Jira space/project key | Existing ynab-mcp project verified; current key differs from agreed YNAB. Key change pending; do not create a duplicate project. |
+| Jira space/project key | YNAB — changed on the existing ynab-mcp project and verified after reload and through the Atlassian plugin on 2026-11-07. |
 | Intent/epic issue URL | Not created |
 | Current implementation issue URL | Not created |
 | Spec / Plan / Acceptance criteria field IDs | Not discovered |
@@ -55,7 +55,7 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 - [x] Current research repository visibility verified: public.
 - [x] 0.1 step 1: generic progress stays here; private setup details go in 1Password (user confirmed).
 - [x] 0.1 step 2: tzehon/ynab-mcp, Public; PR-only delivery with Codex cloud review agreed.
-- [x] 0.1 step 3: Jira project key YNAB agreed by user.
+- [x] 0.1 step 3: Jira project key YNAB agreed by user; applied to the existing project and independently verified on 2026-11-07.
 - [x] 0.1 step 4: owner-only, read-only first release agreed by user; writes deferred.
 - [x] 0.1 step 5: 1Password project entry saved (user confirmed).
 - [ ] 0.2: account and client eligibility checks complete.
@@ -73,13 +73,13 @@ Guided execution started on 7 November 2026. No phase is complete yet. Update af
 
 Chapter checkpoint mapping: J1–J3/G1 establish P1; G2 is completed at C6 and establishes P1-links. C1–C4 establish P2. C5–C6 describe the repeating implementation/review cycle. RD-01–RD-06 establish P4 and contribute to P3-auth; Chapter 05 establishes both client checkpoints before RD-07 enables P5-live. RD-08 plus the recovery procedure establishes P6-recovery.
 
-- Last updated (date/time/time zone): 2026-11-07 10:42 Asia/Singapore
-- Current phase/checkpoint: P0 / 0.2 — Jira access verified; align existing project key before continuing account eligibility checks
+- Last updated (date/time/time zone): 2026-11-07 10:43 Asia/Singapore
+- Current phase/checkpoint: P0 / 0.2 — Jira access and project key verified; remaining account eligibility checks pending
 - Current Jira issue + approved revision: none
 - Current app branch/PR and commit: main at de44eb5d7745a8b51b96eb9824be910f30baf362 (GitHub initialization only); no application PR yet
-- Last observed successful check: Atlassian plugin successfully listed the existing ynab-mcp software project and reported zero issues; browser confirmed Space settings exposes an editable key
-- Blocker or decision needed: existing project key differs from agreed YNAB; Free subscription remains unverified. Earlier connector error is resolved after plugin installation.
-- Next concrete action: in the existing project, open Space settings → Details, change Space key to YNAB and save; verify through the plugin after user confirmation. Do not create another site or project.
+- Last observed successful check: Changed existing project key to YNAB; reloaded settings showed the saved key, and Atlassian plugin confirmed the same project ID with key YNAB and zero issues
+- Blocker or decision needed: Jira Free subscription remains unverified; earlier connector error and project key mismatch are resolved
+- Next concrete action: Verify the existing Jira subscription is Free, then continue the remaining Phase 0 account/client eligibility checks. Do not create another site or project.
 - Where evidence lives (links only; redact before sharing): https://github.com/tzehon/ynab-mcp and https://github.com/tzehon/research/pull/12
 
 ## Decision log
@@ -94,3 +94,4 @@ Record links to decisions in Jira, not duplicated specifications.
 | 2026-11-07 | Pre-Jira setup decision confirmed in guided chat | First release is for the owner only and read-only; creating or changing transactions is deferred. |
 | 2026-11-07 | User completion confirmation in guided chat | 1Password project entry saved; Phase 0.1 complete. GitHub identity and repository access verified independently; remaining Phase 0 checks are pending. |
 | 2026-11-07 | User signup/plugin confirmation and live verification in guided chat | Reuse existing ynab-mcp Jira project. Access verified; key alignment and Free subscription verification remain pending. |
+| 2026-11-07 | User requested agent to apply the agreed key | Existing Jira project key changed to YNAB and verified in the browser and plugin. No duplicate project created. |
